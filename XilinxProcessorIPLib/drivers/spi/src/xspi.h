@@ -298,8 +298,40 @@ extern "C" {
 
 /***************************** Include Files *********************************/
 
-#include "xil_types.h"
-#include "xil_assert.h"
+#include "metal/io.h"
+
+#ifndef TRUE
+#define TRUE		1U
+#endif
+
+#ifndef FALSE
+#define FALSE		0U
+#endif
+
+#ifndef NULL
+#define NULL		0U
+#endif
+
+typedef __u32 u32;
+typedef __u16 u16;
+typedef __u8 u8;
+typedef __s32 s32;
+typedef __s16 s16;
+typedef __u64 u64;
+typedef __s64 s64;
+typedef __s8 s8;
+typedef u64 UINTPTR;
+
+#define XIL_COMPONENT_IS_READY     0x11111111U  /**< In device drivers, This macro will be
+                                                 assigend to "IsReady" member of driver
+												 instance to indicate that driver
+												 instance is initialized and ready to use. */
+#define XIL_COMPONENT_IS_STARTED   0x22222222U  /**< In device drivers, This macro will be assigend to
+                                                 "IsStarted" member of driver instance
+												 to indicate that driver instance is
+												 started and it can be enabled. */
+
+
 #include "xstatus.h"
 #include "xspi_l.h"
 
@@ -400,6 +432,8 @@ typedef struct {
 	u8 XipMode;             /**< 0 if Non-XIP, 1 if XIP Mode */
 	u8 Use_Startup;		/**< 1 if Starup block is used in h/w */
 	u16 FifosDepth;		/**< TX and RX FIFO Depth */
+
+	struct metal_device *device; /* Libmetal device structure */
 } XSpi_Config;
 
 /**
@@ -431,6 +465,9 @@ typedef struct {
 	u32 FlashBaseAddr;    	/**< Used in XIP Mode */
 	u8 XipMode;             /**< 0 if Non-XIP, 1 if XIP Mode */
 	u16 FifosDepth;		/**< TX and RX FIFO Depth */
+
+	struct metal_io_region *io; /* Libmetal IO structure */
+	struct metal_device *device; /* Libmetal device structure */
 } XSpi;
 
 /***************** Macros (Inline Functions) Definitions *********************/
@@ -453,7 +490,7 @@ typedef struct {
 *
 ******************************************************************************/
 #define XSpi_IntrGlobalEnable(InstancePtr)				\
-	XSpi_WriteReg(((InstancePtr)->BaseAddr),  XSP_DGIER_OFFSET, 	\
+	XSpi_WriteReg((InstancePtr)->io, ((InstancePtr)->BaseAddr),  XSP_DGIER_OFFSET, 	\
 			XSP_GINTR_ENABLE_MASK)
 
 /******************************************************************************/
@@ -471,7 +508,7 @@ typedef struct {
 *
 ******************************************************************************/
 #define XSpi_IntrGlobalDisable(InstancePtr) 				\
-	XSpi_WriteReg(((InstancePtr)->BaseAddr),  XSP_DGIER_OFFSET, 0)
+	XSpi_WriteReg((InstancePtr)->io, ((InstancePtr)->BaseAddr),  XSP_DGIER_OFFSET, 0)
 
 /*****************************************************************************/
 /**
@@ -490,7 +527,7 @@ typedef struct {
 *
 ******************************************************************************/
 #define XSpi_IsIntrGlobalEnabled(InstancePtr)				\
-	(XSpi_ReadReg(((InstancePtr)->BaseAddr), XSP_DGIER_OFFSET) ==  \
+	(XSpi_ReadReg((InstancePtr)->io, ((InstancePtr)->BaseAddr), XSP_DGIER_OFFSET) ==  \
 		XSP_GINTR_ENABLE_MASK)
 
 /*****************************************************************************/
@@ -511,7 +548,7 @@ typedef struct {
 *
 ******************************************************************************/
 #define XSpi_IntrGetStatus(InstancePtr) \
-	XSpi_ReadReg(((InstancePtr)->BaseAddr), XSP_IISR_OFFSET)
+	XSpi_ReadReg((InstancePtr)->io, ((InstancePtr)->BaseAddr), XSP_IISR_OFFSET)
 
 /*****************************************************************************/
 /**
@@ -539,7 +576,7 @@ typedef struct {
 *
 ******************************************************************************/
 #define XSpi_IntrClear(InstancePtr, ClearMask) 			\
-	XSpi_WriteReg(((InstancePtr)->BaseAddr),  XSP_IISR_OFFSET,	\
+	XSpi_WriteReg((InstancePtr)->io, ((InstancePtr)->BaseAddr),  XSP_IISR_OFFSET,	\
 		XSpi_IntrGetStatus(InstancePtr) | (ClearMask))
 
 
@@ -561,8 +598,8 @@ typedef struct {
 *
 ******************************************************************************/
 #define XSpi_IntrEnable(InstancePtr, EnableMask)			\
-	XSpi_WriteReg(((InstancePtr)->BaseAddr), XSP_IIER_OFFSET,	\
-		(XSpi_ReadReg(((InstancePtr)->BaseAddr), 		\
+	XSpi_WriteReg((InstancePtr)->io, ((InstancePtr)->BaseAddr), XSP_IIER_OFFSET,	\
+		(XSpi_ReadReg((InstancePtr)->io, ((InstancePtr)->BaseAddr), 		\
 			XSP_IIER_OFFSET)) | (((EnableMask) & XSP_INTR_ALL )))
 
 /****************************************************************************/
@@ -583,8 +620,8 @@ typedef struct {
 *
 ******************************************************************************/
 #define XSpi_IntrDisable(InstancePtr, DisableMask) 			\
-	XSpi_WriteReg(((InstancePtr)->BaseAddr), XSP_IIER_OFFSET,	\
-		XSpi_ReadReg(((InstancePtr)->BaseAddr), 		\
+	XSpi_WriteReg((InstancePtr)->io, ((InstancePtr)->BaseAddr), XSP_IIER_OFFSET,	\
+		XSpi_ReadReg((InstancePtr)->io, ((InstancePtr)->BaseAddr), 		\
 			XSP_IIER_OFFSET) & (~ ((DisableMask) & XSP_INTR_ALL )))
 
 
@@ -602,7 +639,7 @@ typedef struct {
 *
 ******************************************************************************/
 #define XSpi_IntrGetEnabled(InstancePtr) \
-	XSpi_ReadReg(((InstancePtr)->BaseAddr),  XSP_IIER_OFFSET)
+	XSpi_ReadReg((InstancePtr)->io, ((InstancePtr)->BaseAddr),  XSP_IIER_OFFSET)
 
 /****************************************************************************/
 /**
@@ -620,7 +657,7 @@ typedef struct {
 *
 *****************************************************************************/
 #define XSpi_SetControlReg(InstancePtr, Mask) \
-	XSpi_WriteReg(((InstancePtr)->BaseAddr), XSP_CR_OFFSET, (Mask))
+	XSpi_WriteReg((InstancePtr)->io, ((InstancePtr)->BaseAddr), XSP_CR_OFFSET, (Mask))
 
 /****************************************************************************/
 /**
@@ -638,7 +675,7 @@ typedef struct {
 *
 *****************************************************************************/
 #define XSpi_GetControlReg(InstancePtr) \
-	XSpi_ReadReg(((InstancePtr)->BaseAddr), XSP_CR_OFFSET)
+	XSpi_ReadReg((InstancePtr)->io, ((InstancePtr)->BaseAddr), XSP_CR_OFFSET)
 
 /***************************************************************************/
 /**
@@ -656,7 +693,7 @@ typedef struct {
 *
 *****************************************************************************/
 #define XSpi_GetStatusReg(InstancePtr) \
-	XSpi_ReadReg(((InstancePtr)->BaseAddr), XSP_SR_OFFSET)
+	XSpi_ReadReg((InstancePtr)->io, ((InstancePtr)->BaseAddr), XSP_SR_OFFSET)
 
 /****************************************************************************/
 /**
@@ -674,7 +711,7 @@ typedef struct {
 *
 *****************************************************************************/
 #define XSpi_SetXipControlReg(InstancePtr, Mask) \
-	XSpi_WriteReg(((InstancePtr)->BaseAddr), XSP_CR_OFFSET, (Mask))
+	XSpi_WriteReg((InstancePtr)->io, ((InstancePtr)->BaseAddr), XSP_CR_OFFSET, (Mask))
 
 /****************************************************************************/
 /**
@@ -692,7 +729,7 @@ typedef struct {
 *
 *****************************************************************************/
 #define XSpi_GetXipControlReg(InstancePtr) \
-	XSpi_ReadReg(((InstancePtr)->BaseAddr), XSP_CR_OFFSET)
+	XSpi_ReadReg((InstancePtr)->io, ((InstancePtr)->BaseAddr), XSP_CR_OFFSET)
 
 /****************************************************************************/
 /**
@@ -710,7 +747,7 @@ typedef struct {
 *
 *****************************************************************************/
 #define XSpi_GetXipStatusReg(InstancePtr) \
-	XSpi_ReadReg(((InstancePtr)->BaseAddr), XSP_SR_OFFSET)
+	XSpi_ReadReg((InstancePtr)->io, ((InstancePtr)->BaseAddr), XSP_SR_OFFSET)
 
 /****************************************************************************/
 /**
@@ -729,7 +766,7 @@ typedef struct {
 *
 *****************************************************************************/
 #define XSpi_SetSlaveSelectReg(InstancePtr, Mask) \
-	XSpi_WriteReg(((InstancePtr)->BaseAddr), XSP_SSR_OFFSET, (Mask))
+	XSpi_WriteReg((InstancePtr)->io, ((InstancePtr)->BaseAddr), XSP_SSR_OFFSET, (Mask))
 
 /****************************************************************************/
 /**
@@ -747,7 +784,7 @@ typedef struct {
 *
 *****************************************************************************/
 #define XSpi_GetSlaveSelectReg(InstancePtr) 			\
-	XSpi_ReadReg((InstancePtr)->BaseAddr, XSP_SSR_OFFSET)
+	XSpi_ReadReg((InstancePtr)->io, (InstancePtr)->BaseAddr, XSP_SSR_OFFSET)
 
 /****************************************************************************/
 /**
@@ -795,7 +832,7 @@ typedef struct {
  * Initialization functions in xspi_sinit.c
  */
 int XSpi_Initialize(XSpi *InstancePtr, u16 DeviceId);
-XSpi_Config *XSpi_LookupConfig(u16 DeviceId);
+XSpi_Config *XSpi_LookupConfig(struct metal_device **Deviceptr, u16 DeviceId);
 
 /*
  * Functions, in xspi.c

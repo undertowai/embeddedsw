@@ -143,12 +143,12 @@ int XSpi_SelfTest(XSpi *InstancePtr)
 	 * If configured with FIFOs, the occupancy values should be 0.
 	 */
 	if (InstancePtr->HasFifos) {
-		Register = XSpi_ReadReg(InstancePtr->BaseAddr,
+		Register = XSpi_ReadReg(InstancePtr->io, InstancePtr->BaseAddr,
 					 XSP_TFO_OFFSET);
 		if (Register != 0) {
 			return XST_REGISTER_ERROR;
 		}
-		Register = XSpi_ReadReg(InstancePtr->BaseAddr,
+		Register = XSpi_ReadReg(InstancePtr->io, InstancePtr->BaseAddr,
 					 XSP_RFO_OFFSET);
 		if (Register != 0) {
 			return XST_REGISTER_ERROR;
@@ -261,7 +261,7 @@ static int LoopbackTest(XSpi *InstancePtr)
 				Data = XSP_WORD_TESTBYTE;
 			}
 
-			XSpi_WriteReg(InstancePtr->BaseAddr, XSP_DTR_OFFSET,
+			XSpi_WriteReg(InstancePtr->io, InstancePtr->BaseAddr, XSP_DTR_OFFSET,
 					Data + Index);
 			NumSent += (DataWidth >> 3);
 			StatusReg = XSpi_GetStatusReg(InstancePtr);
@@ -292,7 +292,7 @@ static int LoopbackTest(XSpi *InstancePtr)
 		StatusReg = XSpi_GetStatusReg(InstancePtr);
 		while ((StatusReg & XSP_SR_RX_EMPTY_MASK) == 0) {
 
-			RxData = XSpi_ReadReg(InstancePtr->BaseAddr,
+			RxData = XSpi_ReadReg(InstancePtr->io, InstancePtr->BaseAddr,
 						XSP_DRR_OFFSET);
 
 			if (DataWidth == XSP_DATAWIDTH_BYTE) {

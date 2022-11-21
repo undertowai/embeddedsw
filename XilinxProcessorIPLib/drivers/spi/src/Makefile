@@ -1,39 +1,21 @@
-DRIVER_LIB_VERSION = 1.0
-COMPILER=
-ARCHIVER=
-CP=cp
-COMPILER_FLAGS=
-EXTRA_COMPILER_FLAGS=
-LIB=libxil.a
+APP = spi
 
-CC_FLAGS = $(COMPILER_FLAGS)
-ECC_FLAGS = $(EXTRA_COMPILER_FLAGS)
+AR=ar
+LIBSOURCES=*.c
+OUTS = *.o
+NAME := spi
 
-RELEASEDIR=../../../lib/
-INCLUDEDIR=../../../include/
-INCLUDES=-I./. -I$(INCLUDEDIR)
+INCLUDES = -I"../../../../../embeddedsw/lib/bsp/standalone/src/arm/cortexr5/"
+INCLUDES += -I"../../../../../embeddedsw/lib/bsp/standalone/src/arm/common/gcc/"
+INCLUDES += -I"./."
 
-SRCFILES:=$(wildcard *.c)
+all: lib$(NAME).a
 
-OBJECTS = $(addprefix $(RELEASEDIR), $(addsuffix .o, $(basename $(wildcard *.c))))
+lib$(NAME).a: $(OUTS)
+	$(AR) -rcs lib$(NAME).a $(LDFLAGS) $(OUTS)
 
-libs: $(OBJECTS)
-
-DEPFILES := $(SRCFILES:%.c=$(RELEASEDIR)%.d)
-
-include $(wildcard $(DEPFILES))
-
-include $(wildcard ../../../../dep.mk)
-
-$(RELEASEDIR)%.o: %.c
-	${COMPILER} $(CC_FLAGS) $(ECC_FLAGS) $(INCLUDES) $(DEPENDENCY_FLAGS) $< -o $@
-
-.PHONY: include
-include: $(addprefix $(INCLUDEDIR),$(wildcard *.h))
-
-$(INCLUDEDIR)%.h: %.h
-	$(CP) $< $@
+%.o: %.c
+	$(CC) $(CFLAGS) $(INCLUDES) -c $(LIBSOURCES)
 
 clean:
-	rm -rf ${OBJECTS}
-	rm -rf $(DEPFILES)
+	rm -rf *.o *.so *.so.* *.a*

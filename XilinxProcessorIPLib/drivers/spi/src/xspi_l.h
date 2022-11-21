@@ -45,17 +45,13 @@ extern "C" {
 
 /***************************** Include Files *********************************/
 
-#include "xil_types.h"
-#include "xil_assert.h"
-#include "xil_io.h"
-
 /**************************** Type Definitions *******************************/
 
 
 /***************** Macros (Inline Functions) Definitions *********************/
 
-#define XSpi_In32	Xil_In32
-#define XSpi_Out32	Xil_Out32
+#define XSpi_In32	metal_io_read32
+#define XSpi_Out32	metal_io_write32
 
 /****************************************************************************/
 /**
@@ -72,8 +68,8 @@ extern "C" {
 *		u32 XSpi_ReadReg(u32 BaseAddress, u32 RegOffset);
 *
 ******************************************************************************/
-#define XSpi_ReadReg(BaseAddress, RegOffset) \
-	XSpi_In32((BaseAddress) + (RegOffset))
+#define XSpi_ReadReg(io, BaseAddress, RegOffset) \
+	XSpi_In32(io, (BaseAddress) + (RegOffset))
 
 /***************************************************************************/
 /**
@@ -91,8 +87,8 @@ extern "C" {
 *		void XSpi_WriteReg(u32 BaseAddress, u32 RegOffset,
 *					u32 RegisterValue);
 ******************************************************************************/
-#define XSpi_WriteReg(BaseAddress, RegOffset, RegisterValue) \
-	XSpi_Out32((BaseAddress) + (RegOffset), (RegisterValue))
+#define XSpi_WriteReg(io, BaseAddress, RegOffset, RegisterValue) \
+	XSpi_Out32(io, (BaseAddress) + (RegOffset), (RegisterValue))
 
 /************************** Function Prototypes ******************************/
 

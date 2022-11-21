@@ -143,7 +143,7 @@ void XSpi_Abort(XSpi *InstancePtr);
 * @note		None.
 *
 ******************************************************************************/
-int XSpi_CfgInitialize(XSpi *InstancePtr, XSpi_Config *Config,
+int  XSpi_CfgInitialize(XSpi *InstancePtr, XSpi_Config *Config,
 			UINTPTR EffectiveAddr)
 {
 	u8  Buffer[3];
@@ -233,9 +233,9 @@ int XSpi_CfgInitialize(XSpi *InstancePtr, XSpi_Config *Config,
 		Buffer[2] = 0x00;
 	
 		/* Write dummy ReadId to the DTR register */
-		XSpi_WriteReg(InstancePtr->BaseAddr, XSP_DTR_OFFSET, Buffer[0]);
-		XSpi_WriteReg(InstancePtr->BaseAddr, XSP_DTR_OFFSET, Buffer[1]);
-		XSpi_WriteReg(InstancePtr->BaseAddr, XSP_DTR_OFFSET, Buffer[2]);
+		XSpi_WriteReg(InstancePtr->io, InstancePtr->BaseAddr, XSP_DTR_OFFSET, Buffer[0]);
+		XSpi_WriteReg(InstancePtr->io, InstancePtr->BaseAddr, XSP_DTR_OFFSET, Buffer[1]);
+		XSpi_WriteReg(InstancePtr->io, InstancePtr->BaseAddr, XSP_DTR_OFFSET, Buffer[2]);
 	
 		/* Master Inhibit enable in the CR */
 		ControlReg = XSpi_GetControlReg(InstancePtr);
@@ -250,11 +250,11 @@ int XSpi_CfgInitialize(XSpi *InstancePtr, XSpi_Config *Config,
 		/* Read the Rx Data Register */
 		StatusReg = XSpi_GetStatusReg(InstancePtr);
 		if ((StatusReg & XSP_SR_RX_EMPTY_MASK) == 0) {
-			XSpi_ReadReg(InstancePtr->BaseAddr, XSP_DRR_OFFSET);
+			XSpi_ReadReg(InstancePtr->io, InstancePtr->BaseAddr, XSP_DRR_OFFSET);
 		}
 		StatusReg = XSpi_GetStatusReg(InstancePtr);
 		if ((StatusReg & XSP_SR_RX_EMPTY_MASK) == 0) {
-			XSpi_ReadReg(InstancePtr->BaseAddr, XSP_DRR_OFFSET);
+			XSpi_ReadReg(InstancePtr->io, InstancePtr->BaseAddr, XSP_DRR_OFFSET);
 		}
 	}
 	
@@ -435,7 +435,7 @@ void XSpi_Reset(XSpi *InstancePtr)
 	/*
 	 * Reset the device.
 	 */
-	XSpi_WriteReg(InstancePtr->BaseAddr, XSP_SRR_OFFSET,
+	XSpi_WriteReg(InstancePtr->io, InstancePtr->BaseAddr, XSP_SRR_OFFSET,
 			XSP_SRR_RESET_MASK);
 }
 
@@ -640,7 +640,7 @@ int XSpi_Transfer(XSpi *InstancePtr, u8 *SendBufPtr,
 			Data = *(u32 *)InstancePtr->SendBufferPtr;
 		}
 
-		XSpi_WriteReg(InstancePtr->BaseAddr, XSP_DTR_OFFSET, Data);
+		XSpi_WriteReg(InstancePtr->io, InstancePtr->BaseAddr, XSP_DTR_OFFSET, Data);
 		InstancePtr->SendBufferPtr += (DataWidth >> 3);
 		InstancePtr->RemainingBytes -= (DataWidth >> 3);
 		StatusReg = XSpi_GetStatusReg(InstancePtr);
@@ -714,7 +714,7 @@ int XSpi_Transfer(XSpi *InstancePtr, u8 *SendBufPtr,
 
 			while ((StatusReg & XSP_SR_RX_EMPTY_MASK) == 0) {
 
-				Data = XSpi_ReadReg(InstancePtr->BaseAddr,
+				Data = XSpi_ReadReg(InstancePtr->io, InstancePtr->BaseAddr,
 								XSP_DRR_OFFSET);
 				if (DataWidth == XSP_DATAWIDTH_BYTE) {
 					/*
@@ -798,7 +798,7 @@ int XSpi_Transfer(XSpi *InstancePtr, u8 *SendBufPtr,
 						Data = *(u32 *)InstancePtr->
 								SendBufferPtr;
 					}
-					XSpi_WriteReg(InstancePtr->BaseAddr,
+					XSpi_WriteReg(InstancePtr->io, InstancePtr->BaseAddr,
 							XSP_DTR_OFFSET, Data);
 					InstancePtr->SendBufferPtr +=
 							(DataWidth >> 3);
@@ -1150,7 +1150,7 @@ void XSpi_InterruptHandler(void *InstancePtr)
 
 		while ((StatusReg & XSP_SR_RX_EMPTY_MASK) == 0) {
 
-			Data = XSpi_ReadReg(SpiPtr->BaseAddr, XSP_DRR_OFFSET);
+			Data = XSpi_ReadReg(SpiPtr->io, SpiPtr->BaseAddr, XSP_DRR_OFFSET);
 
 			/*
 			 * Data Transfer Width is Byte (8 bit).
@@ -1218,7 +1218,7 @@ void XSpi_InterruptHandler(void *InstancePtr)
 					Data = *(u32 *) SpiPtr->SendBufferPtr;
 				}
 
-				XSpi_WriteReg(SpiPtr->BaseAddr, XSP_DTR_OFFSET,
+				XSpi_WriteReg(SpiPtr->io, SpiPtr->BaseAddr, XSP_DTR_OFFSET,
 						Data);
 				SpiPtr->SendBufferPtr += (DataWidth >> 3);
 			}

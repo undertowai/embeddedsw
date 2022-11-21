@@ -39,8 +39,6 @@ extern "C" {
 
 /***************************** Include Files *********************************/
 
-#include "xil_types.h"
-#include "xil_assert.h"
 #include "xspi_l.h"
 
 /************************** Constant Definitions *****************************/
