@@ -90,9 +90,9 @@ extern "C" {
 /***************************** Include Files *********************************/
 
 #include "xaxidma_hw.h"
-#include "xstatus.h"
+#include "../../lmetal/src/xstatus.h"
+#include "../../lmetal/src/metal_api.h"
 #include "xdebug.h"
-#include "xil_cache.h"
 
 #ifdef __MICROBLAZE__
 #include "xenv.h"

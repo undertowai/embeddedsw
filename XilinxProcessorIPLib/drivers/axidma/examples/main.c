@@ -76,42 +76,6 @@ u32 XAxiDma_RegisterMetal(XAxiDma *InstancePtr, u16 DeviceId, struct metal_devic
 
 /*****************************************************************************/
 /**
-*
-* Compare two strings in the reversed order.This function compares only
-* the last "Count" number of characters of Str1Ptr and Str2Ptr.
-*
-* @param    Str1Ptr is base address of first string
-* @param    Str2Ptr is base address of second string
-* @param    Count is number of last characters  to be compared between
-*           Str1Ptr and Str2Ptr
-*
-* @return
-*           0 if last "Count" number of bytes matches between Str1Ptr and
-*           Str2Ptr, else difference in unmatched character.
-*
-*@note     None.
-*
-******************************************************************************/
-static s32 XAxiDma_Strrncmp(const char *Str1Ptr, const char *Str2Ptr, size_t Count)
-{
-	u16 Len1 = strlen(Str1Ptr);
-	u16 Len2 = strlen(Str2Ptr);
-	u8 Diff;
-
-	for (; Len1 && Len2; Len1--, Len2--) {
-		if ((Diff = Str1Ptr[Len1 - 1] - Str2Ptr[Len2 - 1]) != 0) {
-			return Diff;
-		}
-		if (--Count == 0) {
-			return 0;
-		}
-	}
-
-	return (Len1 - Len2);
-}
-
-/*****************************************************************************/
-/**
 * The entry point for this example. It invokes the example function,
 * and reports the execution status.
 *
@@ -130,12 +94,6 @@ int main(int argc, char **argv)
 	u16 deviceId = 0;
 	char deviceName[NAME_MAX];
 	struct metal_device *DevicePtr;
-
-	// if (argc == 2) {
-	// 	deviceId = ((char *)argv[1])[0] - '0';
-	// } else {
-	// 	return -1;
-	// }
 
 	struct metal_init_params init_param = METAL_INIT_DEFAULTS;
 
@@ -260,71 +218,18 @@ u32 XAxiDma_RegisterMetal(XAxiDma *InstancePtr, u16 DeviceId, struct metal_devic
 
 #define XAXIDMA_SIGNATURE "dma"
 #define XAXIDMA_COMPATIBLE_STRING "xlnx,axi-dma"
-#define XRFDC_PLATFORM_DEVICE_DIR "/sys/bus/platform/devices/"
-#define XRFDC_COMPATIBLE_PROPERTY "compatible" /* device tree property */
-#define XRFDC_CONFIG_DATA_PROPERTY "name" /* device tree property */
+#define XAXIDMA_PLATFORM_DEVICE_DIR "/sys/bus/platform/devices/"
+#define XAXIDMA_COMPATIBLE_PROPERTY "compatible" /* device tree property */
+
+Xmetal_dev_parm_t XDma_DevParm =
+{
+	XAXIDMA_SIGNATURE,
+	XAXIDMA_COMPATIBLE_STRING,
+	XAXIDMA_PLATFORM_DEVICE_DIR,
+	XAXIDMA_COMPATIBLE_PROPERTY
+};
 
 s32 XDMA_GetDeviceNameByDeviceId(char *DevNamePtr, u16 DevId)
 {
-	s32 Status = -1;
-	u32 Data = 0;
-	char CompatibleString[NAME_MAX];
-	char DeviceName[NAME_MAX];
-	struct metal_device *DevicePtr;
-	DIR *DirPtr;
-	struct dirent *DirentPtr;
-	char Len = strlen(XAXIDMA_COMPATIBLE_STRING);
-	char SignLen = strlen(XAXIDMA_SIGNATURE);
-
-	DirPtr = opendir(XRFDC_PLATFORM_DEVICE_DIR);
-	if (DirPtr) {
-		while ((DirentPtr = readdir(DirPtr)) != NULL) {
-			if (XAxiDma_Strrncmp(DirentPtr->d_name, XAXIDMA_SIGNATURE, SignLen) == 0) {
-				Status = metal_device_open("platform", DirentPtr->d_name, &DevicePtr);
-				if (Status) {
-					metal_log(METAL_LOG_ERROR, "\n Failed to open device %s", DirentPtr->d_name);
-					continue;
-				}
-				Status = metal_linux_get_device_property(DevicePtr, XRFDC_COMPATIBLE_PROPERTY,
-									 CompatibleString, Len);
-				if (Status < 0) {
-					metal_log(METAL_LOG_ERROR, "\n Failed to read device tree property");
-				} else if (strncmp(CompatibleString, XAXIDMA_COMPATIBLE_STRING, Len) == 0) {
-					//FIXME:
-					{
-						strcpy(DevNamePtr, DirentPtr->d_name);
-						Status = 0;
-						metal_device_close(DevicePtr);
-						break;
-					}
-					Status = metal_linux_get_device_property(DevicePtr, XRFDC_CONFIG_DATA_PROPERTY,
-										 DeviceName, XRFDC_DEVICE_ID_SIZE);
-					printf("Data=%s, Status=%d\r\n", DeviceName, Status);
-					if (Status < 0) {
-						metal_log(METAL_LOG_ERROR, "\n Failed to read device tree property");
-					} else if (Data == DevId) {
-						strcpy(DevNamePtr, DirentPtr->d_name);
-						Status = 0;
-						metal_device_close(DevicePtr);
-						break;
-					}
-				}
-				metal_device_close(DevicePtr);
-			}
-		}
-	}
-
-   Status = (s32)closedir(DirPtr);
-   if (Status < 0) {
-      metal_log(METAL_LOG_ERROR, "\n Failed to close directory");
-   }
-
-	return Status;
-}
-
-void Xil_AssertNonvoid(int Expression)
-{
-	if (!Expression) {
-		abort();
-	}
+	return X_GetDeviceNameByDeviceId(DevNamePtr, &XDma_DevParm, DevId);
 }

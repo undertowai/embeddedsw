@@ -39,9 +39,6 @@
 extern "C" {
 #endif
 
-#include "xil_types.h"
-#include "xil_io.h"
-
 /************************** Constant Definitions *****************************/
 
 /** @name DMA Transfer Direction
@@ -272,8 +269,8 @@ extern "C" {
 
 /***************** Macros (Inline Functions) Definitions *********************/
 
-#define XAxiDma_In32	Xil_In32
-#define XAxiDma_Out32	Xil_Out32
+#define XAxiDma_In32	metal_io_read32
+#define XAxiDma_Out32	metal_io_write32
 
 /*****************************************************************************/
 /**

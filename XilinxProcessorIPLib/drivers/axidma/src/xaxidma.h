@@ -466,6 +466,9 @@
 extern "C" {
 #endif
 
+#include "../../lmetal/src/metal_api.h"
+#include "../../lmetal/src/xstatus.h"
+
 #include "metal/io.h"
 
 /***************************** Include Files *********************************/

@@ -298,41 +298,10 @@ extern "C" {
 
 /***************************** Include Files *********************************/
 
-#include "metal/io.h"
+//TODO: Fix these
+#include "../../lmetal/src/metal_api.h"
+#include "../../lmetal/src/xstatus.h"
 
-#ifndef TRUE
-#define TRUE		1U
-#endif
-
-#ifndef FALSE
-#define FALSE		0U
-#endif
-
-#ifndef NULL
-#define NULL		0U
-#endif
-
-typedef __u32 u32;
-typedef __u16 u16;
-typedef __u8 u8;
-typedef __s32 s32;
-typedef __s16 s16;
-typedef __u64 u64;
-typedef __s64 s64;
-typedef __s8 s8;
-typedef u64 UINTPTR;
-
-#define XIL_COMPONENT_IS_READY     0x11111111U  /**< In device drivers, This macro will be
-                                                 assigend to "IsReady" member of driver
-												 instance to indicate that driver
-												 instance is initialized and ready to use. */
-#define XIL_COMPONENT_IS_STARTED   0x22222222U  /**< In device drivers, This macro will be assigend to
-                                                 "IsStarted" member of driver instance
-												 to indicate that driver instance is
-												 started and it can be enabled. */
-
-
-#include "xstatus.h"
 #include "xspi_l.h"
 
 /************************** Constant Definitions *****************************/

@@ -46,7 +46,6 @@
 #include <metal/device.h>
 #include <metal/io.h>
 
-
 /************************** Constant Definitions *****************************/
 
 
@@ -59,41 +58,6 @@
 
 /************************** Variable Definitions *****************************/
 
-/*****************************************************************************/
-/**
-*
-* Compare two strings in the reversed order.This function compares only
-* the last "Count" number of characters of Str1Ptr and Str2Ptr.
-*
-* @param    Str1Ptr is base address of first string
-* @param    Str2Ptr is base address of second string
-* @param    Count is number of last characters  to be compared between
-*           Str1Ptr and Str2Ptr
-*
-* @return
-*           0 if last "Count" number of bytes matches between Str1Ptr and
-*           Str2Ptr, else difference in unmatched character.
-*
-*@note     None.
-*
-******************************************************************************/
-static s32 XSpi_Strrncmp(const char *Str1Ptr, const char *Str2Ptr, size_t Count)
-{
-	u16 Len1 = strlen(Str1Ptr);
-	u16 Len2 = strlen(Str2Ptr);
-	u8 Diff;
-
-	for (; Len1 && Len2; Len1--, Len2--) {
-		if ((Diff = Str1Ptr[Len1 - 1] - Str2Ptr[Len2 - 1]) != 0) {
-			return Diff;
-		}
-		if (--Count == 0) {
-			return 0;
-		}
-	}
-
-	return (Len1 - Len2);
-}
 
 
 u32 XSpi_RegisterMetal(XSpi *InstancePtr, u16 DeviceId)
@@ -116,67 +80,18 @@ u32 XSpi_RegisterMetal(XSpi *InstancePtr, u16 DeviceId)
 #define XSPI_PLATFORM_DEVICE_DIR "/sys/bus/platform/devices/"
 #define XSPI_COMPATIBLE_PROPERTY "compatible" /* device tree property */
 
+Xmetal_dev_parm_t Xspi_DevParm =
+{
+	XSPI_SIGNATURE,
+	XSPI_COMPATIBLE_STRING,
+	XSPI_PLATFORM_DEVICE_DIR,
+	XSPI_COMPATIBLE_PROPERTY
+};
+
 s32 XSpi_GetDeviceNameByDeviceId(char *DevNamePtr, u16 DevId)
 {
-	s32 Status = -1;
-	u32 Data = 0;
-	char CompatibleString[NAME_MAX];
-	char DeviceName[NAME_MAX];
-	struct metal_device *DevicePtr;
-	DIR *DirPtr;
-	struct dirent *DirentPtr;
-	char Len = strlen(XSPI_COMPATIBLE_STRING);
-	char SignLen = strlen(XSPI_SIGNATURE);
-
-	DirPtr = opendir(XSPI_PLATFORM_DEVICE_DIR);
-	if (DirPtr) {
-		while ((DirentPtr = readdir(DirPtr)) != NULL) {
-			if (XSpi_Strrncmp(DirentPtr->d_name, XSPI_SIGNATURE, SignLen) == 0) {
-
-				Status = metal_device_open("platform", DirentPtr->d_name, &DevicePtr);
-				if (Status) {
-					metal_log(METAL_LOG_ERROR, "\n Failed to open device %s", DirentPtr->d_name);
-					continue;
-				}
-
-				Status = metal_linux_get_device_property(DevicePtr, XSPI_COMPATIBLE_PROPERTY,
-									 CompatibleString, Len);
-
-				if (Status < 0) {
-					metal_log(METAL_LOG_ERROR, "\n Failed to read device tree property");
-				} else if (strncmp(CompatibleString, XSPI_COMPATIBLE_STRING, Len) == 0) {
-					//FIXME:
-					{
-						strcpy(DevNamePtr, DirentPtr->d_name);
-						Status = 0;
-						metal_device_close(DevicePtr);
-						break;
-					}
-					// Status = metal_linux_get_device_property(DevicePtr, XRFDC_CONFIG_DATA_PROPERTY,
-					// 					 DeviceName, XRFDC_DEVICE_ID_SIZE);
-					// printf("Data=%s, Status=%d\r\n", DeviceName, Status);
-					// if (Status < 0) {
-					// 	metal_log(METAL_LOG_ERROR, "\n Failed to read device tree property");
-					// } else if (Data == DevId) {
-					// 	strcpy(DevNamePtr, DirentPtr->d_name);
-					// 	Status = 0;
-					// 	metal_device_close(DevicePtr);
-					// 	break;
-					// }
-				}
-				metal_device_close(DevicePtr);
-			}
-		}
-	}
-
-   Status = (s32)closedir(DirPtr);
-   if (Status < 0) {
-      metal_log(METAL_LOG_ERROR, "\n Failed to close directory");
-   }
-
-	return Status;
+	return X_GetDeviceNameByDeviceId(DevNamePtr, &Xspi_DevParm, DevId);
 }
-
 
 /*****************************************************************************/
 /**
@@ -290,29 +205,6 @@ int XSpi_Initialize(XSpi *InstancePtr, u16 DeviceId)
 	return XSpi_CfgInitialize(InstancePtr, ConfigPtr,
 				  ConfigPtr->BaseAddress);
 
-}
-
-
-void Xil_AssertNonvoid(void *Expression)
-{
-	if (!Expression) {
-		abort();
-	}
-}
-
-void Xil_AssertVoid(void *Expression)
-{
-	Xil_AssertNonvoid(Expression);
-}
-
-void Xil_AssertNonvoidAlways()
-{
-	Xil_AssertNonvoid(NULL);
-}
-
-void Xil_AssertVoidAlways()
-{
-	Xil_AssertNonvoid(NULL);
 }
 
 

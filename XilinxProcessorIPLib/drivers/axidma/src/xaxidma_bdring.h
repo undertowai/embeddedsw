@@ -58,7 +58,8 @@ extern "C" {
 
 /***************************** Include Files *********************************/
 
-#include "xstatus.h"
+#include "../../lmetal/src/xstatus.h"
+#include "../../lmetal/src/metal_api.h"
 #include "xaxidma_bd.h"
 #include <stdlib.h>
 
