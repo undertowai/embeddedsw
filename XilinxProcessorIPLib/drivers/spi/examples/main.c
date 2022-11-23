@@ -40,6 +40,19 @@
 
 /************************** Constant Definitions ******************************/
 
+#define XSPI_SIGNATURE "quad_spi"
+#define XSPI_COMPATIBLE_STRING "xlnx,axi-quad-spi"
+#define XSPI_PLATFORM_DEVICE_DIR "/sys/bus/platform/devices/"
+#define XSPI_COMPATIBLE_PROPERTY "compatible" /* device tree property */
+
+Xmetal_dev_parm_t Xspi_DevParm =
+{
+	XSPI_SIGNATURE,
+	XSPI_COMPATIBLE_STRING,
+	XSPI_PLATFORM_DEVICE_DIR,
+	XSPI_COMPATIBLE_PROPERTY
+};
+
 /*
  * The following constants map to the XPAR parameters created in the
  * xparameters.h file. They are defined here such that a user can easily
@@ -123,7 +136,10 @@ int SpiSelfTestExample(u16 DeviceId)
 	XSpi_Config *ConfigPtr;	/* Pointer to Configuration data */
 	struct metal_device *Deviceptr; 
 
-	XSpi_Initialize(&Spi, SPI_DEVICE_ID);
+	Status = XSpi_Initialize(&Spi, SPI_DEVICE_ID);
+	if (Status != XST_SUCCESS) {
+		return XST_FAILURE;
+	}
 
 	/*
 	 * Perform a self-test to ensure that the hardware was built correctly

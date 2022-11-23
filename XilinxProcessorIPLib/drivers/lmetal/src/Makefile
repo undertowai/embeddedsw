@@ -1,9 +1,9 @@
-APP = spi
+APP = metalapi
 
 AR=ar
 LIBSOURCES=*.c
 OUTS = *.o
-NAME := spi
+NAME := metalapi
 
 INCLUDES += -I"./."
 

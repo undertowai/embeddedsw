@@ -229,7 +229,8 @@ Xmetal_dev_parm_t XDma_DevParm =
 	XAXIDMA_COMPATIBLE_PROPERTY
 };
 
-s32 XDMA_GetDeviceNameByDeviceId(char *DevNamePtr, u16 DevId)
+s32 XDMA_GetDeviceNameByDeviceId(char *DevNamePtr)
 {
-	return X_GetDeviceNameByDeviceId(DevNamePtr, &XDma_DevParm, DevId);
+	strcpy(XDma_DevParm.name, DevNamePtr);
+	return X_GetDevice(&XDma_DevParm);
 }
