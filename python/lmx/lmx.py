@@ -22,7 +22,7 @@ class Lmx2820(SharedObject):
     RO_REGS = [71, 72, 73, 74, 75, 76, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122]
 
     LOCKED_REG = 74
-    LOCKED_BITS = [15, 16]
+    LOCKED_BITS = [14, 15]
     RF_DATA_READ_BIT = 0x80
 
     def __init__(self, libPath, devName):
@@ -30,7 +30,7 @@ class Lmx2820(SharedObject):
 
     def getBitMask(self, bits):
         mask = 0x0
-        for i in range(bits[0], bits[1], 1):
+        for i in range(bits[0], bits[1]+1, 1):
             mask |= 1 << i
         return mask
 
@@ -41,13 +41,25 @@ class Lmx2820(SharedObject):
 
     def getRegIndex(self, regs, id):
         for i, d in enumerate(regs):
-            if ((d >> 16) & 0x7f) == 0:
+            if ((d >> 16) & 0x7f) == id:
                 return i
         raise Exception()
 
     def getPllStatus(self, regs):
-        i = self.getRegIndex(regs, self.LOCKED_REG)
+        i = self.LOCKED_REG
         return self.getMaskedVal(regs[i], self.LOCKED_BITS)
+
+    def getVCOstate(self, regs):
+        i = self.LOCKED_REG
+        return self.getMaskedVal(regs[i], [2, 4])
+
+    def getVCO_CAPCTRL(self, regs):
+        i = self.LOCKED_REG
+        return self.getMaskedVal(regs[i], [5, 12])
+
+    def getMUTEpin(self, regs):
+        i = 77
+        return self.getMaskedVal(regs[i], [8, 8])
 
     def setMuxOut(self, regs):
         i = self.getRegIndex(regs, 0)
@@ -86,7 +98,6 @@ if __name__ == "__main__":
     gotData = np.empty(expData.size, dtype=np.uint32)
     lmx.setMuxOut(expData)
     lmx.writeData(expData)
-    sleep(1)
     lmx.readData(gotData)
 
     expData = np.flip(expData, 0)
@@ -98,4 +109,7 @@ if __name__ == "__main__":
                 raise Exception
 
     LD = lmx.getPllStatus(gotData)
-    print("PLL Locked : {}".format(LD))
+    print("PLL Locked : {}".format(LD == 0x2))
+    print("VCO {}".format(lmx.getVCOstate(gotData)))
+    print("VCO_CAPCTRL {}".format(lmx.getVCO_CAPCTRL(gotData)))
+    print("MUTE Polarity {}".format(lmx.getMUTEpin(gotData)))

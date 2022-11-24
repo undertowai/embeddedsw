@@ -5,7 +5,9 @@ LIBSOURCES=*.c
 OUTS = *.o
 NAME := spi
 
-INCLUDES += -I"./."
+METAL_API_PATH=../../lmetal/src
+INCLUDES = -I"./."
+INCLUDES += -I"$(METAL_API_PATH)"
 
 all: lib$(NAME).a
 

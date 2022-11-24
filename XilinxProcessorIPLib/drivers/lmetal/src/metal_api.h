@@ -2,7 +2,20 @@
 #ifndef METAL_API_H
 #define METAL_API_H
 
-#include "metal/io.h"
+#include <metal/sys.h>
+#include <metal/io.h>
+#include <metal/alloc.h>
+#include <metal/device.h>
+#include <metal/irq.h>
+#include <metal/errno.h>
+
+#ifndef Xil_In32
+#define Xil_In32 metal_io_read32
+#endif 
+
+#ifndef Xil_Out32
+#define Xil_Out32 metal_io_write32
+#endif
 
 #ifndef TRUE
 #define TRUE		1U

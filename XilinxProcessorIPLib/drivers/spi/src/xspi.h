@@ -299,8 +299,8 @@ extern "C" {
 /***************************** Include Files *********************************/
 
 //TODO: Fix these
-#include "../../lmetal/src/metal_api.h"
-#include "../../lmetal/src/xstatus.h"
+#include <metal_api.h>
+#include <xstatus.h>
 
 #include "xspi_l.h"
 

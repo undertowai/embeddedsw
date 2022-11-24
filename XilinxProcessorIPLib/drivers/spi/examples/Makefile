@@ -1,5 +1,5 @@
 APP = spi-test
-METAL_API_PATH=../../lmetal/src/
+METAL_API_PATH=../../lmetal/src
 LIBSOURCES=main.c
 OUTS = ./main.o
 INCLUDES =  -I"../src/"
