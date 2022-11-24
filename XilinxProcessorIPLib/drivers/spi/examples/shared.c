@@ -92,7 +92,7 @@ static int _SpiInit(XSpi *Spi, const char *devName)
 
 	ControlReg = XSpi_GetControlReg(Spi);
 
-	ControlReg |= (XSP_CR_MASTER_MODE_MASK | XSP_CR_MANUAL_SS_MASK | XSP_CR_LSB_MSB_FIRST_MASK);
+	ControlReg |= (XSP_CR_MASTER_MODE_MASK | XSP_CR_MANUAL_SS_MASK);
 	XSpi_SetControlReg(Spi, ControlReg);
 
     XSpi_Start(Spi);

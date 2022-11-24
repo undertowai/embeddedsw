@@ -15,6 +15,8 @@ def read(path):
     for i, reg in enumerate(regs):
         buffer[i] = int(reg[0], 16)
 
+    return buffer
+
 
 def generateDummy(length, value):
     buffer = np.full(length, value, dtype=np.uint32)
