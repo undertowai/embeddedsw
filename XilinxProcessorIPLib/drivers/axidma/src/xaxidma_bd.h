@@ -90,14 +90,22 @@ extern "C" {
 /***************************** Include Files *********************************/
 
 #include "xaxidma_hw.h"
-#include "../../lmetal/src/xstatus.h"
-#include "../../lmetal/src/metal_api.h"
-#include "xdebug.h"
+#include <xstatus.h>
+#include <metal_api.h>
 
 #ifdef __MICROBLAZE__
 #include "xenv.h"
 #else
 #include <string.h>
+#endif
+
+
+#ifndef XDBG_DEBUG_ERROR
+#define XDBG_DEBUG_ERROR
+#endif
+
+#ifndef xdbg_printf
+#define xdbg_printf(x, args...) ({x; printf(args);})
 #endif
 
 /************************** Constant Definitions *****************************/

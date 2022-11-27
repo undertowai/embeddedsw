@@ -2,23 +2,6 @@
 
 #include "xspi.h"
 #include "xspi_l.h"
-#include "printf.h"
-
-#include "shared.h"
-
-
-#define XSPI_SIGNATURE "quad_spi"
-#define XSPI_COMPATIBLE_STRING "xlnx,axi-quad-spi"
-#define XSPI_PLATFORM_DEVICE_DIR "/sys/bus/platform/devices/"
-#define XSPI_COMPATIBLE_PROPERTY "compatible" /* device tree property */
-
-Xmetal_dev_parm_t Xspi_DevParm =
-{
-	XSPI_SIGNATURE,
-	XSPI_COMPATIBLE_STRING,
-	XSPI_PLATFORM_DEVICE_DIR,
-	XSPI_COMPATIBLE_PROPERTY
-};
 
 static int XSpi_WriteBuf (XSpi *Spi, u8 ic, u32 d, size_t len)
 {
@@ -75,8 +58,7 @@ static int _SpiInit(XSpi *Spi, const char *devName)
 		return -XST_FAILURE;
 	}   
 
-    strcpy(Xspi_DevParm.name, devName);
-    Status = XSpi_Initialize(Spi, &Xspi_DevParm);
+    Status = XSpi_Initialize(Spi, devName);
 	if (Status != XST_SUCCESS) {
     	printf("XSpi_Initialize Failed\r\n");
 		return -XST_FAILURE;
@@ -106,14 +88,13 @@ static int _SpiInit(XSpi *Spi, const char *devName)
 
 int SpiSendData(const char *devName, unsigned int SS, unsigned int bytesInBurst, unsigned int *txBuf, unsigned int len)
 {
-    XSpi Spi;
+    XSpi Spi = {0};
     int Status;
 
     Status = _SpiInit(&Spi, devName);
     if (Status != XST_SUCCESS) {
         return Status;
     }
-    printf("Sending Data; %s len=%d, Burst size=%d SS=%d\r\n", devName, len, bytesInBurst, SS);
 
     for (unsigned int i = 0; i < len; i++) {
         u32 data;
@@ -134,14 +115,13 @@ int SpiSendData(const char *devName, unsigned int SS, unsigned int bytesInBurst,
 
 int SpiRecvData(const char *devName, unsigned int SS, unsigned int bytesInBurst, unsigned int *rxBuf, unsigned int len, u32 readKey)
 {
-    XSpi Spi;
+    XSpi Spi = {0};
     int Status;
 
     Status = _SpiInit(&Spi, devName);
     if (Status != XST_SUCCESS) {
         return Status;
     }
-    printf("Reading Data; len=%d, Burst size=%d\r\n", len, bytesInBurst);
 
     for (unsigned int i = 0; i < len; i++) {
         u32 data;;

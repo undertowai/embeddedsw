@@ -1,0 +1,143 @@
+
+
+#include <metal_api.h>
+#include <xstatus.h>
+
+#include "xaxidma.h"
+
+static int _metal_init (void)
+{
+    struct metal_init_params init_param = {
+	    .log_handler	= metal_default_log_handler,
+	    .log_level	= METAL_LOG_WARNING,
+    };
+
+	if (metal_init(&init_param)) {
+		printf("ERROR: Failed to run metal initialization\n");
+		return XST_FAILURE;
+	}
+    return XST_SUCCESS;
+}
+
+XAxiDma_Config *XDMA_LookupConfig(struct metal_device **Deviceptr, XAxiDma_Config *CfgPtr, const char *DeviceName)
+{
+	s32 Status = 0;
+	u32 AddrWidth = 0;
+
+	Status = metal_device_open("platform", DeviceName, Deviceptr);
+	if (Status != XST_SUCCESS) {
+		metal_log(METAL_LOG_ERROR, "\n Failed to open device %s.\n", DeviceName);
+		return NULL;
+	}
+	Status = metal_linux_get_device_property(*Deviceptr, "xlnx,addrwidth", &AddrWidth, sizeof(AddrWidth));
+
+	AddrWidth = ntohl(AddrWidth);
+
+	if (Status == XST_SUCCESS) {
+		//TODO:
+		CfgPtr->AddrWidth = AddrWidth;
+		CfgPtr->BaseAddr = 0;
+		CfgPtr->DeviceId = 0;
+		CfgPtr->HasMm2S = 0;
+		CfgPtr->HasMm2SDRE = 0;
+		CfgPtr->HasS2Mm = 1;
+		CfgPtr->HasS2MmDRE = 0;
+		CfgPtr->HasSg = 0;
+		CfgPtr->HasStsCntrlStrm = 0;
+		CfgPtr->MicroDmaMode = 0;
+		CfgPtr->Mm2SBurstSize = 0;
+		CfgPtr->Mm2SDataWidth = 0;
+		CfgPtr->Mm2sNumChannels = 0;
+		CfgPtr->S2MmBurstSize = 0x100;
+		CfgPtr->S2MmDataWidth = 0x100;
+		CfgPtr->S2MmNumChannels = 1;
+		CfgPtr->SgLengthWidth = 20;
+	} else {
+		metal_log(METAL_LOG_ERROR, "\n Failed to read device tree property \"reg\"");
+		metal_device_close(*Deviceptr);
+		return NULL;
+	}
+
+	return CfgPtr;
+}
+
+u32 XAxiDma_RegisterMetal(XAxiDma *InstancePtr)
+{
+	s32 Status;
+
+	/* Map RFDC device IO region */
+	InstancePtr->io = metal_device_io_region(InstancePtr->device, 0);
+	if (InstancePtr->io == NULL) {
+		metal_log(METAL_LOG_ERROR, "\n Failed to map AXIDMA region for %s.\n", InstancePtr->device->name);
+		return XST_DMA_ERROR;
+
+	}
+
+	return XST_SUCCESS;
+}
+
+static int Xdma_Init(XAxiDma *AxiDma, const char *DevName)
+{
+    int Status;
+    XAxiDma_Config *CfgPtr, Cfg;
+
+	struct metal_init_params init_param = METAL_INIT_DEFAULTS;
+
+	if (metal_init(&init_param)) {
+		printf("ERROR: Failed to run metal initialization\n");
+		return XST_FAILURE;
+	}
+
+	CfgPtr = XDMA_LookupConfig(&AxiDma->device, &Cfg, DevName);
+
+	if (NULL == CfgPtr) {
+		printf("ERROR: Failed to run XDMA_LookupConfig\n");
+		return XST_FAILURE;
+	}
+
+	Status = XAxiDma_RegisterMetal(AxiDma);
+	if (Status != XST_SUCCESS) {
+		printf("Register metal failed %d\r\n", Status);
+		metal_device_close(AxiDma->device);
+		return XST_FAILURE;
+	}
+
+	Status = XAxiDma_CfgInitialize(AxiDma, CfgPtr);
+	if (Status != XST_SUCCESS) {
+		printf("Initialization failed %d\r\n", Status);
+		metal_device_close(AxiDma->device);
+		return XST_FAILURE;
+	}
+    return XST_SUCCESS;
+}
+
+int XDMA_StartTransfer(const char *DevName, u64 addr, u64 len)
+{
+    XAxiDma Dma = {0};
+    _metal_init();
+
+    if (XST_SUCCESS != Xdma_Init(&Dma, DevName)) {
+        return -XST_FAILURE;
+    }
+
+    if (XST_SUCCESS != XAxiDma_SimpleTransfer(&Dma, addr, len, XAXIDMA_DEVICE_TO_DMA)) {
+
+        return -XST_FAILURE;
+    }
+
+    return XST_SUCCESS;
+}
+
+int XDMA_Reset(const char *DevName)
+{
+    XAxiDma Dma = {0};
+    _metal_init();
+
+    if (XST_SUCCESS != Xdma_Init(&Dma, DevName)) {
+        return -XST_FAILURE;
+    }
+
+    XAxiDma_Reset(&Dma);
+
+    return XST_SUCCESS;
+}

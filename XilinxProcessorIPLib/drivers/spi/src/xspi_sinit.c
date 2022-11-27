@@ -75,11 +75,6 @@ u32 XSpi_RegisterMetal(XSpi *InstancePtr, u16 DeviceId)
 	return XST_SUCCESS;
 }
 
-s32 XSpi_GetDevice(Xmetal_dev_parm_t *Xspi_DevParm)
-{
-	return X_GetDevice(Xspi_DevParm);
-}
-
 /*****************************************************************************/
 /**
 *
@@ -97,7 +92,7 @@ s32 XSpi_GetDevice(Xmetal_dev_parm_t *Xspi_DevParm)
 * @note		None.
 *
 ******************************************************************************/
-XSpi_Config *XSpi_LookupConfig(struct metal_device **Deviceptr, Xmetal_dev_parm_t *Xspi_DevParm)
+XSpi_Config *XSpi_LookupConfig(struct metal_device **Deviceptr, const char *devName)
 {
 	XSpi_Config *CfgPtr = NULL;
 	u32 Index;
@@ -107,15 +102,9 @@ XSpi_Config *XSpi_LookupConfig(struct metal_device **Deviceptr, Xmetal_dev_parm_
 	u32 u32_prop = 0;
 	char *property_name;
 
-	Status = XSpi_GetDevice( Xspi_DevParm);
+	Status = metal_device_open("platform", devName, Deviceptr);
 	if (Status != XST_SUCCESS) {
-		metal_log(METAL_LOG_ERROR, "\n Failed to find device %s", Xspi_DevParm->name);
-		return NULL;
-	}
-
-	Status = metal_device_open("platform", Xspi_DevParm->name, Deviceptr);
-	if (Status != XST_SUCCESS) {
-		metal_log(METAL_LOG_ERROR, "\n Failed to open device %s.\n", Xspi_DevParm->name);
+		metal_log(METAL_LOG_ERROR, "\n Failed to open device %s.\n", devName);
 		return NULL;
 	}
 
@@ -176,20 +165,6 @@ GET_PROPERTY_FAILED:
 		CfgPtr = NULL;
 	}
 
-	// printf("++++ XSpi Config ++++\r\n");
-	// printf("AxiFullBaseAddress=%0x\r\n", CfgPtr->AxiFullBaseAddress);
-	// printf("AxiInterface=%0x\r\n", CfgPtr->AxiInterface);
-	// printf("BaseAddress=%0x\r\n", CfgPtr->BaseAddress);
-	// printf("DataWidth=%0x\r\n", CfgPtr->DataWidth);
-	// printf("DeviceId=%0x\r\n", CfgPtr->DeviceId);
-	// printf("FifosDepth=%0x\r\n", CfgPtr->FifosDepth);
-	// printf("HasFifos=%0x\r\n", CfgPtr->HasFifos);
-	// printf("NumSlaveBits=%0x\r\n", CfgPtr->NumSlaveBits);
-	// printf("SlaveOnly=%0x\r\n", CfgPtr->SlaveOnly);
-	// printf("SpiMode=%0x\r\n", CfgPtr->SpiMode);
-	// printf("Use_Startup=%0x\r\n", CfgPtr->Use_Startup);
-	// printf("XipMode=%0x\r\n", CfgPtr->XipMode);
-
 	return CfgPtr;
 }
 
@@ -222,7 +197,7 @@ GET_PROPERTY_FAILED:
 * @note		None.
 *
 ******************************************************************************/
-int XSpi_Initialize(XSpi *InstancePtr, Xmetal_dev_parm_t *Xspi_DevParm)
+int XSpi_Initialize(XSpi *InstancePtr, const char *devName)
 {
 	int DeviceId = 0;
 	XSpi_Config *ConfigPtr;	/* Pointer to Configuration ROM data */
@@ -233,7 +208,7 @@ int XSpi_Initialize(XSpi *InstancePtr, Xmetal_dev_parm_t *Xspi_DevParm)
 	 * Lookup the device configuration in the temporary CROM table. Use this
 	 * configuration info down below when initializing this component.
 	 */
-	ConfigPtr = XSpi_LookupConfig(&(InstancePtr->device), Xspi_DevParm);
+	ConfigPtr = XSpi_LookupConfig(&(InstancePtr->device), devName);
 	if (ConfigPtr == NULL) {
 		return XST_DEVICE_NOT_FOUND;
 	}

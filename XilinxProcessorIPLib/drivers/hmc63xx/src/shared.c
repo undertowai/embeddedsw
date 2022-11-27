@@ -8,19 +8,6 @@
 #include "axi_gpio.h"
 #include "hmc.h"
 
-#define XSPI_SIGNATURE "axi_gpio"
-#define XSPI_COMPATIBLE_STRING "xlnx,axi-gpio"
-#define XSPI_PLATFORM_DEVICE_DIR "/sys/bus/platform/devices/"
-#define XSPI_COMPATIBLE_PROPERTY "compatible" /* device tree property */
-
-Xmetal_dev_parm_t XGpio_DevParm =
-{
-	XSPI_SIGNATURE,
-	XSPI_COMPATIBLE_STRING,
-	XSPI_PLATFORM_DEVICE_DIR,
-	XSPI_COMPATIBLE_PROPERTY
-};
-
 static int _metal_init (void)
 {
     struct metal_init_params init_param = {
@@ -50,7 +37,7 @@ u32 XGpio_RegisterMetal(XGpio_t *InstancePtr)
 	return XST_SUCCESS;
 }
 
-static int _HMC_SpiInit(XGpio_t *Gpio, const char *devName)
+static int _AXI_Gpio_Init(XGpio_t *Gpio, const char *devName)
 {
     int Status = XST_SUCCESS;
     u32 ControlReg;
@@ -60,11 +47,9 @@ static int _HMC_SpiInit(XGpio_t *Gpio, const char *devName)
 		return -XST_FAILURE;
 	}   
 
-    strcpy(XGpio_DevParm.name, devName);
-
-    Status = metal_device_open("platform", XGpio_DevParm.name, &Gpio->device);
+    Status = metal_device_open("platform", devName, &Gpio->device);
 	if (Status != XST_SUCCESS) {
-		metal_log(METAL_LOG_ERROR, "\n Failed to open device %s.\n", XGpio_DevParm.name);
+		metal_log(METAL_LOG_ERROR, "\n Failed to open device %s.\n", devName);
 		return -XST_FAILURE;
 	}
 
@@ -82,7 +67,7 @@ int HMC6300_SendDefaultConfig(const char *devName, int ic)
     s32 Status;
     XGpio_t Gpio = {0};
 
-    Status = _HMC_SpiInit(&Gpio, devName);
+    Status = _AXI_Gpio_Init(&Gpio, devName);
 	if (Status != XST_SUCCESS) {
 		return -XST_FAILURE;
 	}
@@ -98,7 +83,7 @@ int HMC6300_PrintConfig(const char *devName, int ic)
     s32 Status;
     XGpio_t Gpio = {0};
 
-    Status = _HMC_SpiInit(&Gpio, devName);
+    Status = _AXI_Gpio_Init(&Gpio, devName);
 	if (Status != XST_SUCCESS) {
 		return -XST_FAILURE;
 	}
@@ -115,7 +100,7 @@ int HMC6301_SendDefaultConfig(const char *devName, int ic)
     s32 Status;
     XGpio_t Gpio = {0};
 
-    Status = _HMC_SpiInit(&Gpio, devName);
+    Status = _AXI_Gpio_Init(&Gpio, devName);
 	if (Status != XST_SUCCESS) {
 		return -XST_FAILURE;
 	}
@@ -131,7 +116,7 @@ int HMC6301_PrintConfig(const char *devName, int ic)
     s32 Status;
     XGpio_t Gpio = {0};
 
-    Status = _HMC_SpiInit(&Gpio, devName);
+    Status = _AXI_Gpio_Init(&Gpio, devName);
 	if (Status != XST_SUCCESS) {
 		return -XST_FAILURE;
 	}
@@ -148,7 +133,7 @@ int HMC63xx_Reset (const char *devName)
     s32 Status;
     XGpio_t Gpio = {0};
 
-    Status = _HMC_SpiInit(&Gpio, devName);
+    Status = _AXI_Gpio_Init(&Gpio, devName);
 	if (Status != XST_SUCCESS) {
 		return -XST_FAILURE;
 	}

@@ -800,8 +800,8 @@ typedef struct {
 /*
  * Initialization functions in xspi_sinit.c
  */
-int XSpi_Initialize(XSpi *InstancePtr, Xmetal_dev_parm_t *Xspi_DevParm);
-XSpi_Config *XSpi_LookupConfig(struct metal_device **Deviceptr, Xmetal_dev_parm_t *Xspi_DevParm);
+int XSpi_Initialize(XSpi *InstancePtr, const char *devName);
+XSpi_Config *XSpi_LookupConfig(struct metal_device **Deviceptr, const char *devName);
 
 /*
  * Functions, in xspi.c
