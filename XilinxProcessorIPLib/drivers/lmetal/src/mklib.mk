@@ -1,9 +1,9 @@
 
-SO_SRCS = ./*.c
-SO_OBJS = ./*.o
+SO_SRCS =*.c
+SO_OBJS =*.o
 SO_NAME = $(LIB_NAME)
 
-%.o: *.c
+%.o: %.c
 	$(CC) $(CFLAGS) -c -fPIC $(SO_SRCS) $(INCLUDES)
 
 all: $(SO_OBJS)

@@ -1,7 +1,11 @@
 import sys
 import ctypes as ct
-import numpy as np
-from numpy.ctypeslib import ndpointer
+
+sys.path.append('../misc')
+
+from dts import Dts
+from make import Make
+
 
 class HMC63xx:
     def __init__(self, libPath, devName):
@@ -30,21 +34,21 @@ class HMC63xx:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4:
+    if len(sys.argv) != 2:
         print('{}: Usage'.format(sys.argv[0]))
         exit()
 
-    libPath = sys.argv[1]
-    devName = sys.argv[2]
-    ic = sys.argv[3]
+    libPath = Make().makeLibs('hmc63xx')
 
-    #TODO:
-    devName = devName.split('/')[2].split('@')
-    devName = devName[1] + '.' + devName[0]
+    ipName ='spi_gpio'
+    devName = Dts().ipToDtsName(ipName)
 
+    ic = sys.argv[1]
 
     hmc = HMC63xx(libPath, devName)
 
     hmc.DefaultConfig_6300(ic)
     hmc.PrintConfig_6300(ic)
     hmc.Reset()
+
+    print('Pass')

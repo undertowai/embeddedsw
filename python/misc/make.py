@@ -9,7 +9,7 @@ class Make:
         pass
 
     def __MakeMetal(self):
-        ret = os.system('make -C {}/{} all -s'.format(self.DRIVERS_PATH, self.METALAPI_LIB_PATH))
+        ret = os.system('make -C {}/{} -s all'.format(self.DRIVERS_PATH, self.METALAPI_LIB_PATH))
         assert ret == 0
 
     def __MakeLib(self, lib, keys=''):

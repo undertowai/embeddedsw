@@ -7,8 +7,15 @@ from dts import Dts
 from make import Make
 
 class AxiDma:
-    def __init__(self, libPath):
+    def __init__(self, libName):
+        libPath = Make().makeLibs(libName)
         self.lib = ct.CDLL(libPath)
+        self.numDmaPerIP = 8
+
+    def devIdToIpName(self, devId):
+        ipName ='stream_to_mem_{}_axi_dma_{}'.format(int(devId/self.numDmaPerIP), int(devId%self.numDmaPerIP))
+        devName = Dts().ipToDtsName(ipName)
+        return devName
 
     def startTransfer(self, DevName, addr, len):
         fun = self.lib.XDMA_StartTransfer
@@ -27,17 +34,11 @@ if __name__ == "__main__":
         print('{}: Usage'.format(sys.argv[0]))
         exit()
 
-    libPath = Make().makeLibs('axidma')
-
     id = int(sys.argv[1])
-    numDmaPerIP = int(8)
 
-    ipName ='stream_to_mem_{}_axi_dma_{}'.format(int(id/numDmaPerIP), int(id%numDmaPerIP))
-    devName = Dts().ipToDtsName(ipName)
+    dma = AxiDma('axidma')
 
-    dma = AxiDma(libPath)
-
-    dma.startTransfer(devName, 0, 4096)
-    dma.reset(devName)
+    dma.startTransfer(dma.devIdToIpName(id), 0, 4096)
+    dma.reset(dma.devIdToIpName(id))
 
     print('Pass')
