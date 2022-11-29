@@ -17,6 +17,7 @@ class Make:
         assert ret == 0
 
     def makeLibs(self, libName):
+        print('Building lib \'{}\' ...'.format(libName))
         self.__MakeMetal()
         self.__MakeLib(libName + '/src')
         return self.DRIVERS_PATH + '/' + libName + '/src/lib' + libName + '.so'

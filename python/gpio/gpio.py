@@ -6,26 +6,32 @@ sys.path.append('../misc')
 from dts import Dts
 from make import Make
 
+class Gpio:
+    def __init__(self, lib, ipName):
+        self.lib = lib
+        self.devName = Dts().ipToDtsName(ipName)
+
+    def set(self, val):
+        fun = self.lib.AXI_Gpio_Set
+
+        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(val))
+        assert status == 0
+
+    def get(self):
+        raise Exception('Not yet implemented')
+
 class AxiGpio:
     def __init__(self, libName):
         libPath = Make().makeLibs(libName)
         self.lib = ct.CDLL(libPath)
 
-    def set(self, DevName, val):
-        fun = self.lib.AXI_Gpio_Set
-
-        status = fun(ct.c_char_p(DevName.encode('UTF-8')), int(val))
-        assert status == 0
-
-    def get(self, DevName):
-        #Not yet
-        pass
+    def getGpio(self, ipName):
+        return Gpio(self.lib, ipName)
 
 if __name__ == "__main__":
 
-    gpio = AxiGpio('axi_gpio')
-    ipName = 'dma_sync_gpio_0'
-    devName = Dts().ipToDtsName(ipName)
+    axiGpio = AxiGpio('axi_gpio')
 
-    gpio.set(devName, 0)
+    gpio = axiGpio.getGpio('dma_sync_gpio_0')
+    gpio.set(0)
     print('Pass')

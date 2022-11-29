@@ -172,7 +172,7 @@ static void _hmc6301_init_config (hmc6301_reg_file_t *conf, u8 isExternalLo)
     conf->row23.ICP_BiasTrim = 0b011;
 }
 
-static void _hmc6301_write_def_config(row_t rows[ROWS_NUM], hmc6301_reg_file_t *conf)
+static void _hmc6301_write_config(row_t rows[ROWS_NUM], hmc6301_reg_file_t *conf)
 {
     ROW0_SETALL(rows, &conf->row0);
     ROW1_SETALL(rows, &conf->row1);
@@ -205,7 +205,7 @@ void hmc6301_def_init (XGpio_t *gpio, u8 ic, u32 freq, u8 isExternalLo)
     if (!isExternalLo) {
         _hmc6301_setFreq(&confPerIc[ic].row20, &confPerIc[ic].row22, freq);
     }
-    _hmc6301_write_def_config(rows, &confPerIc[ic]);
+    _hmc6301_write_config(rows, &confPerIc[ic]);
 
     for (i = 0; i < ROWS_NUM; i++) {
         if (rows[i].isSet) {
@@ -338,4 +338,41 @@ void hmc6301_SetIfGain (XGpio_t *gpio, u8 ic, u8 steps_1_3dB)
     _hmc6301_SetIfGain(&confPerIc[ic].row5, steps_1_3dB);
 
     hmc6301_write_row(gpio, ic, 5);
+}
+
+static void _hmc6301_read_regs(XGpio_t *gpio, u8 *rows, u8 ic)
+{
+    u8 i;
+
+    for (i = 0; i < ROWS_NUM; i++) {
+        hmc6301_spi_read(gpio, ic, i, &rows[i]);
+    }
+}
+
+int hmc6301_check_def_config(XGpio_t *gpio, u8 ic)
+{
+    hmc6301_reg_file_t conf = {0};
+    u8 rows_r[ROWS_NUM] = {0};
+    row_t rows[ROWS_NUM] = {0};
+    u8 i;
+
+    _hmc6301_init_config(&conf, FALSE);
+    _hmc6301_write_config(rows, &conf);
+    _hmc6301_read_regs(gpio, rows_r, ic);
+
+    xil_printf("FIXME: hmc6301_check_def_config: skipping regs 16, 17, 18\r\n");
+    for (i = 0; i < ROWS_NUM; i++) {
+
+        if (i == 16 || i == 17 || i == 18) {
+            continue;
+        }        
+        if (!rows[i].isSet) {
+            continue;
+        }
+        if (rows_r[i] != rows[i].data) {
+            return i+1;
+        }
+    }
+
+    return 0;
 }

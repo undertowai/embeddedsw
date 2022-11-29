@@ -334,3 +334,39 @@ void hmc6300_dump_regs(XGpio_t *gpio, u8 ic)
         hmc6300_dump_reg(gpio, ic, i);
     }
 }
+
+static void _hmc6300_read_regs(XGpio_t *gpio, u8 *rows, u8 ic)
+{
+    u8 i;
+
+    for (i = 0; i < ROWS_NUM; i++) {
+        hmc6300_spi_read(gpio, ic, i, &rows[i]);
+    }
+}
+
+int hmc6300_check_def_config(XGpio_t *gpio, u8 ic)
+{
+    hmc6300_reg_file_t conf = {0};
+    u8 rows_r[ROWS_NUM] = {0};
+    row_t rows[ROWS_NUM] = {0};
+    u8 i;
+
+    _hmc6300_init_config(&conf, FALSE);
+    _hmc6300_write_config(rows, &conf);
+    _hmc6300_read_regs(gpio, rows_r, ic);
+
+    xil_printf("FIXME: hmc6300_check_def_config: skipping regs 16, 17, 18\r\n");
+    for (i = 0; i < ROWS_NUM; i++) {
+        if (i == 16 || i == 17 || i == 18) {
+            continue;
+        }
+        if (!rows[i].isSet) {
+            continue;
+        }
+        if (rows_r[i] != rows[i].data) {
+            return i+1;
+        }
+    }
+
+    return 0;
+}

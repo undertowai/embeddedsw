@@ -17,9 +17,10 @@ class Lmx2820:
     LOCKED_BITS = [14, 15]
     RF_DATA_READ_BIT = 0x80
 
-    def __init__(self, libPath, devName):
+    def __init__(self, ipName):
+        libPath = Make().makeLibs('spi')
+        self.devName = Dts().ipToDtsName(ipName)
         self.lib = ct.CDLL(libPath)
-        self.devName = devName
 
     def getRegIndex(self, regs, id):
         for i, d in enumerate(regs):
@@ -33,9 +34,10 @@ class Lmx2820:
         bits = np.packbits(bits, bitorder='little')
         return bits[0]
 
-    def getPllStatus(self, regs):
+    def isPllLocked(self, regs):
         i = self.LOCKED_REG
-        return self.getBits(regs[i:i+1], [14, 15])
+        ld = self.getBits(regs[i:i+1], [14, 15])
+        return ld == 0x2
 
     def setMuxOut(self, regs):
         i = self.getRegIndex(regs, 0)
@@ -56,12 +58,28 @@ class Lmx2820:
     def checkConfig(self, expData, gotData):
         for i, d in enumerate(expData):
             #Mask data bits
-            if i not in lmx.RO_REGS:
+            if i not in self.RO_REGS:
                 if (expData[i] & 0xffff) != gotData[i]:
                     raise Exception("Data doesn't match: i={} : exp={}, got={}".format(i, hex(expData[i]), hex(gotData[i])))
 
     def loadTICS(self, ticsFilePath):
         return TICSread(ticsFilePath)
+
+    def config(self, ticsFilePath):
+        expData = self.loadTICS(ticsFilePath)
+
+        gotData = np.empty(expData.size, dtype=np.uint32)
+        self.setMuxOut(expData)
+        self.writeData(expData)
+        self.readData(gotData)
+
+        expData = np.flip(expData, 0)
+
+        self.checkConfig(expData, gotData)
+
+        if not self.isPllLocked(gotData):
+            raise Exception('PLL is not locked')
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -70,25 +88,6 @@ if __name__ == "__main__":
 
     ticsFilePath = sys.argv[1]
 
-    libPath = Make().makeLibs('spi')
-
-    ipName ='axi_quad_spi_0'
-    devName = Dts().ipToDtsName(ipName)
-
-    lmx = Lmx2820(libPath, devName)
-    expData = lmx.loadTICS(ticsFilePath)
-
-    gotData = np.empty(expData.size, dtype=np.uint32)
-    lmx.setMuxOut(expData)
-    lmx.writeData(expData)
-    lmx.readData(gotData)
-
-    expData = np.flip(expData, 0)
-
-    lmx.checkConfig(expData, gotData)
-
-    LD = lmx.getPllStatus(gotData)
-    if LD != 0x2:
-        raise Exception('PLL is not locked')
-
+    lmx = Lmx2820('axi_quad_spi_0')
+    lmx.config(ticsFilePath)
     print("Pass")

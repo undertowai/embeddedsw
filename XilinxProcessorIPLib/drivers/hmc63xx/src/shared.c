@@ -62,6 +62,22 @@ static int _AXI_Gpio_Init(XGpio_t *Gpio, const char *devName)
     return Status;
 }
 
+int HMC6300_GpioInit(const char *devName)
+{
+    s32 Status;
+    XGpio_t Gpio = {0};
+
+    Status = _AXI_Gpio_Init(&Gpio, devName);
+	if (Status != XST_SUCCESS) {
+		return -XST_FAILURE;
+	}
+    hmc6300_SpiCoreInit(&Gpio);
+
+    metal_device_close(Gpio.device);
+
+    return Status;
+}
+
 int HMC6300_SendDefaultConfig(const char *devName, int ic)
 {
     s32 Status;
@@ -72,6 +88,26 @@ int HMC6300_SendDefaultConfig(const char *devName, int ic)
 		return -XST_FAILURE;
 	}
     hmc6300_def_init(&Gpio, ic, 0, TRUE);
+
+    metal_device_close(Gpio.device);
+
+    return Status;
+}
+
+int HMC6300_CheckConfig(const char *devName, int ic)
+{
+    s32 Status;
+    XGpio_t Gpio = {0};
+
+    Status = _AXI_Gpio_Init(&Gpio, devName);
+	if (Status != XST_SUCCESS) {
+		return -XST_FAILURE;
+	}
+    Status = hmc6300_check_def_config(&Gpio, ic);
+    if (Status) {
+        metal_device_close(Gpio.device);
+        return Status;
+    }
 
     metal_device_close(Gpio.device);
 
@@ -111,6 +147,27 @@ int HMC6301_SendDefaultConfig(const char *devName, int ic)
     return Status;
 }
 
+int HMC6301_CheckConfig(const char *devName, int ic)
+{
+    s32 Status;
+    XGpio_t Gpio = {0};
+
+    Status = _AXI_Gpio_Init(&Gpio, devName);
+	if (Status != XST_SUCCESS) {
+		return -XST_FAILURE;
+	}
+    Status = hmc6301_check_def_config(&Gpio, ic);
+    if (Status) {
+        metal_device_close(Gpio.device);
+        return Status;
+    }
+
+    metal_device_close(Gpio.device);
+
+    return Status;
+}
+
+
 int HMC6301_PrintConfig(const char *devName, int ic)
 {
     s32 Status;
@@ -120,7 +177,7 @@ int HMC6301_PrintConfig(const char *devName, int ic)
 	if (Status != XST_SUCCESS) {
 		return -XST_FAILURE;
 	}
-    hmc6300_dump_regs(&Gpio, ic);
+    hmc6301_dump_regs(&Gpio, ic);
     //hmc6301_print_status(&Gpio, ic);
 
     metal_device_close(Gpio.device);
