@@ -51,7 +51,7 @@ XAxiDma_Config *XDMA_LookupConfig(struct metal_device **Deviceptr, XAxiDma_Confi
 		CfgPtr->S2MmBurstSize = 0x100;
 		CfgPtr->S2MmDataWidth = 0x100;
 		CfgPtr->S2MmNumChannels = 1;
-		CfgPtr->SgLengthWidth = 20;
+		CfgPtr->SgLengthWidth = 31;
 	} else {
 		metal_log(METAL_LOG_ERROR, "\n Failed to read device tree property \"reg\"");
 		metal_device_close(*Deviceptr);
@@ -111,8 +111,10 @@ static int Xdma_Init(XAxiDma *AxiDma, const char *DevName)
     return XST_SUCCESS;
 }
 
-int XDMA_StartTransfer(const char *DevName, u64 addr, u64 len)
+int XDMA_StartTransfer(const char *DevName, u32 addr_hi, u32 addr_lo, u64 len)
 {
+	int Status;
+	u64 addr = ((u64)addr_hi << 32) | addr_lo;
     XAxiDma Dma = {0};
     _metal_init();
 
@@ -120,9 +122,11 @@ int XDMA_StartTransfer(const char *DevName, u64 addr, u64 len)
         return -XST_FAILURE;
     }
 
-    if (XST_SUCCESS != XAxiDma_SimpleTransfer(&Dma, addr, len, XAXIDMA_DEVICE_TO_DMA)) {
-
-        return -XST_FAILURE;
+	printf("XDMA_StartTransfer: %p : %d\r\n", (void *)addr, len);
+	Status = XAxiDma_SimpleTransfer(&Dma, addr, len, XAXIDMA_DEVICE_TO_DMA);
+    if (XST_SUCCESS != Status) {
+		printf("Failed : %d\r\n", Status);
+        return -Status;
     }
 
     return XST_SUCCESS;

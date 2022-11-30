@@ -62,7 +62,7 @@ static int _AXI_Gpio_Init(XGpio_t *Gpio, const char *devName)
     return Status;
 }
 
-int HMC6300_GpioInit(const char *devName)
+int HMC63xx_GpioInit(const char *devName)
 {
     s32 Status;
     XGpio_t Gpio = {0};
@@ -71,7 +71,23 @@ int HMC6300_GpioInit(const char *devName)
 	if (Status != XST_SUCCESS) {
 		return -XST_FAILURE;
 	}
-    hmc6300_SpiCoreInit(&Gpio);
+    hmc63xx_SpiCoreInit(&Gpio);
+
+    metal_device_close(Gpio.device);
+
+    return Status;
+}
+
+int HMC6300_SetIfGain(const char *devName, int ic, int val)
+{
+    s32 Status;
+    XGpio_t Gpio = {0};
+
+    Status = _AXI_Gpio_Init(&Gpio, devName);
+	if (Status != XST_SUCCESS) {
+		return -XST_FAILURE;
+	}
+    hmc6300_SetIfGain(&Gpio, ic, val);
 
     metal_device_close(Gpio.device);
 

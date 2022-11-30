@@ -25,7 +25,7 @@ class Xddr:
                                 flags=mmap.MAP_SHARED,
                                 prot=mmap.PROT_READ | mmap.PROT_WRITE,
                                 access=mmap.ACCESS_READ | mmap.ACCESS_WRITE,
-                                offset=self.address+offset)
+                                offset=offset)
 
             with open(path, 'wb') as f:
                 f.write(mm[:length])
@@ -39,6 +39,6 @@ if __name__ == "__main__":
 
     ddr = Xddr('ddr4_0')
 
-    ddr.capture('cap0.bin', 0, 0x1000)
+    ddr.capture('cap0.bin', 0x48_0000_0000, 0x1000)
 
     print("Pass")

@@ -24,15 +24,8 @@ class Wave:
         stepSize = 360.0 / (numSamples / numCycles)
         phaseRads = (math.pi / 360.0) * phaseDegrees
 
-        print("Full sycles: {}".format(fullCycles))
-        print("Adjusted Sampling Frequency: {} Hz".format(samplingFreq))
-        print("Requested Frequency:         {} Hz".format(freq))
         print("Adjusted Frequency:          {} Hz".format(newFreq))
-        print("num samples in buffer:  {}".format(numSamples))
-        print("num cycles in buffer:  {}".format(numCycles))
-        print("calculated step size:  {}".format(stepSize))
         print("Calculated Amplitude: {}".format(amplitude))
-        print("Phase rads: {}".format(phaseRads))
 
         buffer = np.empty(numSamples, dtype=np.uint16)
         for i in range(numSamples):
@@ -45,13 +38,6 @@ class Wave:
     def strNegative(self, s):
         s = 'minus_' + str(-s) if (s < 0) else str(s)
         return s
-
-    def sinewave(self, freq, dBFS, phaseDegrees, outputDirectory, numBytes, samplingFreq, fullCycles=True, sampleSize = 2):
-
-        fileName = str(int(freq/1000)) + 'KHz_' + self.strNegative(dBFS) + 'dB_' + self.strNegative(phaseDegrees) +  '.dac'
-        buffer = self.getSine(numBytes, freq, dBFS, samplingFreq, sampleSize, phaseDegrees, fullCycles)
-        buffer.tofile(outputDirectory + fileName)
-        return fileName
 
 if __name__ == "__main__":
 

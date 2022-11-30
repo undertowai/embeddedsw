@@ -20,10 +20,17 @@ class HMC63xx:
         self.GpioInit()
 
     def GpioInit(self):
-        fun = self.lib.HMC6300_GpioInit
+        fun = self.lib.HMC63xx_GpioInit
         status = fun(self.devName.encode('UTF-8'))
 
         assert status == 0
+
+    def IfGain_6300(self, ic, val):
+        fun = self.lib.HMC6300_SetIfGain
+
+        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(ic), val)
+        assert status == 0
+
 
     def __CheckDefConfig_6300(self, ic):
         fun = self.lib.HMC6300_CheckConfig

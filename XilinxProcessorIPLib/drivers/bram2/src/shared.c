@@ -61,12 +61,11 @@ static int _AXI_Bram_Init(XBram_t *Bram, const char *devName)
     return Status;
 }
 
-int AXI_Bram_Write(const char *DevName, u64 address, const u32 *data, u64 len)
+int AXI_Bram_Write(const char *DevName, u64 address, const u32 *data, u64 words)
 {
     s32 Status;
     XBram_t Bram = {0};
 	const u32 word_size = 4;
-	u32 words_num = len / word_size;
 	u64 i;
 
     Status = _AXI_Bram_Init(&Bram, DevName);
@@ -74,7 +73,7 @@ int AXI_Bram_Write(const char *DevName, u64 address, const u32 *data, u64 len)
 		return -XST_FAILURE;
 	}
 
-	for (i = 0; i < words_num; i++) {
+	for (i = 0; i < words; i++) {
 		Xil_Out32(Bram.io, address, data[0]);
 		data++;
 		address += word_size;
@@ -84,12 +83,11 @@ int AXI_Bram_Write(const char *DevName, u64 address, const u32 *data, u64 len)
     return Status;
 }
 
-int AXI_Bram_Read(const char *DevName, u64 address, u32 *data, u64 len)
+int AXI_Bram_Read(const char *DevName, u64 address, u32 *data, u64 words)
 {
     s32 Status;
     XBram_t Bram = {0};
 	const u32 word_size = 4;
-	u32 words_num = len / word_size;
 	u64 i;
 
     Status = _AXI_Bram_Init(&Bram, DevName);
@@ -97,7 +95,7 @@ int AXI_Bram_Read(const char *DevName, u64 address, u32 *data, u64 len)
 		return -XST_FAILURE;
 	}
 
-	for (i = 0; i < words_num; i++) {
+	for (i = 0; i < words; i++) {
 		data[0] = Xil_In32(Bram.io, address);
 		data++;
 		address += word_size;

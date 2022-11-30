@@ -20,7 +20,7 @@ class AxiDma:
     def startTransfer(self, DevName, addr, len):
         fun = self.lib.XDMA_StartTransfer
 
-        status = fun(ct.c_char_p(DevName.encode('UTF-8')), int(addr), int(len))
+        status = fun(ct.c_char_p(DevName.encode('UTF-8')), int(addr) >> 32, int(addr) & 0xffffffff, int(len))
         assert status == 0
 
     def reset(self, DevName):
@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
     dma = AxiDma('axidma')
 
-    dma.startTransfer(dma.devIdToIpName(id), 0, 4096)
+    dma.startTransfer(dma.devIdToIpName(id), 0x48_0000_0000, 4096)
     dma.reset(dma.devIdToIpName(id))
 
     print('Pass')

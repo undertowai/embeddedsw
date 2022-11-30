@@ -86,7 +86,7 @@ void hmc63xx_reset(XGpio_t *gpio, u8 grp, u8 reset)
     _RESET(gpio, grp, reset &0x1);
 }
 
-static void _hmc6300_SpiCoreInit(XGpio_t *gpio, u8 grp)
+static void _hmc63xx_SpiCoreInit(XGpio_t *gpio, u8 grp)
 {
     u8 ic;
     gpio_conf(gpio, grp, HMC6300_SCK_PIN, GPIO_OUT);
@@ -104,11 +104,11 @@ static void _hmc6300_SpiCoreInit(XGpio_t *gpio, u8 grp)
     _RESET(gpio, grp, 0);
 }
 
-void hmc6300_SpiCoreInit(XGpio_t *gpio)
+void hmc63xx_SpiCoreInit(XGpio_t *gpio)
 {
     u8 grp;
 
     for (grp = 0; grp < NUM_GROUPS; grp++) {
-        _hmc6300_SpiCoreInit(gpio, grp);
+        _hmc63xx_SpiCoreInit(gpio, grp);
     }
 }

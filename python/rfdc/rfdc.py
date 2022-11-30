@@ -18,6 +18,14 @@ class Rfdc:
         status = fun()
         assert status == 0
 
+    def getSamplingFrequency(self):
+        fun = self.lib.RFDC_GetSamplingFreq
+
+        freq = fun()
+        assert freq > 0
+
+        return int(freq * 1_000_000)
+
 if __name__ == "__main__":
     rfdc = Rfdc('rfdc2')
     rfdc.init()

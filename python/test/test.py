@@ -1,6 +1,6 @@
 
 import sys
-
+from time import sleep
 import numpy as np
 
 sys.path.append('../lmx')
@@ -39,18 +39,23 @@ class TestSuite:
         self.bram0 = bram_f.makeBram('ram_player_8wide_0_axi_bram_ctrl_0')
         self.bram1 = bram_f.makeBram('ram_player_8wide_1_axi_bram_ctrl_0')
 
-    def setup_RF(self, ticsFilePath):
-        self.rfdc.init()
+    def setup_RF(self, ticsFilePath, init_rfdc=True):
+        if init_rfdc:
+            self.rfdc.init()
         self.lmx.config(ticsFilePath)
         self.hmc.DefaultConfig_6300(0x0)
         self.hmc.DefaultConfig_6301(0x0)
         
     def shutdown_RF(self):
-        self.hmc.reset()
+        self.hmc.Reset()
     
-    def load_dac_player(self, bram0_file, bram1_file):
-        bram0_size = self.bram0.loadFromFile(bram0_file, np.uint16)
-        bram1_size = self.bram1.loadFromFile(bram1_file, np.uint16)
+    def getBramSize(self):
+        assert self.bram0.getSize() == self.bram1.getSize()
+        return self.bram0.getSize()
+
+    def load_dac_player(self, bram0_data, bram1_data):
+        bram0_size = self.bram0.load(bram0_data)
+        bram1_size = self.bram1.load(bram1_data)
 
         assert(bram0_size == bram1_size)
 
@@ -67,25 +72,29 @@ class TestSuite:
         else:
             self.gpio_sync.set(0x0)
 
-    def run_test(self, ticsFilePath, bram0_file, bram1_file):
+    def capture(self, ddr, paths, ids, offset, size):
 
-        self.setup_RF(ticsFilePath)
+        assert len(paths) == len(ids)
+
+        base_address = ddr.base_address() + offset
+        addr = base_address
 
         self.adc_dac_sync(False)
+        for id in ids:
+            devName = self.dma.devIdToIpName(id)
+            self.dma.reset(devName)
+            self.dma.startTransfer(devName, addr, size)
+            addr = addr + size
 
-        self.load_dac_player(bram0_file, bram1_file)
+        self.adc_dac_sync(True)
 
-        base_address = self.ddr0.base_address()
-        chunk_length = 0x1000
-        self.dma.startTransfer(self.dma.devIdToIpName(id), base_address, chunk_length)
+        #FIXME Interrupt or poll ?
+        sleep(1)
+        addr = base_address
+        for path in paths:
+            ddr.capture(path, addr, size)
+            addr = addr + size
 
-        self.ddr0.capture('cap0.bin', base_address, chunk_length)
-
-        self.shutdown_RF()
-
-        print('Pass')
-
-        
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:

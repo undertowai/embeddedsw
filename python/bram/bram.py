@@ -29,7 +29,9 @@ class Bram:
 
     def load(self, data):
 
-        assert data.size <= self.size
+        data = data.view(dtype=np.uint32)
+
+        assert int(data.size * 4) <= self.size
 
         self.writeData(data)
         gotData = np.empty(data.size, dtype=data.dtype)
@@ -44,7 +46,10 @@ class Bram:
     def compare(self, expData, gotData):
         for i, d in enumerate(expData):
             if gotData[i] != d:
-                raise Exception("Data doesn't match got: {} != exp: {}".format(gotData[i], d))
+                raise Exception("Data doesn't match i={}; got: {} != exp: {}".format(i, gotData[i], d))
+
+    def getSize(self):
+        return self.size
 
 class BramFactory:
     def __init__(self):
@@ -66,7 +71,7 @@ if __name__ == "__main__":
 
     ipName ='ram_player_8wide_0_axi_bram_ctrl_0'
 
-    bram = BramFactory('bram2')
+    bram = BramFactory()
     bram = bram.makeBram(ipName)
 
     expData = np.random.randint(0, 255, (bram.PAGE_SIZE, 1), dtype=np.uint8)

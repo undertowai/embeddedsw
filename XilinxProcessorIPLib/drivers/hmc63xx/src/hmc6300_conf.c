@@ -276,6 +276,8 @@ void hmc6300_SetIfGain (XGpio_t *gpio, u8 ic, u8 steps_1_3dB)
 {
     row_t rows[ROWS_NUM] = {0};
 
+
+    confPerIc[ic].row7.ifvga_tune = ROW7_ifvga_tune_DEF;
     _hmc6300_SetIfGain(&confPerIc[ic].row7, steps_1_3dB);
 
     hmc6300_write_row(gpio, ic, 7);

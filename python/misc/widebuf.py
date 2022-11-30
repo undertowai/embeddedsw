@@ -8,12 +8,6 @@ class WideBuf:
     def __init__(self):
         pass
 
-    def readWide(self, path, buffer):
-        if exists(path):
-            buffer = np.fromfile(path, dtype=np.uint16)
-            os.remove(path)
-        return buffer
-
     def compose(self, dst, src, bufferNum, buffersCount, samplesPerFLit):
         offset = bufferNum * samplesPerFLit
         for i in range(0, src.size, samplesPerFLit):
@@ -36,18 +30,13 @@ class WideBuf:
             if (offset >= src.size):
                 break
 
-    def make(self, wideFilePath, bufferToInsert, bufferNum, buffersCount = int(8), bufferSize = int(128 * 1024), sampleSize = int(2), samplesPerFLit = int(8)):
-        numSamples = int(bufferSize / sampleSize)
-        buffer = np.empty(buffersCount * numSamples, dtype=np.uint16)
+    def make(self, buffer, tone, bufferNum, buffersCount, samplesPerFLit):
 
-        buffer = self.readWide(wideFilePath, buffer)
-        dacBuffer = np.fromfile(bufferToInsert, dtype=np.uint16)
-        self.compose(buffer, dacBuffer, bufferNum, buffersCount, samplesPerFLit)
+        self.compose(buffer, tone, bufferNum, buffersCount, samplesPerFLit)
 
         #dec_buffer = np.empty(numSamples, dtype=np.uint16)
         #decompose(dec_buffer, buffer, bufferNum, buffersCount, samplesPerFLit)
         #dec_buffer.tofile(wideFilePath + '.decomposed')
-        buffer.tofile(wideFilePath)
 
 if __name__ == "__main__":
     if len(sys.argv) != 4:
