@@ -8,7 +8,7 @@ sys.path.append('../misc')
 from swave import Wave
 from widebuf import WideBuf
 
-class Test_1x1_ST(TestSuite):
+class TestTone(TestSuite):
     def __init__(self):
         super().__init__()
 
@@ -30,41 +30,27 @@ class Test_1x1_ST(TestSuite):
 
         return buffer
 
-    def run_test(self, ticsFilePath, freq, dBFS, captureSize, restart_rfdc, load_bram):
-
-        self.setup_RF(ticsFilePath, [0], [0], restart_rfdc)
-
-        self.hmc.IfGain_6300(0, 0)
+    def run_test(self, freq, dBFS):
 
         samplingFreq = self.rfdc.getSamplingFrequency()
 
         print('\n\n\n=== Running test ===')
         print('RFDC Sampling Rate = {}'.format(samplingFreq))
 
-        if load_bram:
-            bram_data = self.make_single_tone_bram(samplingFreq, freq, dBFS, np.uint16)
-            self.load_dac_player(bram_data, bram_data)
+        bram_data = self.make_single_tone_bram(samplingFreq, freq, dBFS, np.uint16)
+        self.load_dac_player(bram_data, bram_data)
 
-        offset = 0x0
-        self.capture(self.ddr0, ['cap0.bin', 'cap1.bin'], [0, 1], offset, captureSize)
-
-        #self.shutdown_RF()
+        self.gpio_gate_0.set(0xff)
+        self.gpio_gate_1.set(0xff)
+        self.adc_dac_sync(True)
 
         print('Pass')
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print('{}: Usage'.format(sys.argv[0]))
-        exit()
 
-    ticsFilePath = sys.argv[1]
+    freq = 5_000_000
+    dBFS = int(-0)
 
-    freq = 75_000_000
-    dBFS = int(-20)
-    captureSize = 128 * 4096 * 2
-    restart_rfdc = False
-    load_bram = True
-
-    test = Test_1x1_ST()
+    test = TestTone()
     
-    test.run_test(ticsFilePath, freq, dBFS, captureSize, restart_rfdc, load_bram)
+    test.run_test(freq, dBFS)

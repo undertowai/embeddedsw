@@ -38,12 +38,8 @@
 #define ENABLE_METAL_PRINTS
 
 // PLL debug defines. Will print all calculated values
-//#undef LMK_DEBUG
-//#undef LMX_DEBUG
-
-#define LMK_DEBUG
-#define LMX_DEBUG
-
+#undef LMK_DEBUG
+#undef LMX_DEBUG
 
 /**************************** Type Definitions *******************************/
 
@@ -58,7 +54,7 @@ void my_metal_default_log_handler(enum metal_log_level level,
 
 static int resetAllClk104(void);
 void reverse32bArray(u32 *src, int size);
-void printCLK104_settings(void);
+int printCLK104_settings(void);
 
 /************************** Variable Definitions *****************************/
 
@@ -140,7 +136,40 @@ static int _RFDC_Init (XRFdc *RFdcInstPtr)
 	return XST_SUCCESS;
 }
 
-int RFDC_Init(void)
+int RFDC_Init_Clk104(void)
+{
+	int Status;
+	int lmkConfigIndex;
+	int gpioID = 343;
+
+
+	printf("Configuring LMK...\r\n");
+	/* The parameter is a gpioID, see Linux boot logging */
+	XRFClk_Init(gpioID);
+
+	lmkConfigIndex = 3;
+	//LMX2594_FREQ_300M00_PD	if (XST_FAILURE == XRFClk_SetConfigOnAllChipsFromConfigId(lmkConfigIndex, LMX2594_FREQ_8192M00, LMX2594_FREQ_7864M32)) {
+	if (XST_FAILURE == XRFClk_SetConfigOnAllChipsFromConfigId(lmkConfigIndex, LMX2594_FREQ_300M00_PD, LMX2594_FREQ_300M00_PD)) {
+		return XST_FAILURE;
+		printf("Failure in XRFClk_SetConfigOnAllChipsFromConfigId()\n\r");
+	}
+
+	// if (XST_FAILURE == XRFClk_SetConfigOnOneChipFromConfigId(RFCLK_LMK, 5)) {
+	// 	printf("\nFailure in XRFClk_SetConfigOnAllChipsFromConfigId()");
+	// 	return XST_FAILURE;
+	// }
+
+	if (XST_SUCCESS != printCLK104_settings()) {
+		XRFClk_Close();
+		return XST_FAILURE;
+	}
+
+	XRFClk_Close();
+
+	return XST_SUCCESS;
+}
+
+int RFDC_Restart(void)
 {
 	int Status;
 	XRFdc_Config *ConfigPtr;
@@ -154,58 +183,8 @@ int RFDC_Init(void)
 		return XST_FAILURE;
     }
 
-	////////////////////////////////////////////////////////
-	// Configure zcu111 clks
-	printf("\nConfiguring the data converter clocks...\r\n");
-
-	// initialize and reset CLK104 devices on i2c and i2c muxes
-	XRFClk_Init(486);
-
-	if (resetAllClk104() == EXIT_FAILURE) {
-		printf("resetAllClk104() failed\n\r");
-		return XST_FAILURE;
-	}
-
-	printf("Configuring CLK104 LMK and LMX devices\r\n");
-
-	/* Set config on all chips */
-	// using below LMK config index
-	lmkConfigIndex = 3;
-
-//LMX2594_FREQ_300M00_PD	if (XST_FAILURE == XRFClk_SetConfigOnAllChipsFromConfigId(lmkConfigIndex, LMX2594_FREQ_8192M00, LMX2594_FREQ_7864M32)) {
-	if (XST_FAILURE == XRFClk_SetConfigOnAllChipsFromConfigId(lmkConfigIndex, LMX2594_FREQ_300M00_PD, LMX2594_FREQ_300M00_PD)) {
-	printf("Failure in XRFClk_SetConfigOnAllChipsFromConfigId()\n\r");
-		return XST_FAILURE;
-	}
-
-	////////////////////////////////////////////////////
-	/* Get config from PLLs and display               */
-
-//	if (getConfigAll() == EXIT_FAILURE)
-//		goto ret_jump;
-
-	printCLK104_settings();
-
-	///////////////////////////////////////////////////
-	/* Close spi connections to clk104 */
-	XRFClk_Close();
-
-    sleep(2);
-
-	/////////////////////////////////////////////////////////////////////////////////
-	// Display various configurations/status of RFDC
-
-	// Restart the data converters - related to clock configuration
-//	rfdcShutdown(NULL);
 	rfdcStartup(&RFdcInst);
-
-	//display ready status for ADCs and DACs
 	rfdcReady(&RFdcInst);
-
-	//display the Power On Status ADCs and DACs
-//	rfdcPoweronStatus(NULL);
-
-	// Display current setting for DAC 0 in tile 0
 	dacCurrent(&RFdcInst);
 
 	return XST_SUCCESS;
@@ -412,15 +391,15 @@ void printLMXsettings(long int clkin, lmx_config_t *lmxInstPtr)
 * @note		None
 *
 ****************************************************************************/
-void printCLK104_settings(void)
+int printCLK104_settings(void)
 {
 	char pllNames[3][9] = {"LMK ----", "LMX_RF1", "LMX_RF2"};
 	u32  chipIds[3] = {RFCLK_LMK, RFCLK_LMX2594_1, RFCLK_LMX2594_2};
 
-	for(int i=0; i<3; i++) {
+	for(int i=0; i<(sizeof(chipIds) / sizeof(chipIds[0])); i++) {
 		if (XST_FAILURE == XRFClk_GetConfigFromOneChip(chipIds[i], data)) {
 			printf("Failure in XRFClk_GetConfigFromOneChip()\n\r");
-			return;
+			return XST_FAILURE;
 		}
 
 		// For LMX, reverse readback data to match exported register sets and
@@ -450,6 +429,8 @@ void printCLK104_settings(void)
 			printLMXsettings(lmkConfig.clkout[ (i & 2) ].dclk_freq, &lmxConfig);		}
 		printf("\n\r");
 	}
+
+	return XST_SUCCESS;
 }
 
 

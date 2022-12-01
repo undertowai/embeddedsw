@@ -17,11 +17,9 @@ class HMC63xx:
         self.devName = devName
         self.lib = ct.CDLL(self.libPath)
 
-        self.GpioInit()
-
     def GpioInit(self):
         fun = self.lib.HMC63xx_GpioInit
-        status = fun(self.devName.encode('UTF-8'))
+        status = fun(ct.c_char_p(self.devName.encode('UTF-8')))
 
         assert status == 0
 
@@ -31,6 +29,11 @@ class HMC63xx:
         status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(ic), val)
         assert status == 0
 
+    def RMW_6300(self, ic, i, val, mask):
+        fun = self.lib.HMC6300_RMW
+
+        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(ic), i, val, mask)
+        assert status == 0
 
     def __CheckDefConfig_6300(self, ic):
         fun = self.lib.HMC6300_CheckConfig
@@ -74,6 +77,12 @@ class HMC63xx:
         status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(ic))
         assert status == 0
 
+    def RMW_6301(self, ic, i, val, mask):
+        fun = self.lib.HMC6301_RMW
+
+        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(ic), i, val, mask)
+        assert status == 0
+
     def Reset(self):
         fun = self.lib.HMC63xx_Reset
 
@@ -86,11 +95,15 @@ if __name__ == "__main__":
 
     hmc = HMC63xx('spi_gpio')
 
-    for i in range(8) :
-        hmc.DefaultConfig_6300(i)
+    limit = 8
 
-    for i in range(8) :
+    for i in range(limit) :
+        hmc.DefaultConfig_6300(i)
+        #hmc.PrintConfig_6300(i)
+
+    for i in range(limit) :
         hmc.DefaultConfig_6301(i)
+        #hmc.PrintConfig_6301(i)
 
     hmc.Reset()
 

@@ -1,7 +1,7 @@
 import sys
+from time import sleep
 import ctypes as ct
 import numpy as np
-from numpy.ctypeslib import ndpointer
 
 from TICS import read as TICSread
 
@@ -65,6 +65,20 @@ class Lmx2820:
     def loadTICS(self, ticsFilePath):
         return TICSread(ticsFilePath)
 
+    def waitLock(self, data):
+        self.readData(data)
+
+        wait_lock = 0
+        while not self.isPllLocked(data):
+            print('LMX2820: Waiting PLL locked...')
+            sleep(1)
+            self.readData(data)
+
+            wait_lock += 1
+            if wait_lock >= 10:
+                raise Exception('PLL is not locked')
+
+
     def config(self, ticsFilePath):
         expData = self.loadTICS(ticsFilePath)
 
@@ -76,10 +90,7 @@ class Lmx2820:
         expData = np.flip(expData, 0)
 
         self.checkConfig(expData, gotData)
-
-        if not self.isPllLocked(gotData):
-            raise Exception('PLL is not locked')
-
+        self.waitLock(gotData)
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:

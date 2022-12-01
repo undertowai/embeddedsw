@@ -94,6 +94,22 @@ int HMC6300_SetIfGain(const char *devName, int ic, int val)
     return Status;
 }
 
+int HMC6300_RMW(const char *devName, int ic, u32 i, u32 val, u32 mask)
+{
+    s32 Status;
+    XGpio_t Gpio = {0};
+
+    Status = _AXI_Gpio_Init(&Gpio, devName);
+	if (Status != XST_SUCCESS) {
+		return -XST_FAILURE;
+	}
+    hmc6300_rmw(&Gpio, ic, i, val, mask);
+
+    metal_device_close(Gpio.device);
+
+    return Status;
+}
+
 int HMC6300_SendDefaultConfig(const char *devName, int ic)
 {
     s32 Status;
@@ -157,6 +173,22 @@ int HMC6301_SendDefaultConfig(const char *devName, int ic)
 		return -XST_FAILURE;
 	}
     hmc6301_def_init(&Gpio, ic, 0, TRUE);
+
+    metal_device_close(Gpio.device);
+
+    return Status;
+}
+
+int HMC6301_RMW(const char *devName, int ic, u32 i, u32 val, u32 mask)
+{
+    s32 Status;
+    XGpio_t Gpio = {0};
+
+    Status = _AXI_Gpio_Init(&Gpio, devName);
+	if (Status != XST_SUCCESS) {
+		return -XST_FAILURE;
+	}
+    hmc6301_rmw(&Gpio, ic, i, val, mask);
 
     metal_device_close(Gpio.device);
 

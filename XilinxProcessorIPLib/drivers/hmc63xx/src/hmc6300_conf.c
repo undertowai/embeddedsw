@@ -324,7 +324,7 @@ void hmc6300_dump_reg(XGpio_t *gpio, u8 ic, u8 array)
 {
     u8 row;
     hmc6300_spi_read(gpio, ic, array, &row);
-    xil_printf("row[%d] = %0x\r\n", array, row);
+    xil_printf("row[%d] = 0x%0x\r\n", array, row);
 }
 
 void hmc6300_dump_regs(XGpio_t *gpio, u8 ic)
@@ -371,4 +371,13 @@ int hmc6300_check_def_config(XGpio_t *gpio, u8 ic)
     }
 
     return 0;
+}
+
+void hmc6300_rmw (XGpio_t *gpio, u8 ic, u32 i, u32 val, u32 mask)
+{
+    u8 row;
+
+    hmc6300_spi_read(gpio, ic, i, &row);
+    row = (row & mask) | (val);
+    hmc6300_spi_write(gpio, ic, 7, row);
 }
