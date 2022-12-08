@@ -7,20 +7,6 @@ typedef struct {
 	struct metal_device *device; /* Libmetal device structure */
 } XBram_t;
 
-static int _metal_init (void)
-{
-    struct metal_init_params init_param = {
-	    .log_handler	= metal_default_log_handler,
-	    .log_level	= METAL_LOG_WARNING,
-    };
-
-	if (metal_init(&init_param)) {
-		printf("ERROR: Failed to run metal initialization\n");
-		return XST_FAILURE;
-	}
-    return XST_SUCCESS;
-}
-
 u32 XBram_RegisterMetal(XBram_t *InstancePtr)
 {
 	s32 Status;

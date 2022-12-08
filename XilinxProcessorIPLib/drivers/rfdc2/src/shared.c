@@ -87,17 +87,6 @@ lmx_config_t lmxConfig;
 extern const u32 LMK_CKin[LMK_FREQ_NUM][LMK_COUNT];
 extern const u32 LMX2594[][LMX2594_COUNT];
 
-static int _metal_init (void)
-{
-	struct metal_init_params init_param = METAL_INIT_DEFAULTS;
-
-	if (metal_init(&init_param)) {
-		printf("ERROR: Failed to run metal initialization\n");
-		return XST_FAILURE;
-	}
-	return XST_SUCCESS;
-}
-
 static int _RFDC_Init (XRFdc *RFdcInstPtr)
 {
 	int Status;
@@ -174,7 +163,7 @@ int RFDC_Restart(void)
 	int Status;
 	XRFdc_Config *ConfigPtr;
 	int lmkConfigIndex;
-	XRFdc RFdcInst;      /* RFdc driver instance */
+	XRFdc RFdcInst = {0};      /* RFdc driver instance */
 
 	Status = _RFDC_Init(&RFdcInst);
 
@@ -187,14 +176,16 @@ int RFDC_Restart(void)
 	rfdcReady(&RFdcInst);
 	dacCurrent(&RFdcInst);
 
+	metal_device_close(RFdcInst.device);
+
 	return XST_SUCCESS;
 }
 
 int RFDC_GetSamplingFreq (void)
 {
-	int SamplingFreq;
+	float SamplingFreq;
 	int Status;
-	XRFdc RFdcInst;      /* RFdc driver instance */
+	XRFdc RFdcInst = {0};      /* RFdc driver instance */
 
 	Status = _RFDC_Init(&RFdcInst);
 
@@ -212,6 +203,7 @@ int RFDC_GetSamplingFreq (void)
 		SamplingFreq = blockStatus.SamplingFreq * 1e9;
 	} else {
 		xil_printf("Error reading DAC 0 sampling rate\r\n");
+		metal_device_close(RFdcInst.device);
 		return -XST_FAILURE;
 	}
 
@@ -225,7 +217,8 @@ int RFDC_GetSamplingFreq (void)
 	// of axis interface
 	SamplingFreq = SamplingFreq / (float)InterpolationFactor;
 
-	return SamplingFreq / 1000000;
+	metal_device_close(RFdcInst.device);
+	return (int)(SamplingFreq / 1000000.0);
 }
 
 /****************************************************************************/

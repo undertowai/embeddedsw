@@ -43,8 +43,7 @@ class TestSuite:
         self.bram0 = bram_f.makeBram('ram_player_8wide_0_axi_bram_ctrl_0')
         self.bram1 = bram_f.makeBram('ram_player_8wide_1_axi_bram_ctrl_0')
 
-    def setup_RF(self, ticsFilePath, hmc_6300_ics, hmc_6301_ics, restart_rfdc=True):
-
+    def setup_RF_Clk(self, ticsFilePath, restart_rfdc=True):
         self.rfdc.init_clk104()
 
         if restart_rfdc:
@@ -52,6 +51,8 @@ class TestSuite:
 
         self.lmx.config(ticsFilePath)
 
+
+    def setup_RF(self, hmc_6300_ics, hmc_6301_ics):
         self.hmc.GpioInit()
         for ic in hmc_6300_ics:
             self.hmc.DefaultConfig_6300(ic)
@@ -91,15 +92,22 @@ class TestSuite:
             self.dma.startTransfer(devName, addr, size)
             addr = addr + size
 
-    def __capture_memory(self, ddr, paths, offset, size):
+    def __reset_dma(self, ids):
+
+        for id in ids:
+            devName = self.dma.devIdToIpName(id)
+            self.dma.reset(devName)
+
+
+    def __capture_memory(self, ddr, outputdir, paths, offset, size):
         base_address = ddr.base_address() + offset
 
         addr = base_address
         for path in paths:
-            ddr.capture(path, addr, size)
+            ddr.capture(outputdir + '/' + path, addr, size)
             addr = addr + size
 
-    def capture(self, ddr, paths, ids, offset, size):
+    def capture(self, ddr, outputDir, paths, ids, offset, size):
 
         assert len(paths) == len(ids)
 
@@ -114,7 +122,9 @@ class TestSuite:
         #FIXME Interrupt or poll ?
         sleep(1)
 
-        self.__capture_memory(ddr, paths, offset, size)
+        self.__reset_dma(ids)
+
+        self.__capture_memory(ddr, outputDir, paths, offset, size)
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:

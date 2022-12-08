@@ -97,14 +97,6 @@ if __name__ == "__main__":
 
     limit = 8
 
-    for i in range(limit) :
-        hmc.DefaultConfig_6300(i)
-        #hmc.PrintConfig_6300(i)
-
-    for i in range(limit) :
-        hmc.DefaultConfig_6301(i)
-        #hmc.PrintConfig_6301(i)
-
-    hmc.Reset()
+    hmc.GpioInit()
 
     print('Pass')

@@ -34,7 +34,9 @@ class Rfdc:
 
 if __name__ == "__main__":
     rfdc = Rfdc('rfdc2')
-    rfdc.init_clk104()
-    rfdc.restart()
+    #rfdc.init_clk104()
+    #rfdc.restart()
+    freq = rfdc.getSamplingFrequency()
+    print(freq)
 
     print("Pass")

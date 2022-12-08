@@ -5,20 +5,6 @@
 
 #include "xaxidma.h"
 
-static int _metal_init (void)
-{
-    struct metal_init_params init_param = {
-	    .log_handler	= metal_default_log_handler,
-	    .log_level	= METAL_LOG_WARNING,
-    };
-
-	if (metal_init(&init_param)) {
-		printf("ERROR: Failed to run metal initialization\n");
-		return XST_FAILURE;
-	}
-    return XST_SUCCESS;
-}
-
 XAxiDma_Config *XDMA_LookupConfig(struct metal_device **Deviceptr, XAxiDma_Config *CfgPtr, const char *DeviceName)
 {
 	s32 Status = 0;
@@ -79,14 +65,7 @@ u32 XAxiDma_RegisterMetal(XAxiDma *InstancePtr)
 static int Xdma_Init(XAxiDma *AxiDma, const char *DevName)
 {
     int Status;
-    XAxiDma_Config *CfgPtr, Cfg;
-
-	struct metal_init_params init_param = METAL_INIT_DEFAULTS;
-
-	if (metal_init(&init_param)) {
-		printf("ERROR: Failed to run metal initialization\n");
-		return XST_FAILURE;
-	}
+    XAxiDma_Config *CfgPtr, Cfg = {0};
 
 	CfgPtr = XDMA_LookupConfig(&AxiDma->device, &Cfg, DevName);
 
@@ -116,20 +95,22 @@ int XDMA_StartTransfer(const char *DevName, u32 addr_hi, u32 addr_lo, u64 len)
 	int Status;
 	u64 addr = ((u64)addr_hi << 32) | addr_lo;
     XAxiDma Dma = {0};
+
+	printf("XDMA_StartTransfer: %s: %p : 0x%0x\r\n", DevName, (void *)addr, len);
+
     _metal_init();
 
     if (XST_SUCCESS != Xdma_Init(&Dma, DevName)) {
-        return -XST_FAILURE;
+        return XST_FAILURE;
     }
 
-	printf("XDMA_StartTransfer: %p : %d\r\n", (void *)addr, len);
 	Status = XAxiDma_SimpleTransfer(&Dma, addr, len, XAXIDMA_DEVICE_TO_DMA);
     if (XST_SUCCESS != Status) {
-		printf("Failed : %d\r\n", Status);
-        return -Status;
+		printf("XAxiDma_SimpleTransfer Failed : %d\r\n", Status);
     }
 
-    return XST_SUCCESS;
+	metal_device_close(Dma.device);
+    return Status;
 }
 
 int XDMA_Reset(const char *DevName)
@@ -142,6 +123,7 @@ int XDMA_Reset(const char *DevName)
     }
 
     XAxiDma_Reset(&Dma);
+	metal_device_close(Dma.device);
 
     return XST_SUCCESS;
 }

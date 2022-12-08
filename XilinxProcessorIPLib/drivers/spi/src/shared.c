@@ -34,20 +34,6 @@ static int XSpi_ReadBuf (XSpi *Spi, u8 ic, u32 *d, size_t len, u32 i, u32 readKe
 	return Status;
 }
 
-static int _metal_init (void)
-{
-    struct metal_init_params init_param = {
-	    .log_handler	= metal_default_log_handler,
-	    .log_level	= METAL_LOG_WARNING,
-    };
-
-	if (metal_init(&init_param)) {
-		printf("ERROR: Failed to run metal initialization\n");
-		return XST_FAILURE;
-	}
-    return XST_SUCCESS;
-}
-
 static int _SpiInit(XSpi *Spi, const char *devName)
 {
     int Status = XST_SUCCESS;

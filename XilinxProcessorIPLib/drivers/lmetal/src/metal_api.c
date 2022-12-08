@@ -17,6 +17,21 @@
 #include <metal/io.h>
 
 #include "metal_api.h"
+#include "xstatus.h"
+
+int _metal_init (void)
+{
+    struct metal_init_params init_param = {
+	    .log_handler	= metal_default_log_handler,
+	    .log_level		= METAL_LOG_WARNING,
+    };
+
+	if (metal_init(&init_param)) {
+		printf("ERROR: Failed to run metal initialization\n");
+		return XST_FAILURE;
+	}
+    return XST_SUCCESS;
+}
 
 void Xil_AssertNonvoid(int Expression)
 {

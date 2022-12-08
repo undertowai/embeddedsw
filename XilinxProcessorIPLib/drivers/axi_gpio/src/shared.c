@@ -7,20 +7,6 @@ typedef struct {
 	struct metal_device *device; /* Libmetal device structure */
 } XGpio_t;
 
-static int _metal_init (void)
-{
-    struct metal_init_params init_param = {
-	    .log_handler	= metal_default_log_handler,
-	    .log_level	= METAL_LOG_WARNING,
-    };
-
-	if (metal_init(&init_param)) {
-		printf("ERROR: Failed to run metal initialization\n");
-		return XST_FAILURE;
-	}
-    return XST_SUCCESS;
-}
-
 u32 XGpio_RegisterMetal(XGpio_t *InstancePtr)
 {
 	s32 Status;
@@ -72,6 +58,7 @@ int AXI_Gpio_Set(const char *DevName, u32 val)
 	}
 
     Xil_Out32(Gpio.io, 0x0, val);
+	metal_device_close(Gpio.device);
     return Status;
 }
 
@@ -86,5 +73,7 @@ int AXI_Gpio_Read(const char *DevName, u32 *val)
 	}
 
     *val = Xil_In32(Gpio.io, 0x0);
+	metal_device_close(Gpio.device);
+
     return Status;
 }

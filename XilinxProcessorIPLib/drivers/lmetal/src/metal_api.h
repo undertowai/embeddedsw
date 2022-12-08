@@ -122,7 +122,7 @@ typedef struct {
     char name[NAME_MAX];
 } Xmetal_dev_parm_t;
 
-s32 X_GetDevice(Xmetal_dev_parm_t *parm);
+int _metal_init (void);
 
 void Xil_AssertNonvoid(int Expression);
 void Xil_AssertVoid(int Expression);

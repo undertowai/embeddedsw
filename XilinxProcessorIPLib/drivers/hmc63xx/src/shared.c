@@ -8,20 +8,6 @@
 #include "axi_gpio.h"
 #include "hmc.h"
 
-static int _metal_init (void)
-{
-    struct metal_init_params init_param = {
-	    .log_handler	= metal_default_log_handler,
-	    .log_level	= METAL_LOG_WARNING,
-    };
-
-	if (metal_init(&init_param)) {
-		printf("ERROR: Failed to run metal initialization\n");
-		return XST_FAILURE;
-	}
-    return XST_SUCCESS;
-}
-
 u32 XGpio_RegisterMetal(XGpio_t *InstancePtr)
 {
 	s32 Status;
