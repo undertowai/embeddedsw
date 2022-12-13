@@ -2,10 +2,7 @@
 #include <metal_api.h>
 #include <xstatus.h>
 
-typedef struct {
-    struct metal_io_region *io; /* Libmetal IO structure */
-	struct metal_device *device; /* Libmetal device structure */
-} XGpio_t;
+#if USE_METAL
 
 u32 XGpio_RegisterMetal(XGpio_t *InstancePtr)
 {
@@ -47,33 +44,56 @@ static int _AXI_Gpio_Init(XGpio_t *Gpio, const char *devName)
     return Status;
 }
 
-int AXI_Gpio_Set(const char *DevName, u32 val)
+#else /*USE_METAL*/
+
+static int _AXI_Gpio_Init(XGpio_t *Gpio, const char *devName, u32 base, u32 size)
 {
-    s32 Status;
+	int fd = open("/dev/mem", O_RDWR | O_SYNC);
+	Gpio->io = (void *)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED,
+			fd, base);
+
+	if (Gpio->io == MAP_FAILED) {
+		return -XST_FAILURE;
+	}
+	return fd;
+}
+
+#endif /*USE_METAL*/
+
+int AXI_Gpio_Set(const char *DevName, u32 base, u32 size, u32 val)
+{
+    int fd;
     XGpio_t Gpio = {0};
 
-    Status = _AXI_Gpio_Init(&Gpio, DevName);
-	if (Status != XST_SUCCESS) {
-		return -XST_FAILURE;
+    fd = _AXI_Gpio_Init(&Gpio, DevName, base, size);
+	if (fd == XST_FAILURE) {
+		return XST_FAILURE;
 	}
 
     Xil_Out32(Gpio.io, 0x0, val);
+#if USE_METAL
 	metal_device_close(Gpio.device);
-    return Status;
+else
+	close(fd);
+#endif
+    return XST_SUCCESS;
 }
 
-int AXI_Gpio_Read(const char *DevName, u32 *val)
+int AXI_Gpio_Read(const char *DevName, u32 base, u32 size, u32 *val)
 {
-    s32 Status;
+    int fd;
     XGpio_t Gpio = {0};
 
-    Status = _AXI_Gpio_Init(&Gpio, DevName);
-	if (Status != XST_SUCCESS) {
-		return -XST_FAILURE;
+    fd = _AXI_Gpio_Init(&Gpio, DevName, base, size);
+	if (fd == XST_FAILURE) {
+		return XST_FAILURE;
 	}
 
     *val = Xil_In32(Gpio.io, 0x0);
+#if USE_METAL
 	metal_device_close(Gpio.device);
-
-    return Status;
+#else
+	close(fd);
+#endif
+    return XST_SUCCESS;
 }

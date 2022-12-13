@@ -10,11 +10,15 @@ class Gpio:
     def __init__(self, lib, ipName):
         self.lib = lib
         self.devName = Dts().ipToDtsName(ipName)
+        
+        reg = Dts().readPropertyU32(ipName, 'reg')
+        self.addr = (reg[0] << 32) | reg[1]
+        self.size = (reg[2] << 32) | reg[3]
 
     def set(self, val):
         fun = self.lib.AXI_Gpio_Set
 
-        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(val))
+        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(self.addr), int(self.size), int(val))
         assert status == 0
 
     def get(self):

@@ -49,10 +49,10 @@ class Test_1x1_ST(TestSuite):
             self.load_dac_player(bram0_data, bram1_data)
 
         self.setup_RF_Clk(ticsFilePath, restart_rfdc)
-        tx = [i for i in range(0, 4, 1)]
+        tx = [i for i in range(8)]
         rx = [i for i in range(8)]
 
-        capturesDir = '/tmp/captures'
+        capturesDir = '/home/captures'
         if not os.path.exists(capturesDir):
             os.mkdir(capturesDir)
 

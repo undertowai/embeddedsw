@@ -9,13 +9,45 @@
 #include <metal/irq.h>
 #include <metal/errno.h>
 
-#ifndef Xil_In32
-#define Xil_In32 metal_io_read32
+#ifdef Xil_In32
+#warning "Xil_In32 being redefined"
+#undef Xil_In32
 #endif 
 
-#ifndef Xil_Out32
-#define Xil_Out32 metal_io_write32
+#ifdef Xil_Out32
+#warning "Xil_Out32 being redefined"
+#undef Xil_Out32
 #endif
+
+#if USE_METAL
+
+typedef struct {
+    struct metal_io_region *io; /* Libmetal IO structure */
+	struct metal_device *device; /* Libmetal device structure */
+} XGpio_t;
+
+#define Xil_In32 metal_io_read32
+#define Xil_Out32 metal_io_write32
+
+#else /*USE_METAL*/
+
+typedef struct {
+    void *io;
+} XGpio_t;
+
+#define Xil_Out32(io, Addr, Value)         \
+do {                                                       \
+	volatile u32 *LocalAddr = (volatile u32 *)(Addr + io); \
+	*LocalAddr = Value;                                    \
+} while(0)
+
+#define Xil_In32(io, Addr)                     \
+({                                                         \
+	volatile u32 *LocalAddr = (volatile u32 *)(Addr + io); \
+	*LocalAddr;                                            \
+})
+
+#endif /*USE_METAL*/
 
 #ifndef TRUE
 #define TRUE		1U
