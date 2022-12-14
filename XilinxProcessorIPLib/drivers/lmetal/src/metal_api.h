@@ -19,35 +19,13 @@
 #undef Xil_Out32
 #endif
 
-#if USE_METAL
-
 typedef struct {
     struct metal_io_region *io; /* Libmetal IO structure */
 	struct metal_device *device; /* Libmetal device structure */
-} XGpio_t;
+} metal_dev_io_t;
 
 #define Xil_In32 metal_io_read32
 #define Xil_Out32 metal_io_write32
-
-#else /*USE_METAL*/
-
-typedef struct {
-    void *io;
-} XGpio_t;
-
-#define Xil_Out32(io, Addr, Value)         \
-do {                                                       \
-	volatile u32 *LocalAddr = (volatile u32 *)(Addr + io); \
-	*LocalAddr = Value;                                    \
-} while(0)
-
-#define Xil_In32(io, Addr)                     \
-({                                                         \
-	volatile u32 *LocalAddr = (volatile u32 *)(Addr + io); \
-	*LocalAddr;                                            \
-})
-
-#endif /*USE_METAL*/
 
 #ifndef TRUE
 #define TRUE		1U
@@ -145,21 +123,12 @@ typedef u64 UINTPTR;
 												 to indicate that driver instance is
 												 started and it can be enabled. */
 
-typedef struct {
-
-    char signature[NAME_MAX];
-    char compatible[NAME_MAX];
-    char platform_dir[NAME_MAX];
-    char property[NAME_MAX];
-    char name[NAME_MAX];
-} Xmetal_dev_parm_t;
-
-int _metal_init (void);
-
 void Xil_AssertNonvoid(int Expression);
 void Xil_AssertVoid(int Expression);
 void Xil_AssertNonvoidAlways();
 void Xil_AssertVoidAlways();
 
+int _metal_init (void);
+int metal_dev_io_init(metal_dev_io_t *mdev, const char *devName);
 
 #endif /*METAL_API_H*/

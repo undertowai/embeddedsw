@@ -96,8 +96,6 @@ int XDMA_StartTransfer(const char *DevName, u32 addr_hi, u32 addr_lo, u64 len)
 	u64 addr = ((u64)addr_hi << 32) | addr_lo;
     XAxiDma Dma = {0};
 
-	printf("XDMA_StartTransfer: %s: %p : 0x%0x\r\n", DevName, (void *)addr, len);
-
     _metal_init();
 
     if (XST_SUCCESS != Xdma_Init(&Dma, DevName)) {

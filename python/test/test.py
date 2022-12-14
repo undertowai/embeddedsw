@@ -1,7 +1,8 @@
 
 import sys
 from time import sleep
-import numpy as np
+import traceback
+import logging
 
 sys.path.append('../lmx')
 sys.path.append('../hmc')
@@ -22,6 +23,20 @@ from bram import BramFactory
 from hw import Hw
 
 class TestSuite:
+    def Test(func):
+        def inner(self, **kw):
+            try:
+                func(self, **kw)
+            except Exception as e:
+                logging.error(traceback.format_exc())
+                print('=== FAILED ===')
+                self.shutdown_RF()
+            else:
+                print('=== PASS ===')
+        
+        return inner
+
+
     def __init__(self):
 
         self.hw = Hw()
@@ -98,14 +113,29 @@ class TestSuite:
             devName = self.dma.devIdToIpName(id)
             self.dma.reset(devName)
 
+    def __write_cap_data(self, path, data):
+        with open(path, 'wb') as f:
+            f.write(data)
+            f.close()
 
     def __capture_memory(self, ddr, outputdir, paths, offset, size):
         base_address = ddr.base_address() + offset
 
+        batch  = []
         addr = base_address
         for path in paths:
-            ddr.capture(outputdir + '/' + path, addr, size)
+            outputPath = None if outputdir is None else outputdir + '/' + path
+            data = ddr.capture(addr, size)
+            if outputPath is not None:
+                self.__write_cap_data(outputPath, data)
             addr = addr + size
+
+            batch.append((data, path))
+        return batch
+
+    def dac_gate(self, val):
+        self.gpio_gate_0.set((val >> 0) & 0xff)
+        self.gpio_gate_1.set((val >> 16) & 0xff)
 
     def capture(self, ddr, outputDir, paths, ids, offset, size):
 
@@ -115,16 +145,14 @@ class TestSuite:
 
         self.__start_dma(ddr, ids, offset, size)
 
-        self.gpio_gate_0.set(0xff)
-        self.gpio_gate_1.set(0xff)
         self.adc_dac_sync(True)
 
         #FIXME Interrupt or poll ?
-        sleep(1)
+        sleep(0.1)
 
         self.__reset_dma(ids)
 
-        self.__capture_memory(ddr, outputDir, paths, offset, size)
+        return self.__capture_memory(ddr, outputDir, paths, offset, size)
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:

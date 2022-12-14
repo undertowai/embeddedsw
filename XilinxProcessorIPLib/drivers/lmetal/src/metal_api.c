@@ -33,6 +33,30 @@ int _metal_init (void)
     return XST_SUCCESS;
 }
 
+int metal_dev_io_init(metal_dev_io_t *mdev, const char *devName)
+{
+    int Status = XST_SUCCESS;
+
+ 	if (_metal_init() != XST_SUCCESS) {
+		return XST_FAILURE;
+	}   
+
+    Status = metal_device_open("platform", devName, &mdev->device);
+	if (Status != XST_SUCCESS) {
+		metal_log(METAL_LOG_ERROR, "\n Failed to open device %s.\n", devName);
+		return XST_FAILURE;
+	}
+
+	mdev->io = metal_device_io_region(mdev->device, 0);
+
+	if (NULL == mdev->io) {
+        metal_device_close(mdev->device);
+		return XST_FAILURE;
+	}
+
+    return Status;
+}
+
 void Xil_AssertNonvoid(int Expression)
 {
 	if (!Expression) {

@@ -21,35 +21,37 @@ class HMC63xx:
         self.devName = devName
         self.lib = ct.CDLL(self.libPath)
 
+        self.devNamePtr = ct.c_char_p(self.devName.encode('UTF-8'))
+
     def GpioInit(self):
         fun = self.lib.HMC63xx_GpioInit
-        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(self.addr), int(self.size))
+        status = fun(self.devNamePtr)
 
         assert status == 0
 
     def IfGain_6300(self, ic, val):
         fun = self.lib.HMC6300_SetIfGain
 
-        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(self.addr), int(self.size), int(ic), val)
+        status = fun(self.devNamePtr, int(ic), val)
         assert status == 0
 
     def RMW_6300(self, ic, i, val, mask):
         fun = self.lib.HMC6300_RMW
 
-        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(self.addr), int(self.size), int(ic), i, val, mask)
+        status = fun(self.devNamePtr, int(ic), i, val, mask)
         assert status == 0
 
     def __CheckDefConfig_6300(self, ic):
         fun = self.lib.HMC6300_CheckConfig
 
-        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(self.addr), int(self.size), int(ic))
+        status = fun(self.devNamePtr, int(ic))
         if status != 0:
             raise Exception("Failed to config 6300 ic={}, status={}".format(ic, status))
 
     def DefaultConfig_6300(self, ic):
         fun = self.lib.HMC6300_SendDefaultConfig
 
-        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(self.addr), int(self.size), int(ic))
+        status = fun(self.devNamePtr, int(ic))
         assert status == 0
 
         self.__CheckDefConfig_6300(ic)
@@ -57,20 +59,20 @@ class HMC63xx:
     def PrintConfig_6300(self, ic):
         fun = self.lib.HMC6300_PrintConfig
 
-        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(self.addr), int(self.size), int(ic))
+        status = fun(self.devNamePtr, int(ic))
         assert status == 0
 
     def __CheckDefConfig_6301(self, ic):
         fun = self.lib.HMC6301_CheckConfig
 
-        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(self.addr), int(self.size), int(ic))
+        status = fun(self.devNamePtr, int(ic))
         if status != 0:
             raise Exception("Failed to config 6301 ic={}, status={}".format(ic, status))
 
     def DefaultConfig_6301(self, ic):
         fun = self.lib.HMC6301_SendDefaultConfig
 
-        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(self.addr), int(self.size), int(ic))
+        status = fun(self.devNamePtr, int(ic))
         assert status == 0
 
         self.__CheckDefConfig_6301(ic)
@@ -78,19 +80,19 @@ class HMC63xx:
     def PrintConfig_6301(self, ic):
         fun = self.lib.HMC6301_PrintConfig
 
-        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(self.addr), int(self.size), int(ic))
+        status = fun(self.devNamePtr, int(ic))
         assert status == 0
 
     def RMW_6301(self, ic, i, val, mask):
         fun = self.lib.HMC6301_RMW
 
-        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(self.addr), int(self.size), int(ic), i, val, mask)
+        status = fun(self.devNamePtr, int(ic), i, val, mask)
         assert status == 0
 
     def Reset(self):
         fun = self.lib.HMC63xx_Reset
 
-        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(self.addr), int(self.size))
+        status = fun(self.devNamePtr)
         assert status == 0
 
 

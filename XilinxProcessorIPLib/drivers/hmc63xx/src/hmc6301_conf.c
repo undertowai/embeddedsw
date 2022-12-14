@@ -360,7 +360,6 @@ int hmc6301_check_def_config(XGpio_t *gpio, u8 ic)
     _hmc6301_write_config(rows, &conf);
     _hmc6301_read_regs(gpio, rows_r, ic);
 
-    xil_printf("FIXME: hmc6301_check_def_config: skipping regs 16, 17, 18\r\n");
     for (i = 0; i < ROWS_NUM; i++) {
 
         if (i == 16 || i == 17 || i == 18) {
