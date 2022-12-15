@@ -22,8 +22,8 @@ do { \
 static     hmc6301_reg_file_t confPerIc[NUM_ICS] = {0};
 
 static void _hmc6301_powerup(hmc6301_row0_t *row, hmc6301_row1_t *row1, u8 powerup);
-static void _hmc6301_attenuation(hmc6301_row2_t *row, u8 atti, u8 attq, u8 att2);
-static void _hmc6301_SetIfGain (hmc6301_row5_t *row, u8 steps_1_3dB);
+static int _hmc6301_attenuation(hmc6301_row2_t *row, u8 atti, u8 attq, u8 att2);
+static int _hmc6301_SetIfGain (hmc6301_row5_t *row, u8 steps_1_3dB);
 
 static void _hmc6301_powerup(hmc6301_row0_t *row, hmc6301_row1_t *row1, u8 powerup)
 {
@@ -45,28 +45,46 @@ static void _hmc6301_powerup(hmc6301_row0_t *row, hmc6301_row1_t *row1, u8 power
     row1->ipc_pwrdwn = powerdown;
 }
 
-static void _hmc6301_SetIfGain (hmc6301_row5_t *row, u8 steps_1_3dB)
+static int _hmc6301_SetIfGain (hmc6301_row5_t *row, u8 steps_1_3dB)
 {
     const u8 maxGain = 0xF;
     u8 dB_2_val = maxGain - steps_1_3dB;
 
     if (steps_1_3dB > maxGain) {
         xil_printf("_hmc6301_SetIfGain: Invalid parameter: steps_1_3dB=%d\n\r", steps_1_3dB);
-        return;
+        return -1;
     }
     row->ifvga_vga_adj = dB_2_val;
+    return 0;
 }
 
-static void _hmc6301_attenuation(hmc6301_row2_t *row, u8 atti, u8 attq, u8 att2)
+static int _hmc6301_attenuation(hmc6301_row2_t *row, u8 atti, u8 attq, u8 att2)
 {
     const u8 attIQTable[] = {
         /* 0dB */ 0b000, /* 1dB */ 0b001, /* 2dB */ 0b010, /* 3dB */ 0b011, /* 4dB */ 0b100, /* 5dB */ 0b101};
     const u8 attTable[] = {
         /* 0dB */ 0b00, /* 6dB */ 0b01, /* 12dB */ 0b10, /* 18dB */ 0b11 };
 
+    if (atti > _N(attIQTable)) {
+        xil_printf("Parameter overflow: atti\r\n");
+        return -1;
+    }
+
+    if (attq > _N(attIQTable)) {
+        xil_printf("Parameter overflow: attq\r\n");
+        return -1;
+    }
+
+    if (att2 > _N(attTable)) {
+        xil_printf("Parameter overflow: att2\r\n");
+        return -1;
+    }
+
     row->bbamp_atten2 = attTable[att2];
     row->bbamp_attenfi = attIQTable[atti];
     row->bbamp_attenfq = attIQTable[attq];
+
+    return 0;
 }
 
 static void _hmc6301_setFreq(hmc6301_row20_t *row20, hmc6301_row22_t *row22, u32 freq)
@@ -322,22 +340,32 @@ void hmc6301_dump_regs(XGpio_t *gpio, u8 ic)
     }
 }
 
-void hmc6301_attenuation(XGpio_t *gpio, u8 ic, u8 atti, u8 attq, u8 att2)
+int hmc6301_attenuation(XGpio_t *gpio, u8 ic, u8 atti, u8 attq, u8 att2)
 {
     row_t rows[ROWS_NUM] = {0};
+    hmc6301_reg_file_t *conf = &confPerIc[ic];
 
-    _hmc6301_attenuation(&confPerIc[ic].row2, atti, attq, att2);
+    if (_hmc6301_attenuation(&conf->row2, atti, attq, att2)) {
+        return -1;
+    }
 
     hmc6301_write_row(gpio, ic, 2);
+    return 0;
 }
 
-void hmc6301_SetIfGain (XGpio_t *gpio, u8 ic, u8 steps_1_3dB)
+int hmc6301_SetIfGain (XGpio_t *gpio, u8 ic, u8 steps_1_3dB)
 {
     row_t rows[ROWS_NUM] = {0};
+    hmc6301_reg_file_t *conf = &confPerIc[ic];
 
-    _hmc6301_SetIfGain(&confPerIc[ic].row5, steps_1_3dB);
+    conf->row5.rfmix_tune = 0b1111;
+
+    if (_hmc6301_SetIfGain(&conf->row5, steps_1_3dB)) {
+        return -1;
+    }
 
     hmc6301_write_row(gpio, ic, 5);
+    return 0;
 }
 
 static void _hmc6301_read_regs(XGpio_t *gpio, u8 *rows, u8 ic)

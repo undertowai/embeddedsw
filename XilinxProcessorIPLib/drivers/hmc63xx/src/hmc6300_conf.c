@@ -35,28 +35,30 @@ static void _hmc6300_powerup(hmc6300_row4_t *row, u8 powerup)
     row->upmixer_pwrdn = powerdown;
 }
 
-static void _hmc6300_SetIfGain (hmc6300_row7_t *row, u8 steps_1_3dB)
+static int _hmc6300_SetIfGain (hmc6300_row7_t *row, u8 steps_1_3dB)
 {
     const u8 maxGain = 0xD;
     u8 dB_2_val = maxGain - steps_1_3dB;
     
     if (steps_1_3dB > maxGain) {
         xil_printf("_hmc6300_SetIfGain: Invalid parameter: steps_1_3dB=%d\n\r", steps_1_3dB);
-        return;
+        return -1;
     }
     row->ifvga_vga_adj = dB_2_val;
+    return 0;
 }
 
-static void _hmc6300_RFVGAgain (hmc6300_row11_t *row, u8 steps_1_3dB)
+static int _hmc6300_RFVGAgain (hmc6300_row11_t *row, u8 steps_1_3dB)
 {
     const u8 maxGain = 0xF;
     u8 dB_2_val = maxGain - steps_1_3dB;
 
     if (steps_1_3dB > maxGain) {
         xil_printf("_hmc6300_RFVGAgain: Invalid parameter: steps_1_3dB=%d\n\r", steps_1_3dB);
-        return;
+        return -1;
     }
     row->RFVGAgain = dB_2_val;
+    return 0;
 }
 
 static void _hmc6300_setFreq(hmc6300_row20_t *row20, hmc6300_row22_t *row22, u32 freq)
@@ -272,22 +274,31 @@ void hmc6300_enableFM(XGpio_t *gpio, u8 ic, u8 enable)
     hmc6300_write_row(gpio, ic, 10);
 }
 
-void hmc6300_SetIfGain (XGpio_t *gpio, u8 ic, u8 steps_1_3dB)
+int hmc6300_SetIfGain (XGpio_t *gpio, u8 ic, u8 steps_1_3dB)
 {
     row_t rows[ROWS_NUM] = {0};
-
 
     confPerIc[ic].row7.ifvga_tune = ROW7_ifvga_tune_DEF;
-    _hmc6300_SetIfGain(&confPerIc[ic].row7, steps_1_3dB);
+    if (_hmc6300_SetIfGain(&confPerIc[ic].row7, steps_1_3dB)) {
+        return -1;
+    }
 
     hmc6300_write_row(gpio, ic, 7);
+    return 0;
 }
 
-void hmc6300_RFVGAgain (XGpio_t *gpio, u8 ic, u8 steps_1_3dB)
+int hmc6300_RFVGAgain (XGpio_t *gpio, u8 ic, u8 steps_1_3dB)
 {
     row_t rows[ROWS_NUM] = {0};
-    _hmc6300_RFVGAgain(&confPerIc[ic].row11, steps_1_3dB);
+    hmc6300_reg_file_t *conf = &confPerIc[ic];
+
+    conf->row11.RFVGA_ICtrl = ROW11_RFVGA_ICtrl_DEf;
+    conf->row11.enRFVGA_Ana = 0b0;
+    if (_hmc6300_RFVGAgain(&conf->row11, steps_1_3dB)) {
+        return -1;
+    }
     hmc6300_write_row(gpio, ic, 11);
+    return 0;
 }
 
 void hmc6300_writeArray(XGpio_t *gpio, u8 ic, u8 array, u8 data)

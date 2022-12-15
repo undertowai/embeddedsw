@@ -44,6 +44,35 @@ int HMC6300_SetIfGain(const char *devName, int ic, int val)
     return XST_SUCCESS;
 }
 
+int HMC6300_SetRVGAGain(const char *devName, int ic, int val)
+{
+	int status = XST_SUCCESS;
+    XGpio_t Gpio = {0};
+
+	if (XST_SUCCESS != HMC_Dev_Init(&Gpio, devName)) {
+		return XST_FAILURE;
+	}
+    if (hmc6300_RFVGAgain(&Gpio, ic, val)) {
+		status = XST_FAILURE;
+	}
+
+	metal_device_close(Gpio.device);
+    return status;
+}
+
+int HMC6300_Power(const char *devName, int ic, int pwup)
+{
+    XGpio_t Gpio = {0};
+
+	if (XST_SUCCESS != HMC_Dev_Init(&Gpio, devName)) {
+		return XST_FAILURE;
+	}
+    hmc6300_powerup(&Gpio, ic, pwup);
+
+	metal_device_close(Gpio.device);
+    return XST_SUCCESS;
+}
+
 int HMC6300_RMW(const char *devName, int ic, u32 i, u32 val, u32 mask)
 {
     XGpio_t Gpio = {0};
@@ -111,6 +140,38 @@ int HMC6301_SendDefaultConfig(const char *devName, int ic)
 
 	metal_device_close(Gpio.device);
     return XST_SUCCESS;
+}
+
+int HMC6301_SetAtt(const char *devName, int ic, int i, int q, int att)
+{
+	int status = XST_SUCCESS;
+    XGpio_t Gpio = {0};
+
+	if (XST_SUCCESS != HMC_Dev_Init(&Gpio, devName)) {
+		return XST_FAILURE;
+	}
+    if (hmc6301_attenuation(&Gpio, ic, i, q, att)) {
+		status = XST_FAILURE;
+	}
+
+	metal_device_close(Gpio.device);
+    return status;
+}
+
+int HMC6301_SetIfGain(const char *devName, int ic, int val)
+{
+	int status = XST_SUCCESS;
+    XGpio_t Gpio = {0};
+
+	if (XST_SUCCESS != HMC_Dev_Init(&Gpio, devName)) {
+		return XST_FAILURE;
+	}
+    if (hmc6301_SetIfGain(&Gpio, ic, val)) {
+		status  = XST_FAILURE;
+	}
+
+	metal_device_close(Gpio.device);
+    return status;
 }
 
 int HMC6301_RMW(const char *devName, int ic, u32 i, u32 val, u32 mask)

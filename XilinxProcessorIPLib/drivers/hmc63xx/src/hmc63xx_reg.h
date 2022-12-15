@@ -3,6 +3,8 @@
 
 #include "metal_api.h"
 
+#define _N(x) (sizeof(x) / sizeof(x[0]))
+
 typedef struct {
     u8 data;
     u8 isSet;

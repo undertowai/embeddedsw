@@ -39,6 +39,7 @@ class Wave:
         s = 'minus_' + str(-s) if (s < 0) else str(s)
         return s
 
+
 if __name__ == "__main__":
 
     freq = int(sys.argv[1])

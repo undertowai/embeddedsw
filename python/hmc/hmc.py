@@ -35,6 +35,19 @@ class HMC63xx:
         status = fun(self.devNamePtr, int(ic), val)
         assert status == 0
 
+    def RVGAGain_6300(self, ic, val):
+        fun = self.lib.HMC6300_SetRVGAGain
+
+        status = fun(self.devNamePtr, int(ic), val)
+        assert status == 0    
+
+    def Power_6300(self, ic, pwup):
+        fun = self.lib.HMC6300_Power
+
+        status = fun(self.devNamePtr, int(ic), 0x1 if pwup == True else False)
+        assert status == 0    
+
+
     def RMW_6300(self, ic, i, val, mask):
         fun = self.lib.HMC6300_RMW
 
@@ -83,11 +96,43 @@ class HMC63xx:
         status = fun(self.devNamePtr, int(ic))
         assert status == 0
 
-    def RMW_6301(self, ic, i, val, mask):
+    def __RMW_6301(self, ic, i, val, mask):
         fun = self.lib.HMC6301_RMW
 
         status = fun(self.devNamePtr, int(ic), i, val, mask)
         assert status == 0
+
+    def RMW_6301(self, ic, i, val, bp):
+        mask = (1 << (bp[1] + 1)) - 1
+        mask = mask >> bp[0]
+
+        assert val <= mask
+        
+        val = val << bp[0]
+        mask = ~(mask << bp[0])
+        self.__RMW_6301(ic, i, val, mask)
+        
+    def SetAtt_6301(self, ic, i, q, att):
+        fun = self.lib.HMC6301_SetAtt
+
+        status = fun(self.devNamePtr, int(ic), i, q, att)
+        assert status == 0
+
+    def IfGain_6301(self, ic, val):
+        fun = self.lib.HMC6301_SetIfGain
+
+        status = fun(self.devNamePtr, int(ic), val)
+        assert status == 0
+
+    def LNAGain_6301(self, ic, gain):
+        i = int(8)
+        maxGain = 0x3
+        assert gain <= maxGain
+        
+        gain = maxGain - gain
+        
+        self.RMW_6301(ic, i, gain, [3, 4])
+        
 
     def Reset(self):
         fun = self.lib.HMC63xx_Reset
