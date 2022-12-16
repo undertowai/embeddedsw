@@ -131,4 +131,18 @@ void Xil_AssertVoidAlways();
 int _metal_init (void);
 int metal_dev_io_init(metal_dev_io_t *mdev, const char *devName);
 
+#define metal_device_open_wrap(platform, name, device_ptr) \
+({ \
+	int Status; \
+	Status = metal_device_open(platform, name, device_ptr); \
+	Status; \
+})
+
+#define metal_device_close_wrap(device_ptr) \
+({ \
+	int Status; \
+	Status = metal_device_close(device_ptr); \
+	Status; \
+})
+
 #endif /*METAL_API_H*/

@@ -102,7 +102,7 @@ XSpi_Config *XSpi_LookupConfig(struct metal_device **Deviceptr, const char *devN
 	u32 u32_prop = 0;
 	char *property_name;
 
-	Status = metal_device_open("platform", devName, Deviceptr);
+	Status = metal_device_open_wrap("platform", devName, Deviceptr);
 	if (Status != XST_SUCCESS) {
 		metal_log(METAL_LOG_ERROR, "\n Failed to open device %s.\n", devName);
 		return NULL;

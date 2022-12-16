@@ -56,6 +56,7 @@ int AXI_Bram_Write(const char *DevName, u64 address, const u32 *data, u64 words)
 
     Status = _AXI_Bram_Init(&Bram, DevName);
 	if (Status != XST_SUCCESS) {
+		metal_finish();
 		return -XST_FAILURE;
 	}
 
@@ -66,6 +67,7 @@ int AXI_Bram_Write(const char *DevName, u64 address, const u32 *data, u64 words)
 	}
 
 	metal_device_close(Bram.device);
+	metal_finish();
     return Status;
 }
 
@@ -87,5 +89,6 @@ int AXI_Bram_Read(const char *DevName, u64 address, u32 *data, u64 words)
 		address += word_size;
 	}
 	metal_device_close(Bram.device);
+	metal_finish();
     return Status;
 }

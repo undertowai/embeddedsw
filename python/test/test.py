@@ -103,7 +103,6 @@ class TestSuite:
 
         for id in ids:
             devName = self.dma.devIdToIpName(id)
-            self.dma.reset(devName)
             self.dma.startTransfer(devName, addr, size)
             addr = addr + size
 
@@ -135,7 +134,7 @@ class TestSuite:
 
     def dac_gate(self, val):
         self.gpio_gate_0.set((val >> 0) & 0xff)
-        self.gpio_gate_1.set((val >> 16) & 0xff)
+        self.gpio_gate_1.set((val >> 8) & 0xff)
 
     def capture(self, ddr, outputDir, paths, ids, offset, size):
 

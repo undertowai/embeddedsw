@@ -122,6 +122,7 @@ static int _RFDC_Init (XRFdc *RFdcInstPtr)
 	Major = (Val >> 24) & 0xFF;
 	Minor = (Val >> 16) & 0xFF;
 
+	metal_finish();
 	return XST_SUCCESS;
 }
 

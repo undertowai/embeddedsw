@@ -30,6 +30,7 @@ int AXI_Gpio_Set(const char *DevName, u32 val)
 
     Xil_Out32(Gpio.io, 0x0, val);
 	metal_device_close(Gpio.device);
+	metal_finish();
     return XST_SUCCESS;
 }
 
@@ -44,5 +45,6 @@ int AXI_Gpio_Read(const char *DevName, u32 base, u32 size, u32 *val)
 
     *val = Xil_In32(Gpio.io, 0x0);
 	metal_device_close(Gpio.device);
+	metal_finish();
     return XST_SUCCESS;
 }

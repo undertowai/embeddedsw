@@ -95,6 +95,7 @@ int SpiSendData(const char *devName, unsigned int SS, unsigned int bytesInBurst,
         txBuf++;
     }
     metal_device_close(Spi.device);
+    metal_finish();
 
     return XST_SUCCESS;
 }
@@ -123,6 +124,7 @@ int SpiRecvData(const char *devName, unsigned int SS, unsigned int bytesInBurst,
         rxBuf++;
     }
     metal_device_close(Spi.device);
+    metal_finish();
 
     return XST_SUCCESS;
 }

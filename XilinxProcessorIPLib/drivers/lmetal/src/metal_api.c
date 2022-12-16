@@ -41,7 +41,7 @@ int metal_dev_io_init(metal_dev_io_t *mdev, const char *devName)
 		return XST_FAILURE;
 	}   
 
-    Status = metal_device_open("platform", devName, &mdev->device);
+    Status = metal_device_open_wrap("platform", devName, &mdev->device);
 	if (Status != XST_SUCCESS) {
 		metal_log(METAL_LOG_ERROR, "\n Failed to open device %s.\n", devName);
 		return XST_FAILURE;

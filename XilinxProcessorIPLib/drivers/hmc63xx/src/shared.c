@@ -28,6 +28,7 @@ int HMC63xx_GpioInit(const char *devName)
     hmc63xx_SpiCoreInit(&Gpio);
 
 	metal_device_close(Gpio.device);
+	metal_finish();
     return XST_SUCCESS;
 }
 
@@ -41,6 +42,7 @@ int HMC6300_SetIfGain(const char *devName, int ic, int val)
     hmc6300_SetIfGain(&Gpio, ic, val);
 
 	metal_device_close(Gpio.device);
+	metal_finish();
     return XST_SUCCESS;
 }
 
@@ -57,6 +59,7 @@ int HMC6300_SetRVGAGain(const char *devName, int ic, int val)
 	}
 
 	metal_device_close(Gpio.device);
+	metal_finish();
     return status;
 }
 
@@ -70,6 +73,7 @@ int HMC6300_Power(const char *devName, int ic, int pwup)
     hmc6300_powerup(&Gpio, ic, pwup);
 
 	metal_device_close(Gpio.device);
+	metal_finish();
     return XST_SUCCESS;
 }
 
@@ -83,6 +87,7 @@ int HMC6300_RMW(const char *devName, int ic, u32 i, u32 val, u32 mask)
     hmc6300_rmw(&Gpio, ic, i, val, mask);
 
 	metal_device_close(Gpio.device);
+	metal_finish();
     return XST_SUCCESS;
 }
 
@@ -96,6 +101,7 @@ int HMC6300_SendDefaultConfig(const char *devName, int ic)
     hmc6300_def_init(&Gpio, ic, 0, TRUE);
 
 	metal_device_close(Gpio.device);
+	metal_finish();
     return XST_SUCCESS;
 }
 
@@ -113,6 +119,7 @@ int HMC6300_CheckConfig(const char *devName, int ic)
     }
 
 	metal_device_close(Gpio.device);
+	metal_finish();
     return Status;
 }
 
@@ -126,6 +133,7 @@ int HMC6300_PrintConfig(const char *devName, int ic)
     hmc6300_dump_regs(&Gpio, ic);
 
 	metal_device_close(Gpio.device);
+	metal_finish();
     return XST_SUCCESS;
 }
 
@@ -139,6 +147,7 @@ int HMC6301_SendDefaultConfig(const char *devName, int ic)
     hmc6301_def_init(&Gpio, ic, 0, TRUE);
 
 	metal_device_close(Gpio.device);
+	metal_finish();
     return XST_SUCCESS;
 }
 
@@ -155,6 +164,7 @@ int HMC6301_SetAtt(const char *devName, int ic, int i, int q, int att)
 	}
 
 	metal_device_close(Gpio.device);
+	metal_finish();
     return status;
 }
 
@@ -171,6 +181,7 @@ int HMC6301_SetIfGain(const char *devName, int ic, int val)
 	}
 
 	metal_device_close(Gpio.device);
+	metal_finish();
     return status;
 }
 
@@ -184,6 +195,7 @@ int HMC6301_RMW(const char *devName, int ic, u32 i, u32 val, u32 mask)
     hmc6301_rmw(&Gpio, ic, i, val, mask);
 
 	metal_device_close(Gpio.device);
+	metal_finish();
     return XST_SUCCESS;
 }
 
@@ -200,6 +212,7 @@ int HMC6301_CheckConfig(const char *devName, int ic)
     }
 
 	metal_device_close(Gpio.device);
+	metal_finish();
     return Status;
 }
 
@@ -214,6 +227,7 @@ int HMC6301_PrintConfig(const char *devName, int ic)
     hmc6301_dump_regs(&Gpio, ic);
 
 	metal_device_close(Gpio.device);
+	metal_finish();
     return XST_SUCCESS;
 }
 
@@ -228,5 +242,6 @@ int HMC63xx_Reset (const char *devName)
     hmc6301_set_reset(&Gpio);
 
 	metal_device_close(Gpio.device);
+	metal_finish();
     return XST_SUCCESS;
 }

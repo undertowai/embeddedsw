@@ -18,7 +18,7 @@ class Gpio:
     def set(self, val):
         fun = self.lib.AXI_Gpio_Set
 
-        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(self.addr), int(self.size), int(val))
+        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(val))
         assert status == 0
 
     def get(self):

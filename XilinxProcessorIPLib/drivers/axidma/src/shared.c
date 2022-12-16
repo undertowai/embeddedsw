@@ -10,7 +10,7 @@ XAxiDma_Config *XDMA_LookupConfig(struct metal_device **Deviceptr, XAxiDma_Confi
 	s32 Status = 0;
 	u32 AddrWidth = 0;
 
-	Status = metal_device_open("platform", DeviceName, Deviceptr);
+	Status = metal_device_open_wrap("platform", DeviceName, Deviceptr);
 	if (Status != XST_SUCCESS) {
 		metal_log(METAL_LOG_ERROR, "\n Failed to open device %s.\n", DeviceName);
 		return NULL;
@@ -99,6 +99,7 @@ int XDMA_StartTransfer(const char *DevName, u32 addr_hi, u32 addr_lo, u64 len)
     _metal_init();
 
     if (XST_SUCCESS != Xdma_Init(&Dma, DevName)) {
+		metal_finish();
         return XST_FAILURE;
     }
 
@@ -108,6 +109,7 @@ int XDMA_StartTransfer(const char *DevName, u32 addr_hi, u32 addr_lo, u64 len)
     }
 
 	metal_device_close(Dma.device);
+	metal_finish();
     return Status;
 }
 
@@ -122,6 +124,6 @@ int XDMA_Reset(const char *DevName)
 
     XAxiDma_Reset(&Dma);
 	metal_device_close(Dma.device);
-
+	metal_finish();
     return XST_SUCCESS;
 }

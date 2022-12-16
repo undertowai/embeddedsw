@@ -115,8 +115,7 @@ if __name__ == "__main__":
     load_bram = True
     capture_data = True
     #Which radios to use:
-    tx = [0, 1, 2, 3]
-    #tx = [4, 5, 6, 7]
+    tx = [i for i in range(8)]
     rx = [i for i in range(8)]
     outputDir = '/home/captures'
 

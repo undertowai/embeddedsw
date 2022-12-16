@@ -18,8 +18,6 @@ class Xddr:
         self.length = (reg[2] << 32) | reg[3]
 
     def capture(self, offset, length):
-        #TODO: mmap should not allocate memory ?
-        data = []
         with open('/dev/mem', 'r+b') as f:
             mm = mmap.mmap(fileno=f.fileno(),
                                 length=length,
