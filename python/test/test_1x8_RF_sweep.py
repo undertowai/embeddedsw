@@ -64,12 +64,14 @@ class Test_1x8_Sweep(TestSuite):
 
         print('\n\n\n=== Running test ===')
         print('RFDC Sampling Rate = {}'.format(samplingFreq))
+        print('Using Max Gain = {}'.format(self.max_gain))
 
         dtype = np.uint16
 
+        print('=== Generating tones ===')
         if load_bram:
-            bram0_data, freq = self.make_sweep_tone_bram(samplingFreq, self.freq, self.dBFS, self.freqStep, dtype)
-            bram1_data, freq = self.make_sweep_tone_bram(samplingFreq, self.freq, self.dBFS, self.freqStep, dtype)
+            bram0_data, _ = self.make_sweep_tone_bram(samplingFreq, self.freq, self.dBFS, self.freqStep, dtype)
+            bram1_data, _ = self.make_sweep_tone_bram(samplingFreq, self.freq, self.dBFS, self.freqStep, dtype)
 
             self.load_dac_player(bram0_data, bram1_data)
 
@@ -84,13 +86,24 @@ class Test_1x8_Sweep(TestSuite):
             print('*** Running Iteration : rx={}, tx={}'.format(self.rx, txi))
             self.setup_RF([txi], self.rx)
 
-            self.hmc.IfGain_6300(txi, 12)
+            if self.max_gain:
+                for rxi in rx:
+                    self.hmc.SetAtt_6301(rxi, 0x0, 0x0, 0x0)
+                    self.hmc.IfGain_6301(rxi, 0xf)
+                    self.hmc.LNAGain_6301(rxi, 0x3)
+
+                self.hmc.IfGain_6300(txi, 0xd)
+                self.hmc.RVGAGain_6300(txi, 0xf)
 
             outputDir = self.mkdir(self.outputDir, str(txi))
 
             ids = [i for i in range(8)]
             paths = list(map(self.cap_name, ids))
 
+            #input("Press Enter to continue...")
+
+            #Let the RF to settle the configuration
+            sleep(1)
             self.capture(self.ddr0, outputDir, paths, ids, offset, self.captureSize)
 
             ids = [i for i in range(8, 16, 1)]
@@ -107,7 +120,7 @@ if __name__ == "__main__":
 
     ticsFilePath = sys.argv[1]
 
-    freq = 50_000_000
+    freq = 75_000_000
     freqStep = 0
     dBFS = int(-3)
     captureSize = 128 * 4096 * 2
@@ -118,6 +131,7 @@ if __name__ == "__main__":
     tx = [i for i in range(8)]
     rx = [i for i in range(8)]
     outputDir = '/home/captures'
+    max_gain = True
 
     test = Test_1x8_Sweep()
     
@@ -131,4 +145,5 @@ if __name__ == "__main__":
                 capture_data    =capture_data,
                 tx              =tx,
                 rx              =rx,
-                outputDir       =outputDir)
+                outputDir       =outputDir,
+                max_gain        =max_gain)

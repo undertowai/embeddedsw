@@ -342,6 +342,7 @@ void hmc6301_dump_regs(XGpio_t *gpio, u8 ic)
 
 int hmc6301_attenuation(XGpio_t *gpio, u8 ic, u8 atti, u8 attq, u8 att2)
 {
+    u8 row;
     row_t rows[ROWS_NUM] = {0};
     hmc6301_reg_file_t *conf = &confPerIc[ic];
 
@@ -350,11 +351,18 @@ int hmc6301_attenuation(XGpio_t *gpio, u8 ic, u8 atti, u8 attq, u8 att2)
     }
 
     hmc6301_write_row(gpio, ic, 2);
+
+    hmc6301_spi_read(gpio, ic, 2, &row);
+    if (row != rows[2].data) {
+        return -1;
+    }
+
     return 0;
 }
 
 int hmc6301_SetIfGain (XGpio_t *gpio, u8 ic, u8 steps_1_3dB)
 {
+    u8 row;
     row_t rows[ROWS_NUM] = {0};
     hmc6301_reg_file_t *conf = &confPerIc[ic];
 
@@ -365,6 +373,11 @@ int hmc6301_SetIfGain (XGpio_t *gpio, u8 ic, u8 steps_1_3dB)
     }
 
     hmc6301_write_row(gpio, ic, 5);
+
+    hmc6301_spi_read(gpio, ic, 5, &row);
+    if (row != rows[5].data) {
+        return -1;
+    }
     return 0;
 }
 

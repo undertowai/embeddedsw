@@ -120,7 +120,6 @@ class TestSuite:
     def __capture_memory(self, ddr, outputdir, paths, offset, size):
         base_address = ddr.base_address() + offset
 
-        batch  = []
         addr = base_address
         for path in paths:
             outputPath = None if outputdir is None else outputdir + '/' + path
@@ -128,9 +127,6 @@ class TestSuite:
             if outputPath is not None:
                 self.__write_cap_data(outputPath, data)
             addr = addr + size
-
-            batch.append((data, path))
-        return batch
 
     def dac_gate(self, val):
         self.gpio_gate_0.set((val >> 0) & 0xff)

@@ -3,7 +3,7 @@ import sys
 from test import TestSuite
 import numpy as np
 import os
-from time import sleep
+from time import sleep, time
 
 sys.path.append('../misc')
 
@@ -38,7 +38,7 @@ class Test_1x8_Sweep(TestSuite):
 
     def mkdir(self, outputDir, suffix):
         if not os.path.exists(outputDir):
-            os.mkdir(outputDir)
+            os.makedirs(outputDir)
 
         if self.capture_data:
             outputDir = '{}/TX_{}'.format(outputDir, suffix)
@@ -80,9 +80,10 @@ class Test_1x8_Sweep(TestSuite):
 
         dtype = np.uint16
 
+        print('=== Generating tones ===')
         if load_bram:
-            bram0_data, freq = self.make_sweep_tone_bram(samplingFreq, self.freq, self.dBFS, self.freqStep, dtype)
-            bram1_data, freq = self.make_sweep_tone_bram(samplingFreq, self.freq, self.dBFS, self.freqStep, dtype)
+            bram0_data, _ = self.make_sweep_tone_bram(samplingFreq, self.freq, self.dBFS, self.freqStep, dtype)
+            bram1_data, _ = self.make_sweep_tone_bram(samplingFreq, self.freq, self.dBFS, self.freqStep, dtype)
 
             self.load_dac_player(bram0_data, bram1_data)
 
@@ -112,31 +113,34 @@ class Test_1x8_Sweep(TestSuite):
                                 print('ifvga={} rfvga={} bbamp_iq={} bbamp_att2={} if_gain={} lna_gain={}' \
                                     .format(ifvga, rfvga, bbamp_iq, bbamp_atten2, if_gain, lna_gain))
 
-                                for rxi in rx:
-                                    self.hmc.SetAtt_6301(rxi, bbamp_iq, bbamp_iq, bbamp_atten2)
-                                    self.hmc.IfGain_6301(rxi, if_gain)
-                                    self.hmc.LNAGain_6301(rxi, lna_gain)
-
                                 outputDir = self.outputDir + '/' + \
-                                    'ifvga-{}_rfvga-{}_bbamp_iq-{}_bbamp_att2-{}_if_gain-{}_lna_gain-{}' \
+                                    'ifvga-{}/rfvga-{}/bbamp_iq-{}/bbamp_att2-{}/if_gain-{}/lna_gain-{}' \
                                     .format(ifvga, rfvga, bbamp_iq, bbamp_atten2, if_gain, lna_gain)
-
-                                print('outputPath={}'.format(outputDir))
 
                                 for txi in self.tx:
 
-                                    self.setup_RF([txi], [])
+                                    start_t = time()
+                                    self.setup_RF([txi], self.rx)
+
+                                    for rxi in rx:
+                                        self.hmc.SetAtt_6301(rxi, bbamp_iq, bbamp_iq, bbamp_atten2)
+                                        self.hmc.IfGain_6301(rxi, if_gain)
+                                        self.hmc.LNAGain_6301(rxi, lna_gain)
 
                                     self.hmc.IfGain_6300(txi, ifvga)
                                     self.hmc.RVGAGain_6300(txi, rfvga)
 
-                                    print('Tx: {}'.format(txi))
+                                    end_t = time()
 
-                                    self.iteration(outputDir, rxi, offset)
+                                    print('TX{}: Configuring radios done in {:.2f}s'.format(txi, end_t-start_t))
+                                    start_t = end_t
+
+                                    self.iteration(outputDir, txi, offset)
                                     
-                                    self.hmc.Power_6300(txi, False)
+                                    end_t = time()
+                                    print('TX{}: Capturing data done in {:.2f}s'.format(txi, end_t-start_t))
                                     
-                                #input("Press Enter to continue...")
+                                    self.shutdown_RF()
 
         
         self.shutdown_RF()
@@ -148,7 +152,7 @@ if __name__ == "__main__":
 
     ticsFilePath = sys.argv[1]
 
-    freq = 50_000_000
+    freq = 75_000_000
     freqStep = 0
     dBFS = int(-3)
     captureSize = 128 * 4096 * 2
@@ -156,20 +160,29 @@ if __name__ == "__main__":
     load_bram = True
     capture_data = True
     #Which radios to use:
-    tx = [0, 1, 2, 3]
+    tx = [i for i in range(1)]
     rx = [i for i in range(8)]
     outputDir = '/home/captures'
 
     test = Test_1x8_Sweep()
     
     parameters = {
-        'ifvga_vga_adj' : [0x0, 0x3, 0x7, 0xb, 0xd],
-        'RFVGAgain' : [0x0, 0x3, 0x7, 0xb, 0xf],
-        'bbamp_atten_iq' : [0x0, 0x1, 0x2, 0x3, 0x4, 0x5],
+        'ifvga_vga_adj' : [0x6, 0xa, 0xd],
+        'RFVGAgain' : [0x9, 0xb, 0xf],
+        'bbamp_atten_iq' : [0x0, 0x3, 0x5],
         'bbamp_atten2' : [0x0],
-        'if_gain': [0x0, 0x3, 0x7, 0xb, 0xf],
-        'lna_gain' : [0x0, 0x3]
+        'if_gain': [0x6, 0xc, 0xf],
+        'lna_gain' : [0x0, 0x2, 0x3]
     }
+    
+    #parameters = {
+    #    'ifvga_vga_adj' : [0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd],
+    #    'RFVGAgain' : [0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf],
+    #    'bbamp_atten_iq' : [0x0, 0x1, 0x2, 0x3, 0x4, 0x5],
+    #    'bbamp_atten2' : [0x0],
+    #    'if_gain': [0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf],
+    #    'lna_gain' : [0x0, 0x1, 0x2, 0x3]
+    #}
     
     test.run_test(ticsFilePath  =ticsFilePath,
                 freq            =freq,

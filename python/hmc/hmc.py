@@ -151,7 +151,9 @@ if __name__ == "__main__":
     hmc.GpioInit()
     for i in range(limit):
         hmc.DefaultConfig_6301(i)
+        hmc.PrintConfig_6301(i)
         hmc.DefaultConfig_6300(i)
+        hmc.PrintConfig_6300(i)
 
     hmc.Reset()
 

@@ -4,19 +4,20 @@ import sys
 import math
 import numpy as np
 from scipy import signal
+import json
+import os
 
-import matplotlib.pyplot as plt
 
+sys.path.append('../misc')
+
+from traverse import Traverse
 
 class Sig:
+    fs = 600_000_000
+    freq = 75_000_000
+    
     def __init__(self) -> None:
         pass
-
-    def cap_name(id):
-        return 'cap{}_{}.bin'.format('I' if id%2==0 else 'Q', int(id/2))
-
-    def tx_name(id):
-        return 'TX_{}'.format(id)
 
     def get_fn(farr, freq):
         for fn, f in enumerate(farr):
@@ -34,26 +35,66 @@ class Sig:
         N = np.mean(Pxx_den)
         P = (Pxx_den[fn-1] + Pxx_den[fn]) / 2
         return 10*math.log10(P/N)
+    
+    #FIXME
+    def set_dict(dict, keys):
+        if len(keys) == 0:
+            return {}
 
+        d = Sig.set_dict(dict.copy(), keys[1:])
+
+        if not keys[0] in dict:
+            dict[keys[0]] = d
+
+        return dict
+    
+    def process(dict, root, files):
+        print('processing : {}'.format(root))
+        snr_dict = {}
+
+        list.sort(files)
+        for file in files:
+            x = np.fromfile(root + os.sep + file, dtype=np.uint16)
+            snr = Sig.get_SNR(x, Sig.freq, Sig.fs)
+            snr_dict[file] = '{:.2f}'.format(snr)
+            
+        keys = root.split(os.sep)[4:]
+
+        if not keys[-1] in dict:
+            dict[keys[-1]] = {}
+
+        if not keys[-7] in dict[keys[-1]]:
+            dict[keys[-1]][keys[-7]] = {}
+
+        if not keys[-6] in dict[keys[-1]][keys[-7]]:
+            dict[keys[-1]][keys[-7]][keys[-6]] = {}
+
+        if not keys[-5] in dict[keys[-1]][keys[-7]][keys[-6]]:
+            dict[keys[-1]][keys[-7]][keys[-6]][keys[-5]] = {}
+
+        if not keys[-4] in dict[keys[-1]][keys[-7]][keys[-6]][keys[-5]]:
+            dict[keys[-1]][keys[-7]][keys[-6]][keys[-5]][keys[-4]] = {}
+
+        if not keys[-3] in dict[keys[-1]][keys[-7]][keys[-6]][keys[-5]][keys[-4]]:
+            dict[keys[-1]][keys[-7]][keys[-6]][keys[-5]][keys[-4]][keys[-3]] = {}
+
+        #if not keys[-2] in dict[keys[-1]][keys[-7]][keys[-6]][keys[-5]][keys[-4]][keys[-3]]:
+        #    dict[keys[-1]][keys[-7]][keys[-6]][keys[-5]][keys[-4]][keys[-3]][keys[-2]] = {}
+
+
+        dict[keys[-1]][keys[-7]][keys[-6]][keys[-5]][keys[-4]][keys[-3]][keys[-2]] = snr_dict
 
 if __name__ == "__main__":
 
     capturesPath = sys.argv[1]
 
-    fs = 600_000_000
-    freq = 15_000_000
+    dict = {}
+    Traverse.walk(dict, capturesPath, Sig.process)
     
-    ids = [i for i in range(16)]
-    caps = list(map(Sig.cap_name, ids))
-    ids = [i for i in range(8)]
-    txs = list(map(Sig.tx_name, ids))
+    data = json.dumps(dict, indent=4)
     
-    for tx in txs:
-        for cap in caps:
-            path = capturesPath + '/' + tx + '/' + cap
-            x = np.fromfile(path, dtype=np.uint16)
-            snr = Sig.get_SNR(x, freq, fs)
-            print('{} -> {} : {:.2f} {}'.format(tx, cap.replace('cap', '').replace('.bin', ''), snr, '#' * int(snr)))
-        print('============')
+    with open('.' + os.sep + 'snr.json', "w") as f:
+        f.write(data)
+    
 
 

@@ -44,9 +44,7 @@ if __name__ == "__main__":
 
     freq = int(sys.argv[1])
     dBFS = int(sys.argv[2])
-    outputDirectory = sys.argv[3]
-    numBytes = int(sys.argv[4])
-    samplingFreq = int(sys.argv[5])
-    fullCycles = True if sys.argv[6] == 'TRUE' else False
+    numBytes = int(sys.argv[3])
+    samplingFreq = int(sys.argv[4]) 
 
-    Wave().sinewave(freq, dBFS, 0, outputDirectory, numBytes, samplingFreq, fullCycles, sampleSize = 2)
+    Wave().getSine(numBytes, freq, dBFS, samplingFreq, 2, 0.0)

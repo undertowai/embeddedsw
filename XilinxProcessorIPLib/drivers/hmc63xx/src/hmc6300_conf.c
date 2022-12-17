@@ -276,6 +276,7 @@ void hmc6300_enableFM(XGpio_t *gpio, u8 ic, u8 enable)
 
 int hmc6300_SetIfGain (XGpio_t *gpio, u8 ic, u8 steps_1_3dB)
 {
+    u8 row;
     row_t rows[ROWS_NUM] = {0};
 
     confPerIc[ic].row7.ifvga_tune = ROW7_ifvga_tune_DEF;
@@ -284,11 +285,17 @@ int hmc6300_SetIfGain (XGpio_t *gpio, u8 ic, u8 steps_1_3dB)
     }
 
     hmc6300_write_row(gpio, ic, 7);
+
+    hmc6300_spi_read(gpio, ic, 7, &row);
+    if (row != rows[7].data) {
+        return -1;
+    }
     return 0;
 }
 
 int hmc6300_RFVGAgain (XGpio_t *gpio, u8 ic, u8 steps_1_3dB)
 {
+    u8 row;
     row_t rows[ROWS_NUM] = {0};
     hmc6300_reg_file_t *conf = &confPerIc[ic];
 
@@ -298,6 +305,11 @@ int hmc6300_RFVGAgain (XGpio_t *gpio, u8 ic, u8 steps_1_3dB)
         return -1;
     }
     hmc6300_write_row(gpio, ic, 11);
+
+    hmc6300_spi_read(gpio, ic, 11, &row);
+    if (row != rows[11].data) {
+        return -1;
+    }
     return 0;
 }
 
