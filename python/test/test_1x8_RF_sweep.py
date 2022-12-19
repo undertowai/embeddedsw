@@ -51,15 +51,8 @@ class Test_1x8_Sweep(TestSuite):
     def cap_name(self, id):
         return 'cap{}_{}.bin'.format('I' if id%2==0 else 'Q', int(id/2))
 
-    def get_args(self, **kw):
-        for k, v in kw.items():
-            setattr(self, k, v)
-
     @TestSuite.Test
-    def run_test(self, **kw):
-
-        self.get_args(**kw)
-
+    def run_test(self):
         samplingFreq = self.rfdc.getSamplingFrequency()
 
         print('\n\n\n=== Running test ===')
@@ -88,12 +81,15 @@ class Test_1x8_Sweep(TestSuite):
 
             if self.max_gain:
                 for rxi in rx:
-                    self.hmc.SetAtt_6301(rxi, 0x0, 0x0, 0x0)
-                    self.hmc.IfGain_6301(rxi, 0xf)
-                    self.hmc.LNAGain_6301(rxi, 0x3)
+                    self.hmc.SetAtt_6301(ic=rxi, i=0x0, q=0x0, att=0x0)
+                    self.hmc.IfGain_6301(ic=rxi, val=0xf)
+                    self.hmc.LNAGain_6301(ic=rxi, val=0x3)
 
-                self.hmc.IfGain_6300(txi, 0xd)
-                self.hmc.RVGAGain_6300(txi, 0xf)
+                self.hmc.IfGain_6300(ic=txi, val=0xd)
+                self.hmc.RVGAGain_6300(ic=txi, val=0xf)
+            else:
+                self.hmc.IfGain_6300(ic=txi, val=0x3)
+                self.hmc.RVGAGain_6300(ic=txi, val=0x3)
 
             outputDir = self.mkdir(self.outputDir, str(txi))
 
@@ -122,7 +118,7 @@ if __name__ == "__main__":
 
     freq = 75_000_000
     freqStep = 0
-    dBFS = int(-3)
+    dBFS = int(-9)
     captureSize = 128 * 4096 * 2
     restart_rfdc = False
     load_bram = True
@@ -131,7 +127,7 @@ if __name__ == "__main__":
     tx = [i for i in range(8)]
     rx = [i for i in range(8)]
     outputDir = '/home/captures'
-    max_gain = True
+    max_gain = False
 
     test = Test_1x8_Sweep()
     

@@ -6,8 +6,9 @@ sys.path.append('../misc')
 
 from dts import Dts
 from make import Make
+from mlock import MLock
 
-class Bram:
+class Bram(MLock):
     PAGE_SIZE = 128
 
     def __init__(self, lib, devName, size):
@@ -15,38 +16,40 @@ class Bram:
         self.lib = lib
         self.devName = devName
 
-    def writeData(self, data, address=0):
+    def __writeData(self, data, address=0):
         fun = self.lib.AXI_Bram_Write
 
         status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(address), ct.c_void_p(data.ctypes.data), int(data.size))
         assert status == 0
 
-    def readData(self, data, address=0):
+    def __readData(self, data, address=0):
         fun = self.lib.AXI_Bram_Read
 
         status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(address), ct.c_void_p(data.ctypes.data), int(data.size))
         assert status == 0
 
-    def load(self, data):
+    def __compare(self, expData, gotData):
+        for i, d in enumerate(expData):
+            if gotData[i] != d:
+                raise Exception("Data doesn't match i={}; got: {} != exp: {}".format(i, gotData[i], d))
 
+    @MLock.Lock
+    def load(self):
+
+        data = self.data
         data = data.view(dtype=np.uint32)
 
         assert int(data.size * 4) <= self.size
 
-        self.writeData(data)
+        self.__writeData(data)
         gotData = np.empty(data.size, dtype=data.dtype)
-        self.readData(gotData)
-        self.compare(data, gotData)
+        self.__readData(gotData)
+        self.__compare(data, gotData)
         return data.size
 
     def loadFromFile(self, path, dtype):
         data = np.fromfile(path, dtype=dtype)
-        return self.load(data)
-
-    def compare(self, expData, gotData):
-        for i, d in enumerate(expData):
-            if gotData[i] != d:
-                raise Exception("Data doesn't match i={}; got: {} != exp: {}".format(i, gotData[i], d))
+        return self.load(data=data)
 
     def getSize(self):
         return self.size
@@ -75,11 +78,7 @@ if __name__ == "__main__":
     bram = bram.makeBram(ipName)
 
     expData = np.random.randint(0, 255, (bram.PAGE_SIZE, 1), dtype=np.uint8)
-    gotData = np.empty(bram.PAGE_SIZE, dtype=np.uint8)
 
-    bram.writeData(expData)
-    bram.readData(gotData)
-
-    bram.compare(expData, gotData)
+    bram.load(data=expData)
 
     print("Pass")

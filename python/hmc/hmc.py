@@ -5,9 +5,9 @@ sys.path.append('../misc')
 
 from dts import Dts
 from make import Make
+from mlock import MLock
 
-
-class HMC63xx:
+class HMC63xx(MLock):
     def __init__(self, ipName):
 
         libPath = Make().makeLibs('hmc63xx')
@@ -23,35 +23,39 @@ class HMC63xx:
 
         self.devNamePtr = ct.c_char_p(self.devName.encode('UTF-8'))
 
+    @MLock.Lock
     def GpioInit(self):
         fun = self.lib.HMC63xx_GpioInit
         status = fun(self.devNamePtr)
 
         assert status == 0
 
-    def IfGain_6300(self, ic, val):
+    @MLock.Lock
+    def IfGain_6300(self):
         fun = self.lib.HMC6300_SetIfGain
 
-        status = fun(self.devNamePtr, int(ic), val)
+        status = fun(self.devNamePtr, int(self.ic), self.val)
         assert status == 0
 
-    def RVGAGain_6300(self, ic, val):
+    @MLock.Lock
+    def RVGAGain_6300(self):
         fun = self.lib.HMC6300_SetRVGAGain
 
-        status = fun(self.devNamePtr, int(ic), val)
+        status = fun(self.devNamePtr, int(self.ic), self.val)
         assert status == 0    
 
-    def Power_6300(self, ic, pwup):
+    @MLock.Lock
+    def Power_6300(self):
         fun = self.lib.HMC6300_Power
 
-        status = fun(self.devNamePtr, int(ic), 0x1 if pwup == True else False)
+        status = fun(self.devNamePtr, int(self.ic), 0x1 if self.pwup == True else False)
         assert status == 0    
 
-
-    def RMW_6300(self, ic, i, val, mask):
+    @MLock.Lock
+    def RMW_6300(self):
         fun = self.lib.HMC6300_RMW
 
-        status = fun(self.devNamePtr, int(ic), i, val, mask)
+        status = fun(self.devNamePtr, int(self.ic), self.i, self.val, self.mask)
         assert status == 0
 
     def __CheckDefConfig_6300(self, ic):
@@ -61,18 +65,20 @@ class HMC63xx:
         if status != 0:
             raise Exception("Failed to config 6300 ic={}, status={}".format(ic, status))
 
-    def DefaultConfig_6300(self, ic):
+    @MLock.Lock
+    def DefaultConfig_6300(self):
         fun = self.lib.HMC6300_SendDefaultConfig
 
-        status = fun(self.devNamePtr, int(ic))
+        status = fun(self.devNamePtr, int(self.ic))
         assert status == 0
 
-        self.__CheckDefConfig_6300(ic)
+        self.__CheckDefConfig_6300(self.ic)
 
-    def PrintConfig_6300(self, ic):
+    @MLock.Lock
+    def PrintConfig_6300(self):
         fun = self.lib.HMC6300_PrintConfig
 
-        status = fun(self.devNamePtr, int(ic))
+        status = fun(self.devNamePtr, int(self.ic))
         assert status == 0
 
     def __CheckDefConfig_6301(self, ic):
@@ -82,18 +88,20 @@ class HMC63xx:
         if status != 0:
             raise Exception("Failed to config 6301 ic={}, status={}".format(ic, status))
 
-    def DefaultConfig_6301(self, ic):
+    @MLock.Lock
+    def DefaultConfig_6301(self):
         fun = self.lib.HMC6301_SendDefaultConfig
 
-        status = fun(self.devNamePtr, int(ic))
+        status = fun(self.devNamePtr, int(self.ic))
         assert status == 0
 
-        self.__CheckDefConfig_6301(ic)
+        self.__CheckDefConfig_6301(self.ic)
 
-    def PrintConfig_6301(self, ic):
+    @MLock.Lock
+    def PrintConfig_6301(self):
         fun = self.lib.HMC6301_PrintConfig
 
-        status = fun(self.devNamePtr, int(ic))
+        status = fun(self.devNamePtr, int(self.ic))
         assert status == 0
 
     def __RMW_6301(self, ic, i, val, mask):
@@ -102,39 +110,43 @@ class HMC63xx:
         status = fun(self.devNamePtr, int(ic), i, val, mask)
         assert status == 0
 
-    def RMW_6301(self, ic, i, val, bp):
-        mask = (1 << (bp[1] + 1)) - 1
-        mask = mask >> bp[0]
+    @MLock.Lock
+    def RMW_6301(self):
+        mask = (1 << (self.bp[1] + 1)) - 1
+        mask = mask >> self.bp[0]
 
         assert val <= mask
         
-        val = val << bp[0]
-        mask = ~(mask << bp[0])
-        self.__RMW_6301(ic, i, val, mask)
-        
-    def SetAtt_6301(self, ic, i, q, att):
+        val = val << self.bp[0]
+        mask = ~(mask << self.bp[0])
+        self.__RMW_6301(self.ic, self.i, val, mask)
+
+    @MLock.Lock
+    def SetAtt_6301(self):
         fun = self.lib.HMC6301_SetAtt
 
-        status = fun(self.devNamePtr, int(ic), i, q, att)
+        status = fun(self.devNamePtr, int(self.ic), self.i, self.q, self.att)
         assert status == 0
 
-    def IfGain_6301(self, ic, val):
+    @MLock.Lock
+    def IfGain_6301(self):
         fun = self.lib.HMC6301_SetIfGain
 
-        status = fun(self.devNamePtr, int(ic), val)
+        status = fun(self.devNamePtr, int(self.ic), self.val)
         assert status == 0
 
-    def LNAGain_6301(self, ic, gain):
-        i = int(8)
+    @MLock.Lock
+    def LNAGain_6301(self):
         maxGain = 0x3
+        gain  = self.gain
         assert gain <= maxGain
         
         gain = maxGain - gain
         
-        self.RMW_6301(ic, i, gain, [3, 4])
+        self.RMW_6301(self.ic, self.i, gain, [3, 4])
         
-
-    def Reset(self):
+    @MLock.Lock
+    def Reset(self, **kw):
         fun = self.lib.HMC63xx_Reset
 
         status = fun(self.devNamePtr)
@@ -150,10 +162,10 @@ if __name__ == "__main__":
 
     hmc.GpioInit()
     for i in range(limit):
-        hmc.DefaultConfig_6301(i)
-        hmc.PrintConfig_6301(i)
-        hmc.DefaultConfig_6300(i)
-        hmc.PrintConfig_6300(i)
+        hmc.DefaultConfig_6301(ic=i)
+        hmc.PrintConfig_6301(ic=i)
+        #hmc.DefaultConfig_6300(i)
+        hmc.PrintConfig_6300(ic=i)
 
     hmc.Reset()
 

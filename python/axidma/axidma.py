@@ -5,8 +5,9 @@ sys.path.append('../misc')
 
 from dts import Dts
 from make import Make
+from mlock import MLock
 
-class AxiDma:
+class AxiDma(MLock):
     def __init__(self, libName):
         libPath = Make().makeLibs(libName)
         self.lib = ct.CDLL(libPath)
@@ -17,16 +18,18 @@ class AxiDma:
         devName = Dts().ipToDtsName(ipName)
         return devName
 
-    def startTransfer(self, DevName, addr, len):
+    @MLock.Lock
+    def startTransfer(self):
         fun = self.lib.XDMA_StartTransfer
 
-        status = fun(ct.c_char_p(DevName.encode('UTF-8')), int(addr) >> 32, int(addr) & 0xffffffff, int(len))
+        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(self.addr) >> 32, int(self.addr) & 0xffffffff, int(self.len))
         assert status == 0
 
-    def reset(self, DevName):
+    @MLock.Lock
+    def reset(self):
         fun = self.lib.XDMA_Reset
 
-        status = fun(ct.c_char_p(DevName.encode('UTF-8')))
+        status = fun(ct.c_char_p(self.devName.encode('UTF-8')))
         assert status == 0
 
 if __name__ == "__main__":
@@ -38,7 +41,7 @@ if __name__ == "__main__":
 
     dma = AxiDma('axidma')
 
-    dma.startTransfer(dma.devIdToIpName(id), 0x48_0000_0000, 4096)
-    dma.reset(dma.devIdToIpName(id))
+    dma.startTransfer(devName=dma.devIdToIpName(id), addr=0x48_0000_0000, len=4096)
+    dma.reset(devName=dma.devIdToIpName(id))
 
     print('Pass')

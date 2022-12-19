@@ -9,8 +9,9 @@ sys.path.append('../misc')
 
 from dts import Dts
 from make import Make
+from mlock import MLock
 
-class Lmx2820:
+class Lmx2820(MLock):
     RO_REGS = [71, 72, 73, 74, 75, 76, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122]
 
     LOCKED_REG = 74
@@ -22,75 +23,76 @@ class Lmx2820:
         self.devName = Dts().ipToDtsName(ipName)
         self.lib = ct.CDLL(libPath)
 
-    def getRegIndex(self, regs, id):
+    def __getRegIndex(self, regs, id):
         for i, d in enumerate(regs):
             if ((d >> 16) & 0x7f) == id:
                 return i
         raise Exception()
 
-    def getBits(self, a, bounds):
+    def __getBits(self, a, bounds):
         bits = np.unpackbits(a.view(dtype=np.uint8), bitorder='little')
         bits = bits[bounds[0]:bounds[1]+1]
         bits = np.packbits(bits, bitorder='little')
         return bits[0]
 
-    def isPllLocked(self, regs):
+    def __isPllLocked(self, regs):
         i = self.LOCKED_REG
-        ld = self.getBits(regs[i:i+1], [14, 15])
+        ld = self.__getBits(regs[i:i+1], [14, 15])
         return ld == 0x2
 
-    def setMuxOut(self, regs):
-        i = self.getRegIndex(regs, 0)
+    def __setMuxOut(self, regs):
+        i = self.__getRegIndex(regs, 0)
         regs[i] = regs[i] & (~(1 << 2))
 
-    def writeData(self, data):
+    def __writeData(self, data):
         fun = self.lib.SpiSendData
 
         status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(0), int(3), ct.c_void_p(data.ctypes.data), int(data.size))
         assert status == 0
 
-    def readData(self, data):
+    def __readData(self, data):
         fun = self.lib.SpiRecvData
 
         status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(0), int(3), ct.c_void_p(data.ctypes.data), int(data.size), self.RF_DATA_READ_BIT)
         assert status == 0
 
-    def checkConfig(self, expData, gotData):
+    def __checkConfig(self, expData, gotData):
         for i, d in enumerate(expData):
             #Mask data bits
             if i not in self.RO_REGS:
                 if (expData[i] & 0xffff) != gotData[i]:
                     raise Exception("Data doesn't match: i={} : exp={}, got={}".format(i, hex(expData[i]), hex(gotData[i])))
 
-    def loadTICS(self, ticsFilePath):
+    def __loadTICS(self, ticsFilePath):
         return TICSread(ticsFilePath)
 
-    def waitLock(self, data):
-        self.readData(data)
+    def __waitLock(self, data):
+        self.__readData(data)
 
         wait_lock = 0
-        while not self.isPllLocked(data):
+        while not self.__isPllLocked(data):
             print('LMX2820: Waiting PLL locked...')
             sleep(1)
-            self.readData(data)
+            self.__readData(data)
 
             wait_lock += 1
             if wait_lock >= 10:
                 raise Exception('PLL is not locked')
 
 
-    def config(self, ticsFilePath):
-        expData = self.loadTICS(ticsFilePath)
+    @MLock.Lock
+    def config(self):
+        expData = self.__loadTICS(self.ticsFilePath)
 
         gotData = np.empty(expData.size, dtype=np.uint32)
-        self.setMuxOut(expData)
-        self.writeData(expData)
-        self.readData(gotData)
+        self.__setMuxOut(expData)
+        self.__writeData(expData)
+        self.__readData(gotData)
 
         expData = np.flip(expData, 0)
 
-        self.checkConfig(expData, gotData)
-        self.waitLock(gotData)
+        self.__checkConfig(expData, gotData)
+        self.__waitLock(gotData)
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -100,5 +102,5 @@ if __name__ == "__main__":
     ticsFilePath = sys.argv[1]
 
     lmx = Lmx2820('axi_quad_spi_0')
-    lmx.config(ticsFilePath)
+    lmx.config(ticsFilePath=ticsFilePath)
     print("Pass")

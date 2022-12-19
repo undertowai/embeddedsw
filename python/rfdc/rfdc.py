@@ -5,8 +5,9 @@ import numpy as np
 sys.path.append('../misc')
 
 from make import Make
+from mlock import MLock
 
-class Rfdc:
+class Rfdc(MLock):
 
     def __init__(self, libName):
         libPath = Make().makeLibs(libName)
@@ -18,12 +19,14 @@ class Rfdc:
         status = fun()
         assert status == 0
 
+    @MLock.Lock
     def restart(self):
         fun = self.lib.RFDC_Restart
 
         status = fun()
         assert status == 0
 
+    @MLock.Lock
     def getSamplingFrequency(self):
         fun = self.lib.RFDC_GetSamplingFreq
 
