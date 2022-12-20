@@ -7,34 +7,9 @@ from time import sleep
 
 sys.path.append('../misc')
 
-from swave import Wave
-from widebuf import WideBuf
-
 class Test_1x8_Sweep(TestSuite):
     def __init__(self):
         super().__init__()
-
-    def make_sweep_tone_bram(self, samplingFreq, freq, dBFS, freqStep, dtype):
-        sampleSize = np.dtype(dtype).itemsize
-        fullCycles = True
-        phaseDegrees = 0x0
-        buffersCount = self.hw.BUFFERS_IN_BRAM
-        numBytes = int(self.getBramSize() / buffersCount)
-        numSamples = int(numBytes / sampleSize)
-        samplesPerFLit = self.hw.SAMPLES_PER_FLIT
-
-        buffer = np.empty(buffersCount * numSamples, dtype=dtype)
-
-        for i in range(buffersCount):
-
-            #Keep same frequency for I & Q channels
-            if i%2 == 0:
-                tone = Wave().getSine(numBytes, freq, dBFS, samplingFreq, sampleSize, phaseDegrees, fullCycles)
-                freq = freq + freqStep
-
-            WideBuf().make(buffer, tone, i, buffersCount, samplesPerFLit)
-
-        return buffer, freq
 
     def mkdir(self, outputDir, suffix):
         if not os.path.exists(outputDir):
@@ -81,7 +56,7 @@ class Test_1x8_Sweep(TestSuite):
 
             if self.max_gain:
                 for rxi in rx:
-                    self.hmc.SetAtt_6301(ic=rxi, i=0x0, q=0x0, att=0x0)
+                    self.hmc(ic=rxi, i=0x0, q=0x0, att=0x0)
                     self.hmc.IfGain_6301(ic=rxi, val=0xf)
                     self.hmc.LNAGain_6301(ic=rxi, val=0x3)
 

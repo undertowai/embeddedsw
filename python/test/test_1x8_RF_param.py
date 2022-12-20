@@ -14,28 +14,6 @@ class Test_1x8_Sweep(TestSuite):
     def __init__(self):
         super().__init__()
 
-    def make_sweep_tone_bram(self, samplingFreq, freq, dBFS, freqStep, dtype):
-        sampleSize = np.dtype(dtype).itemsize
-        fullCycles = True
-        phaseDegrees = 0x0
-        buffersCount = self.hw.BUFFERS_IN_BRAM
-        numBytes = int(self.getBramSize() / buffersCount)
-        numSamples = int(numBytes / sampleSize)
-        samplesPerFLit = self.hw.SAMPLES_PER_FLIT
-
-        buffer = np.empty(buffersCount * numSamples, dtype=dtype)
-
-        for i in range(buffersCount):
-
-            #Keep same frequency for I & Q channels
-            if i%2 == 0:
-                tone = Wave().getSine(numBytes, freq, dBFS, samplingFreq, sampleSize, phaseDegrees, fullCycles)
-                freq = freq + freqStep
-
-            WideBuf().make(buffer, tone, i, buffersCount, samplesPerFLit)
-
-        return buffer, freq
-
     def mkdir(self, outputDir, suffix):
         if not os.path.exists(outputDir):
             os.makedirs(outputDir)
@@ -123,12 +101,12 @@ class Test_1x8_Sweep(TestSuite):
                                     self.setup_RF([txi], self.rx)
 
                                     for rxi in rx:
-                                        self.hmc.SetAtt_6301(rxi, bbamp_iq, bbamp_iq, bbamp_atten2)
-                                        self.hmc.IfGain_6301(rxi, if_gain)
-                                        self.hmc.LNAGain_6301(rxi, lna_gain)
+                                        self.hmc.SetAtt_6301(ic=rxi, i=bbamp_iq, q=bbamp_iq, att=bbamp_atten2)
+                                        self.hmc.IfGain_6301(ic=rxi, val=if_gain)
+                                        self.hmc.LNAGain_6301(ic=rxi, gain=lna_gain)
 
-                                    self.hmc.IfGain_6300(txi, ifvga)
-                                    self.hmc.RVGAGain_6300(txi, rfvga)
+                                    self.hmc.IfGain_6300(ic=txi, val=ifvga)
+                                    self.hmc.RVGAGain_6300(ic=txi, val=rfvga)
 
                                     end_t = time()
 

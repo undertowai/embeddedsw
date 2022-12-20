@@ -51,12 +51,23 @@ class HMC63xx(MLock):
         status = fun(self.devNamePtr, int(self.ic), 0x1 if self.pwup == True else False)
         assert status == 0    
 
-    @MLock.Lock
-    def RMW_6300(self):
+    def __RMW_6300(self, ic, i, val, mask):
         fun = self.lib.HMC6300_RMW
 
-        status = fun(self.devNamePtr, int(self.ic), self.i, self.val, self.mask)
+        status = fun(self.devNamePtr, int(ic), i, val, mask)
         assert status == 0
+
+    @MLock.Lock
+    def RMW_6300(self):
+        mask = (1 << (self.bp[1] + 1)) - 1
+        mask = mask >> self.bp[0]
+
+        assert self.gain <= mask
+
+        val = self.gain << self.bp[0]
+        mask = 0xff ^ (mask << self.bp[0])
+
+        self.__RMW_6300(self.ic, self.i, val, mask)
 
     def __CheckDefConfig_6300(self, ic):
         fun = self.lib.HMC6300_CheckConfig
@@ -115,10 +126,11 @@ class HMC63xx(MLock):
         mask = (1 << (self.bp[1] + 1)) - 1
         mask = mask >> self.bp[0]
 
-        assert val <= mask
+        assert self.gain <= mask
         
-        val = val << self.bp[0]
-        mask = ~(mask << self.bp[0])
+        val = self.gain << self.bp[0]
+        mask = 0xff ^ (mask << self.bp[0])
+
         self.__RMW_6301(self.ic, self.i, val, mask)
 
     @MLock.Lock
@@ -135,18 +147,17 @@ class HMC63xx(MLock):
         status = fun(self.devNamePtr, int(self.ic), self.val)
         assert status == 0
 
-    @MLock.Lock
-    def LNAGain_6301(self):
+    def LNAGain_6301(self, ic, gain):
+        i = int(8)
         maxGain = 0x3
-        gain  = self.gain
         assert gain <= maxGain
         
         gain = maxGain - gain
         
-        self.RMW_6301(self.ic, self.i, gain, [3, 4])
+        self.RMW_6301(ic=ic, i=i, gain=gain, bp=[3, 4])
         
     @MLock.Lock
-    def Reset(self, **kw):
+    def Reset(self):
         fun = self.lib.HMC63xx_Reset
 
         status = fun(self.devNamePtr)

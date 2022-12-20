@@ -3,6 +3,7 @@ import sys
 from time import sleep
 import traceback
 import logging
+import numpy as np
 
 sys.path.append('../lmx')
 sys.path.append('../hmc')
@@ -11,6 +12,10 @@ sys.path.append('../axidma')
 sys.path.append('../rfdc')
 sys.path.append('../xddr')
 sys.path.append('../bram')
+sys.path.append('../misc')
+
+from swave import Wave
+from widebuf import WideBuf
 
 from lmx import Lmx2820
 from hmc import HMC63xx
@@ -62,6 +67,28 @@ class TestSuite:
         bram_f = BramFactory()
         self.bram0 = bram_f.makeBram('ram_player_8wide_0_axi_bram_ctrl_0')
         self.bram1 = bram_f.makeBram('ram_player_8wide_1_axi_bram_ctrl_0')
+
+    def make_sweep_tone_bram(self, samplingFreq, freq, dBFS, freqStep, dtype):
+        sampleSize = np.dtype(dtype).itemsize
+        fullCycles = True
+        phaseDegrees = 0x0
+        buffersCount = self.hw.BUFFERS_IN_BRAM
+        numBytes = int(self.getBramSize() / buffersCount)
+        numSamples = int(numBytes / sampleSize)
+        samplesPerFLit = self.hw.SAMPLES_PER_FLIT
+
+        buffer = np.empty(buffersCount * numSamples, dtype=dtype)
+
+        for i in range(buffersCount):
+
+            #Keep same frequency for I & Q channels
+            if i%2 == 0:
+                tone = Wave().getSine(numBytes, freq, dBFS, samplingFreq, sampleSize, phaseDegrees, fullCycles)
+                freq = freq + freqStep
+
+            WideBuf().make(buffer, tone, i, buffersCount, samplesPerFLit)
+
+        return buffer, freq
 
     def setup_RF_Clk(self, ticsFilePath, restart_rfdc=True):
         self.rfdc.init_clk104()
