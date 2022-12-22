@@ -1,9 +1,11 @@
-
+import os
 import sys
 from time import sleep
 import traceback
 import logging
 import numpy as np
+import pickle
+import time
 
 sys.path.append('../lmx')
 sys.path.append('../hmc')
@@ -26,6 +28,7 @@ from rfdc import Rfdc
 from bram import BramFactory
 
 from hw import Hw
+from inet import Inet
 
 class TestSuite:
     def getargs(self, **kw):
@@ -90,6 +93,21 @@ class TestSuite:
 
         return buffer, freq
 
+    def mkdir(self, outputDir, suffix):
+        if not os.path.exists(outputDir):
+            os.makedirs(outputDir)
+
+        if self.capture_data:
+            outputDir = '{}/TX_{}'.format(outputDir, suffix)
+            if not os.path.exists(outputDir):
+                os.mkdir(outputDir)
+        else:
+            outputDir = None
+        return outputDir
+
+    def cap_name(self, id):
+        return 'cap{}_{}.bin'.format('I' if id%2==0 else 'Q', int(id/2))
+
     def setup_RF_Clk(self, ticsFilePath, restart_rfdc=True):
         self.rfdc.init_clk104()
 
@@ -133,10 +151,13 @@ class TestSuite:
         base_address = ddr.base_address() + offset
         addr = base_address
 
+        data = []
         for id in ids:
+            data.append((addr, size))
             devName = self.dma.devIdToIpName(id)
             self.dma.startTransfer(devName=devName, addr=addr, len=size)
             addr = addr + size
+        return data
 
     def __reset_dma(self, ids):
 
@@ -174,12 +195,38 @@ class TestSuite:
 
         self.adc_dac_sync(True)
 
-        #FIXME Interrupt or poll ?
-        sleep(0.1)
+        sleep(self.calc_capture_time(size))
 
         self.__reset_dma(ids)
 
         return self.__capture_memory(ddr, outputDir, paths, offset, size)
+
+    def publish(self, area, txn):
+        for a in area:
+            for j in range(0, len(a), 2):
+                addrI, sizeI = a[j]
+                addrQ, sizeQ = a[j+1]
+                bytesI = Xddr.read(addrI, sizeI)
+                bytesQ = Xddr.read(addrQ, sizeQ)
+                
+                print('publishing : I=%x:%x Q=%x:%x' % (addrI, sizeI, addrQ, sizeQ))
+                self.publisher.send_multipart([
+                    bytes(str(Inet.TOPIC_FILTER), 'utf-8'),
+                    bytes(str(txn), 'utf-8'),
+                    bytes(str(j), 'utf-8'),
+                    bytes(str(time.time_ns()), 'utf-8'),
+                    pickle.dumps(bytesI),
+                    pickle.dumps(bytesQ)])
+
+    def start_dma(self, ddr, ids, offset, size):
+        return self.__start_dma(ddr, ids, offset, size)
+
+    def calc_capture_time(self, captureSize):
+        numCaptures = 0x1
+        batchSize = captureSize * numCaptures
+        numFlits = batchSize / (self.hw.SAMPLES_PER_FLIT * self.hw.BYTES_PER_SAMPLE)
+        t = numFlits / self.hw.FABRIC_CLOCK
+        return t
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:

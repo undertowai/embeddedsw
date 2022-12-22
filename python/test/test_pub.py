@@ -2,14 +2,21 @@
 import sys
 from test import TestSuite
 import numpy as np
-import os
-from time import sleep
+from time import sleep, time
+import zmq
+import json
+
+from inet import Inet
 
 sys.path.append('../misc')
 
 class Test_1x8_Sweep(TestSuite):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, port):
+        TestSuite.__init__(self)
+
+        context = zmq.Context()
+        self.publisher = context.socket(zmq.PUB)
+        self.publisher.bind("tcp://0.0.0.0:%s" % port)
 
     @TestSuite.Test
     def run_test(self):
@@ -21,8 +28,8 @@ class Test_1x8_Sweep(TestSuite):
 
         dtype = np.uint16
 
-        print('=== Generating tones ===')
         if load_bram:
+            print('=== Generating tones ===')
             bram0_data, _ = self.make_sweep_tone_bram(samplingFreq, self.freq, self.dBFS, self.freqStep, dtype)
             bram1_data, _ = self.make_sweep_tone_bram(samplingFreq, self.freq, self.dBFS, self.freqStep, dtype)
 
@@ -31,43 +38,37 @@ class Test_1x8_Sweep(TestSuite):
         self.setup_RF_Clk(self.ticsFilePath, self.restart_rfdc)
         #Turn on all the dac player outputs
         self.dac_gate(0xffff)
-
-        offset = 0x0
-
+        sn = 0x0
         for txi in self.tx:
 
             print('*** Running Iteration : rx={}, tx={}'.format(self.rx, txi))
             self.setup_RF([txi], self.rx)
-
-            if self.max_gain:
-                for rxi in rx:
-                    self.hmc(ic=rxi, i=0x0, q=0x0, att=0x0)
-                    self.hmc.IfGain_6301(ic=rxi, val=0xf)
-                    self.hmc.LNAGain_6301(ic=rxi, val=0x3)
-
-                self.hmc.IfGain_6300(ic=txi, val=0xd)
-                self.hmc.RVGAGain_6300(ic=txi, val=0xf)
-            else:
-                self.hmc.IfGain_6300(ic=txi, val=0x3)
-                self.hmc.RVGAGain_6300(ic=txi, val=0x3)
-
-            outputDir = self.mkdir(self.outputDir, str(txi))
-
-            ids = [i for i in range(8)]
-            paths = list(map(self.cap_name, ids))
+            sleep(1)
 
             #input("Press Enter to continue...")
 
+            self.adc_dac_sync(False)
+
             #Let the RF to settle the configuration
-            sleep(1)
-            self.capture(self.ddr0, outputDir, paths, ids, offset, self.captureSize)
+            ids0 = [i for i in range(8)]
+            ids1 = [i for i in range(8, 16, 1)]
+            offset = 0x0
 
-            ids = [i for i in range(8, 16, 1)]
-            paths = list(map(self.cap_name, ids))
+            area = []
+            for ids, ddr in [(ids0, self.ddr0), (ids1, self.ddr1)]:
+                a = self.start_dma(ddr, ids, offset, self.captureSize)
+                area.append(a)
 
-            self.capture(self.ddr1, outputDir, paths, ids, offset, self.captureSize)
+            self.adc_dac_sync(True)
 
+            t = self.calc_capture_time(self.captureSize)
+            print('Waiting %fs for capture to complete ' % t)
+            sleep(t)
+            
+            self.publish(area, txi)
+            sn += 1
             self.shutdown_RF()
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -86,11 +87,10 @@ if __name__ == "__main__":
     #Which radios to use:
     tx = [i for i in range(8)]
     rx = [i for i in range(8)]
-    outputDir = '/home/captures'
-    max_gain = False
+    max_gain = True
 
-    test = Test_1x8_Sweep()
-    
+    test = Test_1x8_Sweep(Inet.PORT)
+
     test.run_test(ticsFilePath  =ticsFilePath,
                 freq            =freq,
                 dBFS            =dBFS,
@@ -101,5 +101,4 @@ if __name__ == "__main__":
                 capture_data    =capture_data,
                 tx              =tx,
                 rx              =rx,
-                outputDir       =outputDir,
                 max_gain        =max_gain)

@@ -113,6 +113,8 @@ class Test_1x8_Sweep(TestSuite):
                                     print('TX{}: Configuring radios done in {:.2f}s'.format(txi, end_t-start_t))
                                     start_t = end_t
 
+                                    #Let the RF to settle the configuration
+                                    sleep(1)
                                     self.iteration(outputDir, txi, offset)
                                     
                                     end_t = time()
