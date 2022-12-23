@@ -417,11 +417,16 @@ int hmc6301_check_def_config(XGpio_t *gpio, u8 ic)
     return 0;
 }
 
-void hmc6301_rmw (XGpio_t *gpio, u8 ic, u32 i, u32 val, u32 mask)
+int hmc6301_rmw (XGpio_t *gpio, u8 ic, u32 i, u32 val, u32 mask)
 {
-    u8 row;
+    u8 row, row_prev;
 
     hmc6301_spi_read(gpio, ic, i, &row);
+    row_prev = row;
+    if (mask == 0xff && val == 0x0) {
+        return row_prev;
+    }
     row = (row & mask) | (val);
     hmc6301_spi_write(gpio, ic, 7, row);
+    return row;
 }

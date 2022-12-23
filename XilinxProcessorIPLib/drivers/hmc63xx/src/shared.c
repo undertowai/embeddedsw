@@ -80,15 +80,16 @@ int HMC6300_Power(const char *devName, int ic, int pwup)
 int HMC6300_RMW(const char *devName, int ic, u32 i, u32 val, u32 mask)
 {
     XGpio_t Gpio = {0};
+	u8 row;
 
 	if (XST_SUCCESS != HMC_Dev_Init(&Gpio, devName)) {
-		return XST_FAILURE;
+		return -XST_FAILURE;
 	}
-    hmc6300_rmw(&Gpio, ic, i, val, mask);
+    row = hmc6300_rmw(&Gpio, ic, i, val, mask);
 
 	metal_device_close(Gpio.device);
 	metal_finish();
-    return XST_SUCCESS;
+    return row;
 }
 
 int HMC6300_SendDefaultConfig(const char *devName, int ic)
@@ -188,15 +189,16 @@ int HMC6301_SetIfGain(const char *devName, int ic, int val)
 int HMC6301_RMW(const char *devName, int ic, u32 i, u32 val, u32 mask)
 {
     XGpio_t Gpio = {0};
+	u8 row = 0;
 
 	if (XST_SUCCESS != HMC_Dev_Init(&Gpio, devName)) {
-		return XST_FAILURE;
+		return -XST_FAILURE;
 	}
-    hmc6301_rmw(&Gpio, ic, i, val, mask);
+    row = hmc6301_rmw(&Gpio, ic, i, val, mask);
 
 	metal_device_close(Gpio.device);
 	metal_finish();
-    return XST_SUCCESS;
+    return row;
 }
 
 int HMC6301_CheckConfig(const char *devName, int ic)

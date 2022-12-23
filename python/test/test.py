@@ -109,13 +109,22 @@ class TestSuite:
         return 'cap{}_{}.bin'.format('I' if id%2==0 else 'Q', int(id/2))
 
     def setup_RF_Clk(self, ticsFilePath, restart_rfdc=True):
-        self.rfdc.init_clk104()
 
         if restart_rfdc:
             self.rfdc.restart()
 
-        self.lmx.config(ticsFilePath=ticsFilePath)
+        if False == self.lmx.readLockedReg():
+            print('Configuring RF clocks ...')
+            self.rfdc.init_clk104()
 
+            self.lmx.power_reset(False, 0x0)
+            self.lmx.power_reset(True, 0x0)
+            self.lmx.power_reset(True, 0x1)
+            sleep(1)
+
+            self.lmx.config(ticsFilePath=ticsFilePath)
+
+        assert self.lmx.readLockedReg() == True
 
     def setup_RF(self, hmc_6300_ics, hmc_6301_ics):
         self.hmc.GpioInit()

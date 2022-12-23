@@ -2,36 +2,13 @@
 import sys
 from test import TestSuite
 import numpy as np
-import os
 from time import sleep, time
 
 sys.path.append('../misc')
 
-from swave import Wave
-from widebuf import WideBuf
-
 class Test_1x8_Sweep(TestSuite):
     def __init__(self):
         super().__init__()
-
-    def mkdir(self, outputDir, suffix):
-        if not os.path.exists(outputDir):
-            os.makedirs(outputDir)
-
-        if self.capture_data:
-            outputDir = '{}/TX_{}'.format(outputDir, suffix)
-            if not os.path.exists(outputDir):
-                os.mkdir(outputDir)
-        else:
-            outputDir = None
-        return outputDir
-
-    def cap_name(self, id):
-        return 'cap{}_{}.bin'.format('I' if id%2==0 else 'Q', int(id/2))
-
-    def get_args(self, **kw):
-        for k, v in kw.items():
-            setattr(self, k, v)
 
     def iteration(self, outputDir, txi, offset):
         outputDir = self.mkdir(outputDir, str(txi))
@@ -122,7 +99,6 @@ class Test_1x8_Sweep(TestSuite):
                                     
                                     self.shutdown_RF()
 
-        
         self.shutdown_RF()
 
 if __name__ == "__main__":
@@ -137,7 +113,7 @@ if __name__ == "__main__":
     dBFS = int(-3)
     captureSize = 128 * 4096 * 2
     restart_rfdc = False
-    load_bram = True
+    load_bram = False
     capture_data = True
     #Which radios to use:
     tx = [i for i in range(1)]

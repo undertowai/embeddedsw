@@ -7,9 +7,28 @@ from time import sleep
 
 sys.path.append('../misc')
 
+from widebuf import WideBuf
+
 class Test_1x8_Sweep(TestSuite):
     def __init__(self):
         super().__init__()
+
+    def load_ext_bram(self, Ipath, Qpath, dtype):
+        sampleSize = np.dtype(dtype).itemsize
+        buffersCount = self.hw.BUFFERS_IN_BRAM
+        numBytes = int(self.getBramSize() / buffersCount)
+        numSamples = int(numBytes / sampleSize)
+        samplesPerFLit = self.hw.SAMPLES_PER_FLIT
+
+        buffer = np.empty(buffersCount * numSamples, dtype=dtype)
+        
+        I = np.fromfile(Ipath, dtype=np.int16)
+        Q = np.fromfile(Qpath, dtype=np.int16)
+        for i in range(0, buffersCount, 2):
+            WideBuf().make(buffer, I, i, buffersCount, samplesPerFLit)
+            WideBuf().make(buffer, Q, i+1, buffersCount, samplesPerFLit)
+
+        return buffer
 
     @TestSuite.Test
     def run_test(self):
@@ -21,10 +40,20 @@ class Test_1x8_Sweep(TestSuite):
 
         dtype = np.uint16
 
-        print('=== Generating tones ===')
         if load_bram:
-            bram0_data, _ = self.make_sweep_tone_bram(samplingFreq, self.freq, self.dBFS, self.freqStep, dtype)
-            bram1_data, _ = self.make_sweep_tone_bram(samplingFreq, self.freq, self.dBFS, self.freqStep, dtype)
+            if self.ext_bram_path is not None:
+                print('=== Using external generated tones ===')
+                Ipath = self.ext_bram_path + os.sep + 'Ichannel.npy'
+                Qpath = self.ext_bram_path + os.sep + 'Qchannel.npy'
+                bram0_data = self.load_ext_bram(Ipath, Qpath, dtype)
+                bram1_data = np.copy(bram0_data)
+            else:
+                print('=== Generating tones ===')
+                bram0_data, _ = self.make_sweep_tone_bram(samplingFreq, self.freq, self.dBFS, self.freqStep, dtype)
+                if self.freqStep != 0:
+                    bram1_data, _ = self.make_sweep_tone_bram(samplingFreq, self.freq, self.dBFS, self.freqStep, dtype)
+                else:
+                    bram1_data = np.copy(bram0_data)
 
             self.load_dac_player(bram0_data, bram1_data)
 
@@ -80,14 +109,17 @@ if __name__ == "__main__":
     freqStep = 0
     dBFS = int(-9)
     captureSize = 128 * 4096 * 2
-    restart_rfdc = False
-    load_bram = True
-    capture_data = True
+    ext_bram_path = './'
     #Which radios to use:
     tx = [i for i in range(8)]
     rx = [i for i in range(8)]
     outputDir = '/home/captures'
-    max_gain = False
+
+    max_gain        = False
+    restart_rfdc    = False
+    load_bram       = True
+    capture_data    = True
+
 
     test = Test_1x8_Sweep()
     
@@ -102,4 +134,5 @@ if __name__ == "__main__":
                 tx              =tx,
                 rx              =rx,
                 outputDir       =outputDir,
-                max_gain        =max_gain)
+                max_gain        =max_gain,
+                ext_bram_path   =ext_bram_path)

@@ -22,6 +22,7 @@ class Lmx2820(MLock):
         libPath = Make().makeLibs('spi')
         self.devName = Dts().ipToDtsName(ipName)
         self.lib = ct.CDLL(libPath)
+        self.devNamePtr = ct.c_char_p(self.devName.encode('UTF-8'))
 
     def __getRegIndex(self, regs, id):
         for i, d in enumerate(regs):
@@ -30,7 +31,10 @@ class Lmx2820(MLock):
         raise Exception()
 
     def __getBits(self, a, bounds):
-        bits = np.unpackbits(a.view(dtype=np.uint8), bitorder='little')
+        if type(a) is np.ndarray:
+            a = a.view(dtype=np.uint8)
+
+        bits = np.unpackbits(a, bitorder='little')
         bits = bits[bounds[0]:bounds[1]+1]
         bits = np.packbits(bits, bitorder='little')
         return bits[0]
@@ -47,13 +51,13 @@ class Lmx2820(MLock):
     def __writeData(self, data):
         fun = self.lib.SpiSendData
 
-        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(0), int(3), ct.c_void_p(data.ctypes.data), int(data.size))
+        status = fun(self.devNamePtr, int(0), int(3), ct.c_void_p(data.ctypes.data), int(data.size))
         assert status == 0
 
     def __readData(self, data):
         fun = self.lib.SpiRecvData
 
-        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(0), int(3), ct.c_void_p(data.ctypes.data), int(data.size), self.RF_DATA_READ_BIT)
+        status = fun(self.devNamePtr, int(0), int(3), ct.c_void_p(data.ctypes.data), int(data.size), self.RF_DATA_READ_BIT)
         assert status == 0
 
     def __checkConfig(self, expData, gotData):
@@ -93,14 +97,44 @@ class Lmx2820(MLock):
 
         self.__checkConfig(expData, gotData)
         self.__waitLock(gotData)
+        
+    @MLock.Lock
+    def writeReg(self):
+        fun = self.lib.SpiWriteReg
+        data = (self.reg << 16) | self.val
+        status = fun(self.devNamePtr, int(0), int(3), data)
+        assert status == 0
+
+    @MLock.Lock
+    def readReg(self):
+        fun = self.lib.SpiReadReg
+        status = fun(self.devNamePtr, int(0), int(3), self.reg, self.RF_DATA_READ_BIT)
+        assert status >= 0
+        return status
+    
+    def dumpRegs(self):
+        for i in range(123):
+            reg = self.readReg(reg=i)
+            print('reg %d = %x' % (i, reg))
+
+    def readLockedReg(self):
+        reg = self.readReg(reg=self.LOCKED_REG)
+        ld = (reg >> 14) & 0x2
+        return ld == 0x2
+
+    def power_reset(self, pwup, reset):
+        r = 0x0
+        p = 0x0 if pwup else 0x1
+        reset = reset << 1
+        self.writeReg(reg=r, val=p|reset)
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print('{}: Usage'.format(sys.argv[0]))
-        exit()
-
-    ticsFilePath = sys.argv[1]
 
     lmx = Lmx2820('axi_quad_spi_0')
-    lmx.config(ticsFilePath=ticsFilePath)
+    if len(sys.argv) == 2:
+        ticsFilePath = sys.argv[1]
+        lmx.config(ticsFilePath=ticsFilePath)
+
+    print('locked= %d' % lmx.readLockedReg())
+    lmx.dumpRegs()
     print("Pass")

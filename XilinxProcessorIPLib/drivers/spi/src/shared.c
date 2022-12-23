@@ -89,7 +89,7 @@ int SpiSendData(const char *devName, unsigned int SS, unsigned int bytesInBurst,
         Status = XSpi_WriteBuf(&Spi, SS, data, bytesInBurst);
         if (Status != XST_SUCCESS) {
             printf("XSpi_WriteBuf Failed\r\n");
-            return -XST_FAILURE;
+            break;
         }
 
         txBuf++;
@@ -97,7 +97,7 @@ int SpiSendData(const char *devName, unsigned int SS, unsigned int bytesInBurst,
     metal_device_close(Spi.device);
     metal_finish();
 
-    return XST_SUCCESS;
+    return Status;
 }
 
 int SpiRecvData(const char *devName, unsigned int SS, unsigned int bytesInBurst, unsigned int *rxBuf, unsigned int len, u32 readKey)
@@ -117,7 +117,7 @@ int SpiRecvData(const char *devName, unsigned int SS, unsigned int bytesInBurst,
         Status = XSpi_ReadBuf(&Spi, SS, &data, bytesInBurst, i, readKey);
         if (Status != XST_SUCCESS) {
             printf("XSpi_WriteBuf Failed\r\n");
-            return -XST_FAILURE;
+            break;
         }
         rxBuf[0] = data;
 
@@ -126,5 +126,53 @@ int SpiRecvData(const char *devName, unsigned int SS, unsigned int bytesInBurst,
     metal_device_close(Spi.device);
     metal_finish();
 
-    return XST_SUCCESS;
+    return Status;
+}
+
+int SpiWriteReg(const char *devName, unsigned int SS, unsigned int bytesInBurst, unsigned int data)
+{
+    XSpi Spi = {0};
+    int Status;
+
+    Status = _SpiInit(&Spi, devName);
+    if (Status != XST_SUCCESS) {
+        return Status;
+    }
+
+    Status = XSpi_WriteBuf(&Spi, SS, data, bytesInBurst);
+
+    if (Status != XST_SUCCESS) {
+        printf("XSpi_WriteBuf Failed\r\n");
+    }
+
+    metal_device_close(Spi.device);
+    metal_finish();
+
+    return Status;
+}
+
+int SpiReadReg(const char *devName, unsigned int SS, unsigned int bytesInBurst, unsigned int reg, u32 readKey)
+{
+    XSpi Spi = {0};
+    int Status;
+    unsigned int data;
+
+    Status = _SpiInit(&Spi, devName);
+    if (Status != XST_SUCCESS) {
+        return -Status;
+    }
+
+    Status = XSpi_ReadBuf(&Spi, SS, &data, bytesInBurst, reg, readKey);
+
+    if (Status != XST_SUCCESS) {
+        printf("XSpi_WriteBuf Failed\r\n");
+        Status = -Status;
+    } else {
+        Status = data;
+    }
+
+    metal_device_close(Spi.device);
+    metal_finish();
+
+    return Status;
 }

@@ -5,10 +5,13 @@ import numpy as np
 from time import sleep, time
 import zmq
 import json
+import os
 
 from inet import Inet
 
 sys.path.append('../misc')
+
+from widebuf import WideBuf
 
 class Test_1x8_Sweep(TestSuite):
     def __init__(self, port):
@@ -17,6 +20,23 @@ class Test_1x8_Sweep(TestSuite):
         context = zmq.Context()
         self.publisher = context.socket(zmq.PUB)
         self.publisher.bind("tcp://0.0.0.0:%s" % port)
+
+    def load_ext_bram(self, Ipath, Qpath, dtype):
+        sampleSize = np.dtype(dtype).itemsize
+        buffersCount = self.hw.BUFFERS_IN_BRAM
+        numBytes = int(self.getBramSize() / buffersCount)
+        numSamples = int(numBytes / sampleSize)
+        samplesPerFLit = self.hw.SAMPLES_PER_FLIT
+
+        buffer = np.empty(buffersCount * numSamples, dtype=dtype)
+
+        for i in range(0, buffersCount, 2):
+            I = np.fromfile(Ipath, dtype)
+            Q = np.fromfile(Qpath, dtype)
+            WideBuf().make(buffer, I, i, buffersCount, samplesPerFLit)
+            WideBuf().make(buffer, Q, i+1, buffersCount, samplesPerFLit)
+
+        return buffer, int(0)
 
     @TestSuite.Test
     def run_test(self):
@@ -29,9 +49,15 @@ class Test_1x8_Sweep(TestSuite):
         dtype = np.uint16
 
         if load_bram:
-            print('=== Generating tones ===')
-            bram0_data, _ = self.make_sweep_tone_bram(samplingFreq, self.freq, self.dBFS, self.freqStep, dtype)
-            bram1_data, _ = self.make_sweep_tone_bram(samplingFreq, self.freq, self.dBFS, self.freqStep, dtype)
+            if self.ext_bram_path is not None:
+                Ipath = self.ext_bram_path + os.sep + 'Ichannel.npy'
+                Qpath = self.ext_bram_path + os.sep + 'Qchannel.npy'
+                bram0_data = self.load_ext_bram(Ipath, Qpath, dtype)
+                bram1_data = np.copy(bram0_data)
+            else:
+                print('=== Generating tones ===')
+                bram0_data, _ = self.make_sweep_tone_bram(samplingFreq, self.freq, self.dBFS, self.freqStep, dtype)
+                bram1_data, _ = self.make_sweep_tone_bram(samplingFreq, self.freq, self.dBFS, self.freqStep, dtype)
 
             self.load_dac_player(bram0_data, bram1_data)
 
@@ -83,6 +109,7 @@ if __name__ == "__main__":
     captureSize = 128 * 4096 * 2
     restart_rfdc = False
     load_bram = True
+    ext_bram_path = './'
     capture_data = True
     #Which radios to use:
     tx = [i for i in range(8)]
@@ -101,4 +128,5 @@ if __name__ == "__main__":
                 capture_data    =capture_data,
                 tx              =tx,
                 rx              =rx,
-                max_gain        =max_gain)
+                max_gain        =max_gain,
+                ext_bram_path   =ext_bram_path)

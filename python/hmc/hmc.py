@@ -55,19 +55,20 @@ class HMC63xx(MLock):
         fun = self.lib.HMC6300_RMW
 
         status = fun(self.devNamePtr, int(ic), i, val, mask)
-        assert status == 0
+        assert status >= 0
+        return status
 
     @MLock.Lock
     def RMW_6300(self):
         mask = (1 << (self.bp[1] + 1)) - 1
         mask = mask >> self.bp[0]
 
-        assert self.gain <= mask
+        assert self.val <= mask
 
-        val = self.gain << self.bp[0]
+        val = self.val << self.bp[0]
         mask = 0xff ^ (mask << self.bp[0])
 
-        self.__RMW_6300(self.ic, self.i, val, mask)
+        return self.__RMW_6300(self.ic, self.i, val, mask)
 
     def __CheckDefConfig_6300(self, ic):
         fun = self.lib.HMC6300_CheckConfig
@@ -119,19 +120,20 @@ class HMC63xx(MLock):
         fun = self.lib.HMC6301_RMW
 
         status = fun(self.devNamePtr, int(ic), i, val, mask)
-        assert status == 0
+        assert status >= 0
+        return status
 
     @MLock.Lock
     def RMW_6301(self):
         mask = (1 << (self.bp[1] + 1)) - 1
         mask = mask >> self.bp[0]
 
-        assert self.gain <= mask
+        assert self.val <= mask
         
-        val = self.gain << self.bp[0]
+        val = self.val << self.bp[0]
         mask = 0xff ^ (mask << self.bp[0])
 
-        self.__RMW_6301(self.ic, self.i, val, mask)
+        return self.__RMW_6301(self.ic, self.i, val, mask)
 
     @MLock.Lock
     def SetAtt_6301(self):
@@ -154,8 +156,19 @@ class HMC63xx(MLock):
         
         gain = maxGain - gain
         
-        self.RMW_6301(ic=ic, i=i, gain=gain, bp=[3, 4])
-        
+        self.RMW_6301(ic=ic, i=i, val=gain, bp=[3, 4])
+
+    def ReadReg_6300(self, ic, i):
+        return self.RMW_6300(ic=ic, i=i, val=0x0, bp=[0,7])
+    
+    def ReadTemp_6300(self, ic):
+        #enable temperature sensor
+        self.RMW_6300(ic=ic, i=3, val=0x1, bp=[0,0])
+        self.RMW_6300(ic=ic, i=10, val=0x0, bp=[0,0])
+        temp = self.ReadReg_6300(ic, 27)
+        tempC = ((85-(-40)) * temp) / 0x1f
+        return int(tempC)
+
     @MLock.Lock
     def Reset(self):
         fun = self.lib.HMC63xx_Reset
@@ -169,14 +182,14 @@ if __name__ == "__main__":
 
     hmc = HMC63xx('spi_gpio')
 
-    limit = 8
+    limit = 1
 
     hmc.GpioInit()
     for i in range(limit):
-        hmc.DefaultConfig_6301(ic=i)
-        hmc.PrintConfig_6301(ic=i)
-        #hmc.DefaultConfig_6300(i)
+        #hmc.DefaultConfig_6300(ic=i)
         hmc.PrintConfig_6300(ic=i)
+        #hmc.DefaultConfig_6300(ic=i)
+        hmc.PrintConfig_6301(ic=i)
 
     hmc.Reset()
 
