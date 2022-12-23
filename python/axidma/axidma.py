@@ -1,11 +1,12 @@
 import sys
 import ctypes as ct
 
-sys.path.append('../misc')
+sys.path.append("../misc")
 
 from dts import Dts
 from make import Make
 from mlock import MLock
+
 
 class AxiDma(MLock):
     def __init__(self, libName):
@@ -14,7 +15,9 @@ class AxiDma(MLock):
         self.numDmaPerIP = 8
 
     def devIdToIpName(self, devId):
-        ipName ='stream_to_mem_{}_axi_dma_{}'.format(int(devId/self.numDmaPerIP), int(devId%self.numDmaPerIP))
+        ipName = "stream_to_mem_{}_axi_dma_{}".format(
+            int(devId / self.numDmaPerIP), int(devId % self.numDmaPerIP)
+        )
         devName = Dts().ipToDtsName(ipName)
         return devName
 
@@ -22,26 +25,32 @@ class AxiDma(MLock):
     def startTransfer(self):
         fun = self.lib.XDMA_StartTransfer
 
-        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(self.addr) >> 32, int(self.addr) & 0xffffffff, int(self.len))
+        status = fun(
+            ct.c_char_p(self.devName.encode("UTF-8")),
+            int(self.addr) >> 32,
+            int(self.addr) & 0xFFFFFFFF,
+            int(self.len),
+        )
         assert status == 0
 
     @MLock.Lock
     def reset(self):
         fun = self.lib.XDMA_Reset
 
-        status = fun(ct.c_char_p(self.devName.encode('UTF-8')))
+        status = fun(ct.c_char_p(self.devName.encode("UTF-8")))
         assert status == 0
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print('{}: Usage'.format(sys.argv[0]))
+        print("{}: Usage".format(sys.argv[0]))
         exit()
 
     id = int(sys.argv[1])
 
-    dma = AxiDma('axidma')
+    dma = AxiDma("axidma")
 
     dma.startTransfer(devName=dma.devIdToIpName(id), addr=0x48_0000_0000, len=4096)
     dma.reset(devName=dma.devIdToIpName(id))
 
-    print('Pass')
+    print("Pass")

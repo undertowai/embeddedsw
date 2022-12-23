@@ -1,4 +1,3 @@
-
 from genericpath import exists
 import sys
 import math
@@ -8,14 +7,15 @@ import json
 import os
 
 
-sys.path.append('../misc')
+sys.path.append("../misc")
 
 from traverse import Traverse
+
 
 class Sig:
     fs = 600_000_000
     freq = 75_000_000
-    
+
     def __init__(self) -> None:
         pass
 
@@ -24,19 +24,18 @@ class Sig:
             if f > freq:
                 return fn
         return None
-            
+
     def get_SNR(x, freq, fs):
         f, Pxx_den = signal.welch(x, fs, nperseg=1024)
-
 
         l = list(f)
         fn = Sig.get_fn(l, freq)
 
         N = np.mean(Pxx_den)
-        P = (Pxx_den[fn-1] + Pxx_den[fn]) / 2
-        return 10*math.log10(P/N)
-    
-    #FIXME
+        P = (Pxx_den[fn - 1] + Pxx_den[fn]) / 2
+        return 10 * math.log10(P / N)
+
+    # FIXME
     def set_dict(dict, keys):
         if len(keys) == 0:
             return {}
@@ -47,17 +46,17 @@ class Sig:
             dict[keys[0]] = d
 
         return dict
-    
+
     def process(dict, root, files):
-        print('processing : {}'.format(root))
+        print("processing : {}".format(root))
         snr_dict = {}
 
         list.sort(files)
         for file in files:
             x = np.fromfile(root + os.sep + file, dtype=np.uint16)
             snr = Sig.get_SNR(x, Sig.freq, Sig.fs)
-            snr_dict[file] = '{:.2f}'.format(snr)
-            
+            snr_dict[file] = "{:.2f}".format(snr)
+
         keys = root.split(os.sep)[4:]
 
         if not keys[-1] in dict:
@@ -78,11 +77,13 @@ class Sig:
         if not keys[-3] in dict[keys[-1]][keys[-7]][keys[-6]][keys[-5]][keys[-4]]:
             dict[keys[-1]][keys[-7]][keys[-6]][keys[-5]][keys[-4]][keys[-3]] = {}
 
-        #if not keys[-2] in dict[keys[-1]][keys[-7]][keys[-6]][keys[-5]][keys[-4]][keys[-3]]:
+        # if not keys[-2] in dict[keys[-1]][keys[-7]][keys[-6]][keys[-5]][keys[-4]][keys[-3]]:
         #    dict[keys[-1]][keys[-7]][keys[-6]][keys[-5]][keys[-4]][keys[-3]][keys[-2]] = {}
 
+        dict[keys[-1]][keys[-7]][keys[-6]][keys[-5]][keys[-4]][keys[-3]][
+            keys[-2]
+        ] = snr_dict
 
-        dict[keys[-1]][keys[-7]][keys[-6]][keys[-5]][keys[-4]][keys[-3]][keys[-2]] = snr_dict
 
 if __name__ == "__main__":
 
@@ -90,11 +91,8 @@ if __name__ == "__main__":
 
     dict = {}
     Traverse.walk(dict, capturesPath, Sig.process)
-    
+
     data = json.dumps(dict, indent=4)
-    
-    with open('.' + os.sep + 'snr.json', "w") as f:
+
+    with open("." + os.sep + "snr.json", "w") as f:
         f.write(data)
-    
-
-

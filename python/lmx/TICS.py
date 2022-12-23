@@ -1,14 +1,15 @@
 import sys
 import numpy as np
 
+
 def read(path):
-    lines=[]
+    lines = []
     with open(path) as f:
         lines = f.readlines()
 
     regs = []
     for line in lines:
-        regs.append( (line.split()[1], line.split()[0]) )
+        regs.append((line.split()[1], line.split()[0]))
 
     buffer = np.empty(len(regs), dtype=np.uint32)
 

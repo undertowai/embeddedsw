@@ -1,7 +1,8 @@
 from filelock import Timeout, FileLock
 
+
 class MLock:
-    LOCK_PATH = '../metal.lock'
+    LOCK_PATH = "../metal.lock"
     LOCK_TIMEOUT = 1
 
     def getargs(self, **kw):
@@ -20,11 +21,11 @@ class MLock:
                 with self.mlock.acquire(timeout=MLock.LOCK_TIMEOUT):
                     ret = func(self)
             except Timeout:
-                raise Exception('Can\'t acquire metal lock' )
+                raise Exception("Can't acquire metal lock")
             finally:
                 self.mlock.release()
                 self.delargs(**kw)
-                
+
             return ret
 
         return inner

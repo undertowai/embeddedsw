@@ -1,12 +1,12 @@
-
 import sys
 from test import TestSuite
 import numpy as np
 
-sys.path.append('../misc')
+sys.path.append("../misc")
 
 from swave import Wave
 from widebuf import WideBuf
+
 
 class TestTone(TestSuite):
     def __init__(self):
@@ -21,7 +21,9 @@ class TestTone(TestSuite):
         numSamples = int(numBytes / sampleSize)
         samplesPerFLit = self.hw.SAMPLES_PER_FLIT
 
-        tone = Wave().getSine(numBytes, freq, dBFS, samplingFreq, sampleSize, phaseDegrees, fullCycles)
+        tone = Wave().getSine(
+            numBytes, freq, dBFS, samplingFreq, sampleSize, phaseDegrees, fullCycles
+        )
 
         buffer = np.empty(buffersCount * numSamples, dtype=dtype)
 
@@ -34,17 +36,18 @@ class TestTone(TestSuite):
 
         samplingFreq = self.rfdc.getSamplingFrequency()
 
-        print('\n\n\n=== Running test ===')
-        print('RFDC Sampling Rate = {}'.format(samplingFreq))
+        print("\n\n\n=== Running test ===")
+        print("RFDC Sampling Rate = {}".format(samplingFreq))
 
         bram_data = self.make_single_tone_bram(samplingFreq, freq, dBFS, np.uint16)
         self.load_dac_player(bram_data, bram_data)
 
-        self.gpio_gate_0.set(0xff)
-        self.gpio_gate_1.set(0xff)
+        self.gpio_gate_0.set(0xFF)
+        self.gpio_gate_1.set(0xFF)
         self.adc_dac_sync(True)
 
-        print('Pass')
+        print("Pass")
+
 
 if __name__ == "__main__":
 
@@ -52,5 +55,5 @@ if __name__ == "__main__":
     dBFS = int(-0)
 
     test = TestTone()
-    
+
     test.run_test(freq, dBFS)

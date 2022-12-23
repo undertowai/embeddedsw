@@ -1,4 +1,3 @@
-
 import sys
 from test import TestSuite
 import numpy as np
@@ -9,9 +8,10 @@ import os
 
 from inet import Inet
 
-sys.path.append('../misc')
+sys.path.append("../misc")
 
 from widebuf import WideBuf
+
 
 class Test_1x8_Sweep(TestSuite):
     def __init__(self, port):
@@ -25,41 +25,45 @@ class Test_1x8_Sweep(TestSuite):
     def run_test(self):
         samplingFreq = self.rfdc.getSamplingFrequency()
 
-        print('\n\n\n=== Running test ===')
-        print('RFDC Sampling Rate = {}'.format(samplingFreq))
-        print('Using Max Gain = {}'.format(self.max_gain))
+        print("\n\n\n=== Running test ===")
+        print("RFDC Sampling Rate = {}".format(samplingFreq))
+        print("Using Max Gain = {}".format(self.max_gain))
 
         dtype = np.uint16
 
         if load_bram:
             if self.ext_bram_path is not None:
-                Ipath = self.ext_bram_path + os.sep + 'Ichannel.npy'
-                Qpath = self.ext_bram_path + os.sep + 'Qchannel.npy'
+                Ipath = self.ext_bram_path + os.sep + "Ichannel.npy"
+                Qpath = self.ext_bram_path + os.sep + "Qchannel.npy"
                 bram0_data = self.load_ext_bram(Ipath, Qpath, dtype)
                 bram1_data = np.copy(bram0_data)
             else:
-                print('=== Generating tones ===')
-                bram0_data, _ = self.make_sweep_tone_bram(samplingFreq, self.freq, self.dBFS, self.freqStep, dtype)
+                print("=== Generating tones ===")
+                bram0_data, _ = self.make_sweep_tone_bram(
+                    samplingFreq, self.freq, self.dBFS, self.freqStep, dtype
+                )
                 if self.freqStep != 0:
-                    bram1_data, _ = self.make_sweep_tone_bram(samplingFreq, self.freq, self.dBFS, self.freqStep, dtype)
+                    bram1_data, _ = self.make_sweep_tone_bram(
+                        samplingFreq, self.freq, self.dBFS, self.freqStep, dtype
+                    )
                 else:
                     bram1_data = np.copy(bram0_data)
 
             self.load_dac_player(bram0_data, bram1_data)
 
         self.setup_RF_Clk(self.ticsFilePath, self.restart_rfdc)
-        #Turn on all the dac player outputs
-        self.dac_gate(0xffff)
+        # Turn on all the dac player outputs
+        self.dac_gate(0xFFFF)
         sn = 0x0
         offset = 0x0
-        
+
         ids0 = []
         ids1 = []
         for rx in self.rx:
             if rx > 3:
-                ids1.extend([rx*2, rx*2+1])
+                ids1.extend([rx * 2, rx * 2 + 1])
             else:
-                ids0.extend([rx*2, rx*2+1])
+                ids0.extend([rx * 2, rx * 2 + 1])
 
         self.setup_RF(self.tx, self.rx)
         for tx in self.tx:
@@ -70,7 +74,11 @@ class Test_1x8_Sweep(TestSuite):
 
                 self.hmc.Power_6300(ic=txi, pwup=True)
                 sleep(0.2)
-                print('*** Running Iteration : sn={}, rx={}, tx={}'.format(sn, self.rx, txi))
+                print(
+                    "*** Running Iteration : sn={}, rx={}, tx={}".format(
+                        sn, self.rx, txi
+                    )
+                )
 
                 self.adc_dac_sync(False)
 
@@ -82,19 +90,19 @@ class Test_1x8_Sweep(TestSuite):
                 self.adc_dac_sync(True)
 
                 t = self.calc_capture_time(self.captureSize)
-                print('Waiting %fs for capture to complete ' % t)
+                print("Waiting %fs for capture to complete " % t)
                 sleep(t)
-                
+
                 self.publish(area, sn, self.freq, samplingFreq)
                 sn += 1
                 self.hmc.Power_6300(ic=txi, pwup=False)
-                
+
         self.shutdown_RF()
 
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print('{}: Usage'.format(sys.argv[0]))
+        print("{}: Usage".format(sys.argv[0]))
         exit()
 
     ticsFilePath = sys.argv[1]
@@ -107,24 +115,26 @@ if __name__ == "__main__":
     load_bram = True
     ext_bram_path = None
     capture_data = True
-    #Which radios to use:
-    #tx = [i for i in range(8)]
-    #rx = [i for i in range(8)]
+    # Which radios to use:
+    # tx = [i for i in range(8)]
+    # rx = [i for i in range(8)]
     tx = [0]
     rx = [0]
     max_gain = True
 
     test = Test_1x8_Sweep(Inet.PORT)
 
-    test.run_test(ticsFilePath  =ticsFilePath,
-                freq            =freq,
-                dBFS            =dBFS,
-                freqStep        =freqStep,
-                captureSize     =captureSize,
-                restart_rfdc    =restart_rfdc,
-                load_bram       =load_bram,
-                capture_data    =capture_data,
-                tx              =tx,
-                rx              =rx,
-                max_gain        =max_gain,
-                ext_bram_path   =ext_bram_path)
+    test.run_test(
+        ticsFilePath=ticsFilePath,
+        freq=freq,
+        dBFS=dBFS,
+        freqStep=freqStep,
+        captureSize=captureSize,
+        restart_rfdc=restart_rfdc,
+        load_bram=load_bram,
+        capture_data=capture_data,
+        tx=tx,
+        rx=rx,
+        max_gain=max_gain,
+        ext_bram_path=ext_bram_path,
+    )

@@ -7,14 +7,14 @@ import numpy as np
 import pickle
 import time
 
-sys.path.append('../lmx')
-sys.path.append('../hmc')
-sys.path.append('../gpio')
-sys.path.append('../axidma')
-sys.path.append('../rfdc')
-sys.path.append('../xddr')
-sys.path.append('../bram')
-sys.path.append('../misc')
+sys.path.append("../lmx")
+sys.path.append("../hmc")
+sys.path.append("../gpio")
+sys.path.append("../axidma")
+sys.path.append("../rfdc")
+sys.path.append("../xddr")
+sys.path.append("../bram")
+sys.path.append("../misc")
 
 from swave import Wave
 from widebuf import WideBuf
@@ -30,6 +30,7 @@ from bram import BramFactory
 from hw import Hw
 from inet import Inet
 
+
 class TestSuite:
     def getargs(self, **kw):
         for k, v in kw.items():
@@ -42,34 +43,33 @@ class TestSuite:
                 func(self)
             except Exception as e:
                 logging.error(traceback.format_exc())
-                print('=== FAILED ===')
+                print("=== FAILED ===")
                 self.shutdown_RF()
             else:
-                print('=== PASS ===')
-        
-        return inner
+                print("=== PASS ===")
 
+        return inner
 
     def __init__(self):
 
         self.hw = Hw()
 
-        self.lmx = Lmx2820('axi_quad_spi_0')
-        self.hmc = HMC63xx('spi_gpio')
-        self.axiGpio = AxiGpio('axi_gpio')
-        self.dma = AxiDma('axidma')
-        self.ddr0 = Xddr('ddr4_0')
-        self.ddr1 = Xddr('ddr4_1')
-        self.rfdc = Rfdc('rfdc2')
+        self.lmx = Lmx2820("axi_quad_spi_0")
+        self.hmc = HMC63xx("spi_gpio")
+        self.axiGpio = AxiGpio("axi_gpio")
+        self.dma = AxiDma("axidma")
+        self.ddr0 = Xddr("ddr4_0")
+        self.ddr1 = Xddr("ddr4_1")
+        self.rfdc = Rfdc("rfdc2")
 
-        self.gpio_sync = self.axiGpio.getGpio('dma_sync_gpio_0')
-        self.gpio_gate_0 = self.axiGpio.getGpio('axis_gate_0_axi_gpio_0')
-        self.gpio_gate_1 = self.axiGpio.getGpio('axis_gate_1_axi_gpio_0')
-        self.gpio_bram_count = self.axiGpio.getGpio('axi_gpio_0')
+        self.gpio_sync = self.axiGpio.getGpio("dma_sync_gpio_0")
+        self.gpio_gate_0 = self.axiGpio.getGpio("axis_gate_0_axi_gpio_0")
+        self.gpio_gate_1 = self.axiGpio.getGpio("axis_gate_1_axi_gpio_0")
+        self.gpio_bram_count = self.axiGpio.getGpio("axi_gpio_0")
 
         bram_f = BramFactory()
-        self.bram0 = bram_f.makeBram('ram_player_8wide_0_axi_bram_ctrl_0')
-        self.bram1 = bram_f.makeBram('ram_player_8wide_1_axi_bram_ctrl_0')
+        self.bram0 = bram_f.makeBram("ram_player_8wide_0_axi_bram_ctrl_0")
+        self.bram1 = bram_f.makeBram("ram_player_8wide_1_axi_bram_ctrl_0")
 
     def load_ext_bram(self, Ipath, Qpath, dtype):
         sampleSize = np.dtype(dtype).itemsize
@@ -79,12 +79,12 @@ class TestSuite:
         samplesPerFLit = self.hw.SAMPLES_PER_FLIT
 
         buffer = np.empty(buffersCount * numSamples, dtype=dtype)
-        
+
         I = np.fromfile(Ipath, dtype=np.int16)
         Q = np.fromfile(Qpath, dtype=np.int16)
         for i in range(0, buffersCount, 2):
             WideBuf().make(buffer, I, i, buffersCount, samplesPerFLit)
-            WideBuf().make(buffer, Q, i+1, buffersCount, samplesPerFLit)
+            WideBuf().make(buffer, Q, i + 1, buffersCount, samplesPerFLit)
 
         return buffer
 
@@ -101,9 +101,17 @@ class TestSuite:
 
         for i in range(buffersCount):
 
-            #Keep same frequency for I & Q channels
-            if i%2 == 0:
-                tone = Wave().getSine(numBytes, freq, dBFS, samplingFreq, sampleSize, phaseDegrees, fullCycles)
+            # Keep same frequency for I & Q channels
+            if i % 2 == 0:
+                tone = Wave().getSine(
+                    numBytes,
+                    freq,
+                    dBFS,
+                    samplingFreq,
+                    sampleSize,
+                    phaseDegrees,
+                    fullCycles,
+                )
                 freq = freq + freqStep
 
             WideBuf().make(buffer, tone, i, buffersCount, samplesPerFLit)
@@ -115,7 +123,7 @@ class TestSuite:
             os.makedirs(outputDir)
 
         if self.capture_data:
-            outputDir = '{}/TX_{}'.format(outputDir, suffix)
+            outputDir = "{}/TX_{}".format(outputDir, suffix)
             if not os.path.exists(outputDir):
                 os.mkdir(outputDir)
         else:
@@ -123,7 +131,7 @@ class TestSuite:
         return outputDir
 
     def cap_name(self, id):
-        return 'cap{}_{}.bin'.format('I' if id%2==0 else 'Q', int(id/2))
+        return "cap{}_{}.bin".format("I" if id % 2 == 0 else "Q", int(id / 2))
 
     def setup_RF_Clk(self, ticsFilePath, restart_rfdc=True):
 
@@ -131,7 +139,7 @@ class TestSuite:
             self.rfdc.restart()
 
         if False == self.lmx.readLockedReg():
-            print('Configuring RF clocks ...')
+            print("Configuring RF clocks ...")
             self.rfdc.init_clk104()
 
             self.lmx.power_reset(False, 0x0)
@@ -147,13 +155,13 @@ class TestSuite:
         self.hmc.GpioInit()
         for ic in hmc_6300_ics:
             self.hmc.DefaultConfig_6300(ic=ic)
-        
+
         for ic in hmc_6301_ics:
             self.hmc.DefaultConfig_6301(ic=ic)
-        
+
     def shutdown_RF(self):
         self.hmc.Reset()
-    
+
     def getBramSize(self):
         assert self.bram0.getSize() == self.bram1.getSize()
         return self.bram0.getSize()
@@ -162,15 +170,19 @@ class TestSuite:
         bram0_size = self.bram0.load(data=bram0_data)
         bram1_size = self.bram1.load(data=bram1_data)
 
-        assert(bram0_size == bram1_size)
+        assert bram0_size == bram1_size
 
-        div = self.hw.BUFFERS_IN_BRAM * self.hw.SAMPLES_PER_FLIT * self.hw.BYTES_PER_SAMPLE
+        div = (
+            self.hw.BUFFERS_IN_BRAM
+            * self.hw.SAMPLES_PER_FLIT
+            * self.hw.BYTES_PER_SAMPLE
+        )
         playerTicksPerBuffer = int(bram0_size / div)
 
         self.gpio_bram_count.set(val=playerTicksPerBuffer)
 
     def adc_dac_sync(self, sync):
-        self.gpio_sync.set(val= (0xff if sync else 0x0))
+        self.gpio_sync.set(val=(0xFF if sync else 0x0))
 
     def __start_dma(self, ddr, ids, offset, size):
 
@@ -192,7 +204,7 @@ class TestSuite:
             self.dma.reset(devName=devName)
 
     def __write_cap_data(self, path, data):
-        with open(path, 'wb') as f:
+        with open(path, "wb") as f:
             f.write(data)
             f.close()
 
@@ -201,15 +213,15 @@ class TestSuite:
 
         addr = base_address
         for path in paths:
-            outputPath = None if outputdir is None else outputdir + '/' + path
+            outputPath = None if outputdir is None else outputdir + "/" + path
             data = ddr.capture(addr, size)
             if outputPath is not None:
                 self.__write_cap_data(outputPath, data)
             addr = addr + size
 
     def dac_gate(self, val):
-        self.gpio_gate_0.set(val=(val >> 0) & 0xff)
-        self.gpio_gate_1.set(val=(val >> 8) & 0xff)
+        self.gpio_gate_0.set(val=(val >> 0) & 0xFF)
+        self.gpio_gate_1.set(val=(val >> 8) & 0xFF)
 
     def capture(self, ddr, outputDir, paths, ids, offset, size):
 
@@ -231,19 +243,22 @@ class TestSuite:
         for a in area:
             for j in range(0, len(a), 2):
                 addrI, sizeI = a[j]
-                addrQ, sizeQ = a[j+1]
+                addrQ, sizeQ = a[j + 1]
                 bytesI = Xddr.read(addrI, sizeI)
                 bytesQ = Xddr.read(addrQ, sizeQ)
-                
-                print('publishing : I=%x:%x Q=%x:%x' % (addrI, sizeI, addrQ, sizeQ))
-                self.publisher.send_multipart([
-                    bytes(str(Inet.TOPIC_FILTER), 'utf-8'),
-                    bytes(str(sn), 'utf-8'),
-                    bytes(str(fs), 'utf-8'),
-                    bytes(str(freq), 'utf-8'),
-                    bytes(str(time.time_ns() / 1_000_000_000), 'utf-8'),
-                    pickle.dumps(bytesI),
-                    pickle.dumps(bytesQ)])
+
+                print("publishing : I=%x:%x Q=%x:%x" % (addrI, sizeI, addrQ, sizeQ))
+                self.publisher.send_multipart(
+                    [
+                        bytes(str(Inet.TOPIC_FILTER), "utf-8"),
+                        bytes(str(sn), "utf-8"),
+                        bytes(str(fs), "utf-8"),
+                        bytes(str(freq), "utf-8"),
+                        bytes(str(time.time_ns() / 1_000_000_000), "utf-8"),
+                        pickle.dumps(bytesI),
+                        pickle.dumps(bytesQ),
+                    ]
+                )
 
     def start_dma(self, ddr, ids, offset, size):
         return self.__start_dma(ddr, ids, offset, size)
@@ -255,9 +270,10 @@ class TestSuite:
         t = numFlits / self.hw.FABRIC_CLOCK
         return t
 
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print('{}: Usage'.format(sys.argv[0]))
+        print("{}: Usage".format(sys.argv[0]))
         exit()
 
     ticsFilePath = sys.argv[1]

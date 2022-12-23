@@ -1,19 +1,20 @@
 import sys
 import ctypes as ct
 
-sys.path.append('../misc')
+sys.path.append("../misc")
 
 from dts import Dts
 from make import Make
 from mlock import MLock
 
+
 class HMC63xx(MLock):
     def __init__(self, ipName):
 
-        libPath = Make().makeLibs('hmc63xx')
+        libPath = Make().makeLibs("hmc63xx")
         devName = Dts().ipToDtsName(ipName)
 
-        reg = Dts().readPropertyU32(ipName, 'reg')
+        reg = Dts().readPropertyU32(ipName, "reg")
         self.addr = (reg[0] << 32) | reg[1]
         self.size = (reg[2] << 32) | reg[3]
 
@@ -21,7 +22,7 @@ class HMC63xx(MLock):
         self.devName = devName
         self.lib = ct.CDLL(self.libPath)
 
-        self.devNamePtr = ct.c_char_p(self.devName.encode('UTF-8'))
+        self.devNamePtr = ct.c_char_p(self.devName.encode("UTF-8"))
 
     @MLock.Lock
     def GpioInit(self):
@@ -42,14 +43,14 @@ class HMC63xx(MLock):
         fun = self.lib.HMC6300_SetRVGAGain
 
         status = fun(self.devNamePtr, int(self.ic), self.val)
-        assert status == 0    
+        assert status == 0
 
     @MLock.Lock
     def Power_6300(self):
         fun = self.lib.HMC6300_Power
 
         status = fun(self.devNamePtr, int(self.ic), 0x1 if self.pwup == True else False)
-        assert status == 0    
+        assert status == 0
 
     def __RMW_6300(self, ic, i, val, mask):
         fun = self.lib.HMC6300_RMW
@@ -66,7 +67,7 @@ class HMC63xx(MLock):
         assert self.val <= mask
 
         val = self.val << self.bp[0]
-        mask = 0xff ^ (mask << self.bp[0])
+        mask = 0xFF ^ (mask << self.bp[0])
 
         return self.__RMW_6300(self.ic, self.i, val, mask)
 
@@ -129,9 +130,9 @@ class HMC63xx(MLock):
         mask = mask >> self.bp[0]
 
         assert self.val <= mask
-        
+
         val = self.val << self.bp[0]
-        mask = 0xff ^ (mask << self.bp[0])
+        mask = 0xFF ^ (mask << self.bp[0])
 
         return self.__RMW_6301(self.ic, self.i, val, mask)
 
@@ -153,20 +154,20 @@ class HMC63xx(MLock):
         i = int(8)
         maxGain = 0x3
         assert gain <= maxGain
-        
+
         gain = maxGain - gain
-        
+
         self.RMW_6301(ic=ic, i=i, val=gain, bp=[3, 4])
 
     def ReadReg_6300(self, ic, i):
-        return self.RMW_6300(ic=ic, i=i, val=0x0, bp=[0,7])
-    
+        return self.RMW_6300(ic=ic, i=i, val=0x0, bp=[0, 7])
+
     def ReadTemp_6300(self, ic):
-        #enable temperature sensor
-        self.RMW_6300(ic=ic, i=3, val=0x1, bp=[0,0])
-        self.RMW_6300(ic=ic, i=10, val=0x0, bp=[0,0])
+        # enable temperature sensor
+        self.RMW_6300(ic=ic, i=3, val=0x1, bp=[0, 0])
+        self.RMW_6300(ic=ic, i=10, val=0x0, bp=[0, 0])
         temp = self.ReadReg_6300(ic, 27)
-        tempC = ((85-(-40)) * temp) / 0x1f
+        tempC = ((85 - (-40)) * temp) / 0x1F
         return int(tempC)
 
     @MLock.Lock
@@ -177,20 +178,19 @@ class HMC63xx(MLock):
         assert status == 0
 
 
-
 if __name__ == "__main__":
 
-    hmc = HMC63xx('spi_gpio')
+    hmc = HMC63xx("spi_gpio")
 
     limit = 1
 
     hmc.GpioInit()
     for i in range(limit):
-        #hmc.DefaultConfig_6300(ic=i)
+        # hmc.DefaultConfig_6300(ic=i)
         hmc.PrintConfig_6300(ic=i)
-        #hmc.DefaultConfig_6300(ic=i)
+        # hmc.DefaultConfig_6300(ic=i)
         hmc.PrintConfig_6301(ic=i)
 
     hmc.Reset()
 
-    print('Pass')
+    print("Pass")

@@ -2,13 +2,13 @@ import sys
 import ctypes as ct
 import numpy as np
 
-sys.path.append('../misc')
+sys.path.append("../misc")
 
 from make import Make
 from mlock import MLock
 
-class Rfdc(MLock):
 
+class Rfdc(MLock):
     def __init__(self, libName):
         libPath = Make().makeLibs(libName)
         self.lib = ct.CDLL(libPath)
@@ -35,10 +35,11 @@ class Rfdc(MLock):
 
         return int(freq * 1_000_000)
 
+
 if __name__ == "__main__":
-    rfdc = Rfdc('rfdc2')
-    #rfdc.init_clk104()
-    #rfdc.restart()
+    rfdc = Rfdc("rfdc2")
+    # rfdc.init_clk104()
+    # rfdc.restart()
     freq = rfdc.getSamplingFrequency()
     print(freq)
 

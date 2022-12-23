@@ -4,6 +4,7 @@ import math
 import os
 import numpy as np
 
+
 class WideBuf:
     def __init__(self):
         pass
@@ -13,10 +14,10 @@ class WideBuf:
         for i in range(0, src.size, samplesPerFLit):
 
             for j in range(samplesPerFLit):
-                dst[offset+j] = src[i+j]
+                dst[offset + j] = src[i + j]
 
             offset += buffersCount * samplesPerFLit
-            if (offset >= dst.size):
+            if offset >= dst.size:
                 break
 
     def decompose(self, dst, src, bufferNum, buffersCount, samplesPerFLit):
@@ -24,19 +25,20 @@ class WideBuf:
         for i in range(0, dst.size, samplesPerFLit):
 
             for j in range(samplesPerFLit):
-                dst[i+j] = src[offset+j]
+                dst[i + j] = src[offset + j]
 
             offset += buffersCount * samplesPerFLit
-            if (offset >= src.size):
+            if offset >= src.size:
                 break
 
     def make(self, buffer, tone, bufferNum, buffersCount, samplesPerFLit):
 
         self.compose(buffer, tone, bufferNum, buffersCount, samplesPerFLit)
 
-        #dec_buffer = np.empty(numSamples, dtype=np.uint16)
-        #decompose(dec_buffer, buffer, bufferNum, buffersCount, samplesPerFLit)
-        #dec_buffer.tofile(wideFilePath + '.decomposed')
+        # dec_buffer = np.empty(numSamples, dtype=np.uint16)
+        # decompose(dec_buffer, buffer, bufferNum, buffersCount, samplesPerFLit)
+        # dec_buffer.tofile(wideFilePath + '.decomposed')
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 4:

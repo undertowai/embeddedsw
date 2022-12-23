@@ -1,4 +1,3 @@
-
 class Hw:
     BUFFERS_IN_BRAM = 0x8
     SAMPLES_PER_FLIT = 0x8

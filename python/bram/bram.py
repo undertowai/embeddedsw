@@ -2,11 +2,12 @@ import sys
 import ctypes as ct
 import numpy as np
 
-sys.path.append('../misc')
+sys.path.append("../misc")
 
 from dts import Dts
 from make import Make
 from mlock import MLock
+
 
 class Bram(MLock):
     PAGE_SIZE = 128
@@ -19,19 +20,33 @@ class Bram(MLock):
     def __writeData(self, data, address=0):
         fun = self.lib.AXI_Bram_Write
 
-        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(address), ct.c_void_p(data.ctypes.data), int(data.size))
+        status = fun(
+            ct.c_char_p(self.devName.encode("UTF-8")),
+            int(address),
+            ct.c_void_p(data.ctypes.data),
+            int(data.size),
+        )
         assert status == 0
 
     def __readData(self, data, address=0):
         fun = self.lib.AXI_Bram_Read
 
-        status = fun(ct.c_char_p(self.devName.encode('UTF-8')), int(address), ct.c_void_p(data.ctypes.data), int(data.size))
+        status = fun(
+            ct.c_char_p(self.devName.encode("UTF-8")),
+            int(address),
+            ct.c_void_p(data.ctypes.data),
+            int(data.size),
+        )
         assert status == 0
 
     def __compare(self, expData, gotData):
         for i, d in enumerate(expData):
             if gotData[i] != d:
-                raise Exception("Data doesn't match i={}; got: {} != exp: {}".format(i, gotData[i], d))
+                raise Exception(
+                    "Data doesn't match i={}; got: {} != exp: {}".format(
+                        i, gotData[i], d
+                    )
+                )
 
     @MLock.Lock
     def load(self):
@@ -54,14 +69,15 @@ class Bram(MLock):
     def getSize(self):
         return self.size
 
+
 class BramFactory:
     def __init__(self):
-        libPath = Make().makeLibs('bram2')
+        libPath = Make().makeLibs("bram2")
         self.lib = ct.CDLL(libPath)
 
     def makeBram(self, ipName):
         devName = Dts().ipToDtsName(ipName)
-        reg = Dts().readPropertyU32(ipName, 'reg')
+        reg = Dts().readPropertyU32(ipName, "reg")
         size = (reg[2] << 32) | reg[3]
 
         return Bram(self.lib, devName, size)
@@ -69,10 +85,10 @@ class BramFactory:
 
 if __name__ == "__main__":
     if len(sys.argv) != 1:
-        print('{}: Usage'.format(sys.argv[0]))
+        print("{}: Usage".format(sys.argv[0]))
         exit()
 
-    ipName ='ram_player_8wide_0_axi_bram_ctrl_0'
+    ipName = "ram_player_8wide_0_axi_bram_ctrl_0"
 
     bram = BramFactory()
     bram = bram.makeBram(ipName)

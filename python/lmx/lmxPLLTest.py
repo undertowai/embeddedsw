@@ -4,13 +4,13 @@ import numpy as np
 
 from lmx import Lmx2820
 
-sys.path.append('../misc')
+sys.path.append("../misc")
 
 from dts import Dts
 
 if __name__ == "__main__":
     if len(sys.argv) != 4:
-        print('{}: Usage'.format(sys.argv[0]))
+        print("{}: Usage".format(sys.argv[0]))
         exit()
 
     libPath = sys.argv[1]
@@ -33,4 +33,4 @@ if __name__ == "__main__":
 
     LD = lmx.getPllStatus(gotData)
     if LD != 0x2:
-        raise Exception('PLL is not locked')
+        raise Exception("PLL is not locked")
