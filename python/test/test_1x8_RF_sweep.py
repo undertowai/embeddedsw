@@ -13,23 +13,6 @@ class Test_1x8_Sweep(TestSuite):
     def __init__(self):
         super().__init__()
 
-    def load_ext_bram(self, Ipath, Qpath, dtype):
-        sampleSize = np.dtype(dtype).itemsize
-        buffersCount = self.hw.BUFFERS_IN_BRAM
-        numBytes = int(self.getBramSize() / buffersCount)
-        numSamples = int(numBytes / sampleSize)
-        samplesPerFLit = self.hw.SAMPLES_PER_FLIT
-
-        buffer = np.empty(buffersCount * numSamples, dtype=dtype)
-        
-        I = np.fromfile(Ipath, dtype=np.int16)
-        Q = np.fromfile(Qpath, dtype=np.int16)
-        for i in range(0, buffersCount, 2):
-            WideBuf().make(buffer, I, i, buffersCount, samplesPerFLit)
-            WideBuf().make(buffer, Q, i+1, buffersCount, samplesPerFLit)
-
-        return buffer
-
     @TestSuite.Test
     def run_test(self):
         samplingFreq = self.rfdc.getSamplingFrequency()

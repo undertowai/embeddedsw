@@ -71,6 +71,23 @@ class TestSuite:
         self.bram0 = bram_f.makeBram('ram_player_8wide_0_axi_bram_ctrl_0')
         self.bram1 = bram_f.makeBram('ram_player_8wide_1_axi_bram_ctrl_0')
 
+    def load_ext_bram(self, Ipath, Qpath, dtype):
+        sampleSize = np.dtype(dtype).itemsize
+        buffersCount = self.hw.BUFFERS_IN_BRAM
+        numBytes = int(self.getBramSize() / buffersCount)
+        numSamples = int(numBytes / sampleSize)
+        samplesPerFLit = self.hw.SAMPLES_PER_FLIT
+
+        buffer = np.empty(buffersCount * numSamples, dtype=dtype)
+        
+        I = np.fromfile(Ipath, dtype=np.int16)
+        Q = np.fromfile(Qpath, dtype=np.int16)
+        for i in range(0, buffersCount, 2):
+            WideBuf().make(buffer, I, i, buffersCount, samplesPerFLit)
+            WideBuf().make(buffer, Q, i+1, buffersCount, samplesPerFLit)
+
+        return buffer
+
     def make_sweep_tone_bram(self, samplingFreq, freq, dBFS, freqStep, dtype):
         sampleSize = np.dtype(dtype).itemsize
         fullCycles = True
@@ -210,7 +227,7 @@ class TestSuite:
 
         return self.__capture_memory(ddr, outputDir, paths, offset, size)
 
-    def publish(self, area, txn):
+    def publish(self, area, sn, freq, fs):
         for a in area:
             for j in range(0, len(a), 2):
                 addrI, sizeI = a[j]
@@ -221,9 +238,10 @@ class TestSuite:
                 print('publishing : I=%x:%x Q=%x:%x' % (addrI, sizeI, addrQ, sizeQ))
                 self.publisher.send_multipart([
                     bytes(str(Inet.TOPIC_FILTER), 'utf-8'),
-                    bytes(str(txn), 'utf-8'),
-                    bytes(str(j), 'utf-8'),
-                    bytes(str(time.time_ns()), 'utf-8'),
+                    bytes(str(sn), 'utf-8'),
+                    bytes(str(fs), 'utf-8'),
+                    bytes(str(freq), 'utf-8'),
+                    bytes(str(time.time_ns() / 1_000_000_000), 'utf-8'),
                     pickle.dumps(bytesI),
                     pickle.dumps(bytesQ)])
 

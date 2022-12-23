@@ -21,23 +21,6 @@ class Test_1x8_Sweep(TestSuite):
         self.publisher = context.socket(zmq.PUB)
         self.publisher.bind("tcp://0.0.0.0:%s" % port)
 
-    def load_ext_bram(self, Ipath, Qpath, dtype):
-        sampleSize = np.dtype(dtype).itemsize
-        buffersCount = self.hw.BUFFERS_IN_BRAM
-        numBytes = int(self.getBramSize() / buffersCount)
-        numSamples = int(numBytes / sampleSize)
-        samplesPerFLit = self.hw.SAMPLES_PER_FLIT
-
-        buffer = np.empty(buffersCount * numSamples, dtype=dtype)
-
-        for i in range(0, buffersCount, 2):
-            I = np.fromfile(Ipath, dtype)
-            Q = np.fromfile(Qpath, dtype)
-            WideBuf().make(buffer, I, i, buffersCount, samplesPerFLit)
-            WideBuf().make(buffer, Q, i+1, buffersCount, samplesPerFLit)
-
-        return buffer, int(0)
-
     @TestSuite.Test
     def run_test(self):
         samplingFreq = self.rfdc.getSamplingFrequency()
@@ -57,7 +40,10 @@ class Test_1x8_Sweep(TestSuite):
             else:
                 print('=== Generating tones ===')
                 bram0_data, _ = self.make_sweep_tone_bram(samplingFreq, self.freq, self.dBFS, self.freqStep, dtype)
-                bram1_data, _ = self.make_sweep_tone_bram(samplingFreq, self.freq, self.dBFS, self.freqStep, dtype)
+                if self.freqStep != 0:
+                    bram1_data, _ = self.make_sweep_tone_bram(samplingFreq, self.freq, self.dBFS, self.freqStep, dtype)
+                else:
+                    bram1_data = np.copy(bram0_data)
 
             self.load_dac_player(bram0_data, bram1_data)
 
@@ -65,35 +51,45 @@ class Test_1x8_Sweep(TestSuite):
         #Turn on all the dac player outputs
         self.dac_gate(0xffff)
         sn = 0x0
-        for txi in self.tx:
+        offset = 0x0
+        
+        ids0 = []
+        ids1 = []
+        for rx in self.rx:
+            if rx > 3:
+                ids1.extend([rx*2, rx*2+1])
+            else:
+                ids0.extend([rx*2, rx*2+1])
 
-            print('*** Running Iteration : rx={}, tx={}'.format(self.rx, txi))
-            self.setup_RF([txi], self.rx)
-            sleep(1)
+        self.setup_RF(self.tx, self.rx)
+        for tx in self.tx:
+            self.hmc.Power_6300(ic=tx, pwup=False)
 
-            #input("Press Enter to continue...")
+        while True:
+            for txi in self.tx:
 
-            self.adc_dac_sync(False)
+                self.hmc.Power_6300(ic=txi, pwup=True)
+                sleep(0.2)
+                print('*** Running Iteration : sn={}, rx={}, tx={}'.format(sn, self.rx, txi))
 
-            #Let the RF to settle the configuration
-            ids0 = [i for i in range(8)]
-            ids1 = [i for i in range(8, 16, 1)]
-            offset = 0x0
+                self.adc_dac_sync(False)
 
-            area = []
-            for ids, ddr in [(ids0, self.ddr0), (ids1, self.ddr1)]:
-                a = self.start_dma(ddr, ids, offset, self.captureSize)
-                area.append(a)
+                area = []
+                for ids, ddr in [(ids0, self.ddr0), (ids1, self.ddr1)]:
+                    a = self.start_dma(ddr, ids, offset, self.captureSize)
+                    area.append(a)
 
-            self.adc_dac_sync(True)
+                self.adc_dac_sync(True)
 
-            t = self.calc_capture_time(self.captureSize)
-            print('Waiting %fs for capture to complete ' % t)
-            sleep(t)
-            
-            self.publish(area, txi)
-            sn += 1
-            self.shutdown_RF()
+                t = self.calc_capture_time(self.captureSize)
+                print('Waiting %fs for capture to complete ' % t)
+                sleep(t)
+                
+                self.publish(area, sn, self.freq, samplingFreq)
+                sn += 1
+                self.hmc.Power_6300(ic=txi, pwup=False)
+                
+        self.shutdown_RF()
 
 
 if __name__ == "__main__":
@@ -106,14 +102,16 @@ if __name__ == "__main__":
     freq = 75_000_000
     freqStep = 0
     dBFS = int(-9)
-    captureSize = 128 * 4096 * 2
+    captureSize = 128 * 1024 * 2
     restart_rfdc = False
     load_bram = True
-    ext_bram_path = './'
+    ext_bram_path = None
     capture_data = True
     #Which radios to use:
-    tx = [i for i in range(8)]
-    rx = [i for i in range(8)]
+    #tx = [i for i in range(8)]
+    #rx = [i for i in range(8)]
+    tx = [0]
+    rx = [0]
     max_gain = True
 
     test = Test_1x8_Sweep(Inet.PORT)
