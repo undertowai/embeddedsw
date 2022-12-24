@@ -29,22 +29,20 @@ class Test_1x8_Sweep(TestSuite):
         print("RFDC Sampling Rate = {}".format(samplingFreq))
         print("Using Max Gain = {}".format(self.max_gain))
 
-        dtype = np.uint16
-
         if load_bram:
             if self.ext_bram_path is not None:
                 Ipath = self.ext_bram_path + os.sep + "Ichannel.npy"
                 Qpath = self.ext_bram_path + os.sep + "Qchannel.npy"
-                bram0_data = self.load_ext_bram(Ipath, Qpath, dtype)
+                bram0_data = self.make_bram_content_from_file(Ipath, Qpath)
                 bram1_data = np.copy(bram0_data)
             else:
                 print("=== Generating tones ===")
                 bram0_data, _ = self.make_sweep_tone_bram(
-                    samplingFreq, self.freq, self.dBFS, self.freqStep, dtype
+                    samplingFreq, self.freq, self.dBFS, self.freqStep
                 )
                 if self.freqStep != 0:
                     bram1_data, _ = self.make_sweep_tone_bram(
-                        samplingFreq, self.freq, self.dBFS, self.freqStep, dtype
+                        samplingFreq, self.freq, self.dBFS, self.freqStep
                     )
                 else:
                     bram1_data = np.copy(bram0_data)
@@ -111,16 +109,16 @@ if __name__ == "__main__":
     freqStep = 0
     dBFS = int(-9)
     captureSize = 128 * 1024 * 2
-    restart_rfdc = False
-    load_bram = True
-    ext_bram_path = None
-    capture_data = True
     # Which radios to use:
     # tx = [i for i in range(8)]
     # rx = [i for i in range(8)]
     tx = [0]
     rx = [0]
-    max_gain = True
+    restart_rfdc    = False
+    load_bram       = True
+    ext_bram_path   = None
+    capture_data    = True
+    max_gain        = False
 
     test = Test_1x8_Sweep(Inet.PORT)
 

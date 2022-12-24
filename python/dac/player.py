@@ -4,6 +4,7 @@ import numpy as np
 sys.path.append("../misc")
 sys.path.append("../bram")
 sys.path.append("../test")
+sys.path.append("../gpio")
 
 from bram import BramFactory
 from gpio import AxiGpio
@@ -25,7 +26,7 @@ class DacPlayer(AxiGpio):
         assert self.bram0.getSize() == self.bram1.getSize()
         return self.bram0.getSize()
 
-    def make_sweep_tone_bram(self, samplingFreq, freq, dBFS, freqStep, dtype):
+    def make_sweep_tone_bram(self, samplingFreq, freq, dBFS, freqStep):
         sampleSize = self.hw.BYTES_PER_SAMPLE
         fullCycles = True
         phaseDegrees = 0x0

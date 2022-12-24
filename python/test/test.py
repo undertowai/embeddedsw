@@ -161,7 +161,7 @@ class TestSuite(DacPlayer):
 
         self.__reset_dma(ids)
 
-        return self.__capture_memory(ddr, outputDir, paths, offset, size)
+        #return self.__capture_memory(ddr, outputDir, paths, offset, size)
 
     def publish(self, area, sn, freq, fs):
         for a in area:

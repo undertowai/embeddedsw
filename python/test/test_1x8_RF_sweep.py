@@ -21,8 +21,6 @@ class Test_1x8_Sweep(TestSuite):
         print("RFDC Sampling Rate = {}".format(samplingFreq))
         print("Using Max Gain = {}".format(self.max_gain))
 
-        dtype = np.uint16
-
         if load_bram:
             if self.ext_bram_path is not None:
                 print("=== Using external generated tones ===")
@@ -33,11 +31,11 @@ class Test_1x8_Sweep(TestSuite):
             else:
                 print("=== Generating tones ===")
                 bram0_data, _ = self.make_sweep_tone_bram(
-                    samplingFreq, self.freq, self.dBFS, self.freqStep, dtype
+                    samplingFreq, self.freq, self.dBFS, self.freqStep
                 )
                 if self.freqStep != 0:
                     bram1_data, _ = self.make_sweep_tone_bram(
-                        samplingFreq, self.freq, self.dBFS, self.freqStep, dtype
+                        samplingFreq, self.freq, self.dBFS, self.freqStep
                     )
                 else:
                     bram1_data = np.copy(bram0_data)
