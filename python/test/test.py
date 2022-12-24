@@ -81,16 +81,15 @@ class TestSuite(DacPlayer):
         if restart_rfdc:
             self.rfdc.restart()
 
-        if False == self.lmx.readLockedReg():
-            print("Configuring RF clocks ...")
-            self.rfdc.init_clk104()
+        print("Configuring RF clocks ...")
+        self.rfdc.init_clk104()
 
-            self.lmx.power_reset(False, 0x0)
-            self.lmx.power_reset(True, 0x0)
-            self.lmx.power_reset(True, 0x1)
-            sleep(1)
+        self.lmx.power_reset(False, 0x0)
+        self.lmx.power_reset(True, 0x0)
+        self.lmx.power_reset(True, 0x1)
+        sleep(1)
 
-            self.lmx.config(ticsFilePath=ticsFilePath)
+        self.lmx.config(ticsFilePath=ticsFilePath)
 
         assert self.lmx.readLockedReg() == True
 
@@ -161,7 +160,7 @@ class TestSuite(DacPlayer):
 
         self.__reset_dma(ids)
 
-        #return self.__capture_memory(ddr, outputDir, paths, offset, size)
+        return self.__capture_memory(ddr, outputDir, paths, offset, size)
 
     def publish(self, area, sn, freq, fs):
         for a in area:
@@ -186,6 +185,9 @@ class TestSuite(DacPlayer):
 
     def start_dma(self, ddr, ids, offset, size):
         return self.__start_dma(ddr, ids, offset, size)
+
+    def reset_dma(self, ids):
+        return self.__reset_dma(ids)
 
     def calc_capture_time(self, captureSize):
         numCaptures = 0x1
