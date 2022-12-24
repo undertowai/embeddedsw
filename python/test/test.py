@@ -13,25 +13,21 @@ sys.path.append("../gpio")
 sys.path.append("../axidma")
 sys.path.append("../rfdc")
 sys.path.append("../xddr")
-sys.path.append("../bram")
+sys.path.append("../dac")
 sys.path.append("../misc")
-
-from swave import Wave
-from widebuf import WideBuf
 
 from lmx import Lmx2820
 from hmc import HMC63xx
-from gpio import AxiGpio
 from axidma import AxiDma
 from xddr import Xddr
 from rfdc import Rfdc
-from bram import BramFactory
+from player import DacPlayer
 
 from hw import Hw
 from inet import Inet
 
 
-class TestSuite:
+class TestSuite(DacPlayer):
     def getargs(self, **kw):
         for k, v in kw.items():
             setattr(self, k, v)
@@ -51,72 +47,19 @@ class TestSuite:
         return inner
 
     def __init__(self):
-
+        DacPlayer.__init__(self)
         self.hw = Hw()
 
         self.lmx = Lmx2820("axi_quad_spi_0")
         self.hmc = HMC63xx("spi_gpio")
-        self.axiGpio = AxiGpio("axi_gpio")
         self.dma = AxiDma("axidma")
         self.ddr0 = Xddr("ddr4_0")
         self.ddr1 = Xddr("ddr4_1")
         self.rfdc = Rfdc("rfdc2")
 
-        self.gpio_sync = self.axiGpio.getGpio("dma_sync_gpio_0")
-        self.gpio_gate_0 = self.axiGpio.getGpio("axis_gate_0_axi_gpio_0")
-        self.gpio_gate_1 = self.axiGpio.getGpio("axis_gate_1_axi_gpio_0")
-        self.gpio_bram_count = self.axiGpio.getGpio("axi_gpio_0")
-
-        bram_f = BramFactory()
-        self.bram0 = bram_f.makeBram("ram_player_8wide_0_axi_bram_ctrl_0")
-        self.bram1 = bram_f.makeBram("ram_player_8wide_1_axi_bram_ctrl_0")
-
-    def load_ext_bram(self, Ipath, Qpath, dtype):
-        sampleSize = np.dtype(dtype).itemsize
-        buffersCount = self.hw.BUFFERS_IN_BRAM
-        numBytes = int(self.getBramSize() / buffersCount)
-        numSamples = int(numBytes / sampleSize)
-        samplesPerFLit = self.hw.SAMPLES_PER_FLIT
-
-        buffer = np.empty(buffersCount * numSamples, dtype=dtype)
-
-        I = np.fromfile(Ipath, dtype=np.int16)
-        Q = np.fromfile(Qpath, dtype=np.int16)
-        for i in range(0, buffersCount, 2):
-            WideBuf().make(buffer, I, i, buffersCount, samplesPerFLit)
-            WideBuf().make(buffer, Q, i + 1, buffersCount, samplesPerFLit)
-
-        return buffer
-
-    def make_sweep_tone_bram(self, samplingFreq, freq, dBFS, freqStep, dtype):
-        sampleSize = np.dtype(dtype).itemsize
-        fullCycles = True
-        phaseDegrees = 0x0
-        buffersCount = self.hw.BUFFERS_IN_BRAM
-        numBytes = int(self.getBramSize() / buffersCount)
-        numSamples = int(numBytes / sampleSize)
-        samplesPerFLit = self.hw.SAMPLES_PER_FLIT
-
-        buffer = np.empty(buffersCount * numSamples, dtype=dtype)
-
-        for i in range(buffersCount):
-
-            # Keep same frequency for I & Q channels
-            if i % 2 == 0:
-                tone = Wave().getSine(
-                    numBytes,
-                    freq,
-                    dBFS,
-                    samplingFreq,
-                    sampleSize,
-                    phaseDegrees,
-                    fullCycles,
-                )
-                freq = freq + freqStep
-
-            WideBuf().make(buffer, tone, i, buffersCount, samplesPerFLit)
-
-        return buffer, freq
+        self.gpio_sync = self.getGpio("dma_sync_gpio_0")
+        self.gpio_gate_0 = self.getGpio("axis_gate_0_axi_gpio_0")
+        self.gpio_gate_1 = self.getGpio("axis_gate_1_axi_gpio_0")
 
     def mkdir(self, outputDir, suffix):
         if not os.path.exists(outputDir):
@@ -161,25 +104,6 @@ class TestSuite:
 
     def shutdown_RF(self):
         self.hmc.Reset()
-
-    def getBramSize(self):
-        assert self.bram0.getSize() == self.bram1.getSize()
-        return self.bram0.getSize()
-
-    def load_dac_player(self, bram0_data, bram1_data):
-        bram0_size = self.bram0.load(data=bram0_data)
-        bram1_size = self.bram1.load(data=bram1_data)
-
-        assert bram0_size == bram1_size
-
-        div = (
-            self.hw.BUFFERS_IN_BRAM
-            * self.hw.SAMPLES_PER_FLIT
-            * self.hw.BYTES_PER_SAMPLE
-        )
-        playerTicksPerBuffer = int(bram0_size / div)
-
-        self.gpio_bram_count.set(val=playerTicksPerBuffer)
 
     def adc_dac_sync(self, sync):
         self.gpio_sync.set(val=(0xFF if sync else 0x0))

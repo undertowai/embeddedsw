@@ -28,7 +28,7 @@ class Test_1x8_Sweep(TestSuite):
                 print("=== Using external generated tones ===")
                 Ipath = self.ext_bram_path + os.sep + "Ichannel.npy"
                 Qpath = self.ext_bram_path + os.sep + "Qchannel.npy"
-                bram0_data = self.load_ext_bram(Ipath, Qpath, dtype)
+                bram0_data = self.make_bram_content_from_file(Ipath, Qpath)
                 bram1_data = np.copy(bram0_data)
             else:
                 print("=== Generating tones ===")
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     freqStep = 0
     dBFS = int(-9)
     captureSize = 128 * 4096 * 2
-    ext_bram_path = "./"
+    ext_bram_path = None
     # Which radios to use:
     tx = [i for i in range(8)]
     rx = [i for i in range(8)]
