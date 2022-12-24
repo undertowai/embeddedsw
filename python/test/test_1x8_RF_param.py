@@ -3,9 +3,6 @@ from test import TestSuite
 import numpy as np
 from time import sleep, time
 
-sys.path.append("../misc")
-
-
 class Test_1x8_Sweep(TestSuite):
     def __init__(self):
         super().__init__()

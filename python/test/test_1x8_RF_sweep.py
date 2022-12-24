@@ -4,9 +4,7 @@ import numpy as np
 import os
 from time import sleep
 
-sys.path.append("../misc")
-
-from widebuf import WideBuf
+from misc.widebuf import WideBuf
 
 
 class Test_1x8_Sweep(TestSuite):

@@ -1,12 +1,9 @@
 import sys
 import ctypes as ct
 
-sys.path.append("../misc")
-
-from dts import Dts
-from make import Make
-from mlock import MLock
-
+from misc.dts import Dts
+from misc.make import Make
+from misc.mlock import MLock
 
 class Gpio(MLock):
     def __init__(self, lib, ipName):

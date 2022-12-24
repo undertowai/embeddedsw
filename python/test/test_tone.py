@@ -2,11 +2,8 @@ import sys
 from test import TestSuite
 import numpy as np
 
-sys.path.append("../misc")
-
-from swave import Wave
-from widebuf import WideBuf
-
+from misc.swave import Wave
+from misc.widebuf import WideBuf
 
 class TestTone(TestSuite):
     def __init__(self):

@@ -6,11 +6,7 @@ from scipy import signal
 import json
 import os
 
-
-sys.path.append("../misc")
-
-from traverse import Traverse
-
+from misc.traverse import Traverse
 
 class Sig:
     fs = 600_000_000

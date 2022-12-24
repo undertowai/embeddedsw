@@ -3,13 +3,11 @@ from time import sleep
 import ctypes as ct
 import numpy as np
 
-from TICS import read as TICSread
+from .TICS import read as TICSread
 
-sys.path.append("../misc")
-
-from dts import Dts
-from make import Make
-from mlock import MLock
+from misc.dts import Dts
+from misc.make import Make
+from misc.mlock import MLock
 
 
 class Lmx2820(MLock):

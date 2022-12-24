@@ -2,10 +2,8 @@ import sys
 import ctypes as ct
 import numpy as np
 
-sys.path.append("../misc")
-
-from make import Make
-from mlock import MLock
+from misc.make import Make
+from misc.mlock import MLock
 
 
 class Rfdc(MLock):

@@ -8,10 +8,7 @@ import os
 
 from inet import Inet
 
-sys.path.append("../misc")
-
-from widebuf import WideBuf
-
+from misc.widebuf import WideBuf
 
 class Test_1x8_Sweep(TestSuite):
     def __init__(self, port):

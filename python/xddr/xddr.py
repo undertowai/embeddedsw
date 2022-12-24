@@ -4,10 +4,7 @@ import numpy as np
 import os
 import mmap
 
-sys.path.append("../misc")
-
-from dts import Dts
-
+from misc.dts import Dts
 
 class Xddr:
     def __init__(self, ipName):

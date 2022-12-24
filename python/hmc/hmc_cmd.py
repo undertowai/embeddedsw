@@ -2,7 +2,6 @@ import cmd
 
 from hmc import HMC63xx
 
-
 class HMC_shell(cmd.Cmd):
     """
     HMC63xx command processor

@@ -7,25 +7,16 @@ import numpy as np
 import pickle
 import time
 
-sys.path.append("../lmx")
-sys.path.append("../hmc")
-sys.path.append("../gpio")
-sys.path.append("../axidma")
-sys.path.append("../rfdc")
-sys.path.append("../xddr")
-sys.path.append("../bram")
-sys.path.append("../misc")
+from misc.swave import Wave
+from misc.widebuf import WideBuf
 
-from swave import Wave
-from widebuf import WideBuf
-
-from lmx import Lmx2820
-from hmc import HMC63xx
-from gpio import AxiGpio
-from axidma import AxiDma
-from xddr import Xddr
-from rfdc import Rfdc
-from bram import BramFactory
+from lmx.lmx import Lmx2820
+from hmc.hmc import HMC63xx
+from gpio.gpio import AxiGpio
+from axidma.axidma import AxiDma
+from xddr.xddr import Xddr
+from rfdc.rfdc import Rfdc
+from bram.bram import BramFactory
 
 from hw import Hw
 from inet import Inet

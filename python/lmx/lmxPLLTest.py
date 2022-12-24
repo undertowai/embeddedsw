@@ -4,9 +4,7 @@ import numpy as np
 
 from lmx import Lmx2820
 
-sys.path.append("../misc")
-
-from dts import Dts
+from misc.dts import Dts
 
 if __name__ == "__main__":
     if len(sys.argv) != 4:
