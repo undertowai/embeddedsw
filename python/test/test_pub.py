@@ -2,13 +2,12 @@ import sys
 from test import TestSuite
 from time import sleep
 import zmq
-import numpy as np
 
 from inet import Inet
 
 sys.path.append("../misc")
 
-class Test_1x8_Sweep(TestSuite):
+class Test_Streaming(TestSuite):
     def __init__(self, port):
         TestSuite.__init__(self)
 
@@ -89,7 +88,7 @@ if __name__ == "__main__":
     capture_data    = True
     max_gain        = False
 
-    test = Test_1x8_Sweep(Inet.PORT)
+    test = Test_Streaming(Inet.PORT)
 
     test.run_test(
         ticsFilePath=ticsFilePath,

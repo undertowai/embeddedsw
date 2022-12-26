@@ -51,7 +51,6 @@ u32 XAxiDma_RegisterMetal(XAxiDma *InstancePtr)
 {
 	s32 Status;
 
-	/* Map RFDC device IO region */
 	InstancePtr->io = metal_device_io_region(InstancePtr->device, 0);
 	if (InstancePtr->io == NULL) {
 		metal_log(METAL_LOG_ERROR, "\n Failed to map AXIDMA region for %s.\n", InstancePtr->device->name);

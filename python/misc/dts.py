@@ -12,6 +12,7 @@ class Dts:
     def __readIp(self, ip):
         with open(self.IP_SYMBOLS_PATH + "/" + ip) as f:
             out = f.read().replace("\x00", "").split("/")
+            f.close()
         return out
 
     def ipToDtsName(self, ip):

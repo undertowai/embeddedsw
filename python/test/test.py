@@ -21,13 +21,13 @@ from hmc import HMC63xx
 from axidma import AxiDma
 from xddr import Xddr
 from rfdc import Rfdc
-from player import DacPlayer
+from gpio import AxiGpio
 
 from hw import Hw
 from inet import Inet
 
 
-class TestSuite(DacPlayer):
+class TestSuite(AxiGpio):
     def getargs(self, **kw):
         for k, v in kw.items():
             setattr(self, k, v)
@@ -47,7 +47,7 @@ class TestSuite(DacPlayer):
         return inner
 
     def __init__(self):
-        DacPlayer.__init__(self)
+        AxiGpio.__init__(self, 'axi_gpio')
         self.hw = Hw()
 
         self.lmx = Lmx2820("axi_quad_spi_0")
