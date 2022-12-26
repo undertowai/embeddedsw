@@ -1,16 +1,18 @@
-import sys
+import sys, argparse
 import numpy as np
 
 sys.path.append("../misc")
 sys.path.append("../bram")
 sys.path.append("../test")
 sys.path.append("../gpio")
+sys.path.append("../rfdc")
 
 from bram import BramFactory
 from gpio import AxiGpio
 from hw import Hw
 from swave import Wave
 from widebuf import WideBuf
+from rfdc import Rfdc
 
 class DacPlayer(AxiGpio):
     def __init__(self):
@@ -18,9 +20,12 @@ class DacPlayer(AxiGpio):
         bram_f = BramFactory()
         self.bram0 = bram_f.makeBram("ram_player_8wide_0_axi_bram_ctrl_0")
         self.bram1 = bram_f.makeBram("ram_player_8wide_1_axi_bram_ctrl_0")
-        
+
         self.gpio_bram_count = self.getGpio("axi_gpio_0")
         self.hw = Hw()
+        self.rfdc = Rfdc("rfdc2")
+
+        self.samplingFreq = self.rfdc.getSamplingFrequency()
 
     def getBramSize(self):
         assert self.bram0.getSize() == self.bram1.getSize()
@@ -99,19 +104,78 @@ class DacPlayer(AxiGpio):
             WideBuf().make(buffer, Q, i + 1, buffersCount, samplesPerFLit)
 
         return buffer
+    
+    def decompose(self, idx):
+        sampleSize = self.hw.BYTES_PER_SAMPLE
+        buffersCount = self.hw.BUFFERS_IN_BRAM
+        numBytes = int(self.getBramSize() / buffersCount)
+        numSamples = int(numBytes / sampleSize)
+        samplesPerFLit = self.hw.SAMPLES_PER_FLIT
+
+        assert self.hw.BYTES_PER_SAMPLE == 2
+        dtype = np.int16
+
+        bram = self.bram0 if idx == 0 else self.bram1
+        bram_data = bram.read(dtype=dtype)
         
+        buffers = []
+        for i in range(0, buffersCount, 1):
+            buffer = WideBuf().decompose(bram_data, numSamples, i, buffersCount, samplesPerFLit)
+            buffers.append(buffer)
+
+        for i, buffer in enumerate(buffers):
+            buffer.tofile('samples_{}.bin'.format(i))
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: {} <I file path> <Q file path>".format(sys.argv[0]))
-        exit()
-        
-    I_path = sys.argv[1]
-    Q_path = sys.argv[2]
-    
+
+    argparser=argparse.ArgumentParser()
+
+    argparser.add_argument('--dec', help='Decompose specified bram into linear samples', type=int)
+
+    argparser.add_argument('--bram0', help='specify file with bram0 content', type=str)
+    argparser.add_argument('--bram1', help='specify file with bram1 content', type=str)
+
+    argparser.add_argument('--ifile', help='specify I data to be loaded in BRAM', type=str)
+    argparser.add_argument('--qfile', help='specify Q data to be loaded in BRAM', type=str)
+
+    argparser.add_argument('--tone', help='Specify tone frequency to be loaded in BRAM', type=int)
+    argparser.add_argument('--step', help='Specify tone step frequency', type=int)
+    argparser.add_argument('--db', help='Specify tone amplitude', type=int)
+
+    args  = argparser.parse_args()
+
     player = DacPlayer()
-    
-    bram_data = player.make_bram_content_from_file(I_path, Q_path)
-    player.load_dac_player(bram_data, bram_data)
-    
+
+    if args.dec is not None:
+        print('Decomposing: {}'.format('bram0' if args.dec == 0 else 'bram1'))
+        player.decompose(args.dec)
+    elif args.bram0 is not None or args.bram1 is not None:
+        if args.bram0 is None or args.bram1 is None:
+
+            print('Loading raw content : bram0={} bram1={}'.format(args.bram0, args.bram1))
+            player.load_dac_player_from_file(args.bram0, args.bram1)
+
+    elif args.ifile is not None or args.qfile is not None:
+        if args.ifile is None or args.qfile is None:
+            raise Exception('Both I & Q data has to be specified')
+        
+        print('Flattening BRAM from files : {} {}'.format(args.ifile, args.qfile))
+        bram_data = player.make_bram_content_from_file(args.ifile, args.qfile)
+        player.load_dac_player(bram_data, bram_data)
+    elif args.tone is not None:
+        freq = int(args.tone)
+        step = int(5_000_000)
+        dBFS = int(-9)
+        if args.step is not None:
+            step = int(args.step)  
+        if args.db is not None:
+            dBFS = int(args.db)
+
+        print('Flattening BRAM using tone freq={} step={} dBFS={}'.format(freq, step, dBFS))
+        bram0, freq = player.make_sweep_tone_bram(player.samplingFreq, freq, dBFS, step)
+        if step != 0:
+            bram1, freq = player.make_sweep_tone_bram(player.samplingFreq, freq, dBFS, step)
+        else: bram1 = bram0
+
+        player.load_dac_player(bram0, bram1)
     print("Pass")

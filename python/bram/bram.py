@@ -62,6 +62,13 @@ class Bram(MLock):
         self.__compare(data, gotData)
         return data.size
 
+    @MLock.Lock
+    def read(self):
+        size = int(self.size / 4)
+        data = np.empty(size, dtype=np.uint32)
+        self.__readData(data)
+        return data.view(dtype=self.dtype)
+
     def loadFromFile(self, path, dtype):
         data = np.fromfile(path, dtype=dtype)
         return self.load(data=data)

@@ -3,7 +3,7 @@ from filelock import Timeout, FileLock
 
 class MLock:
     LOCK_PATH = "../metal.lock"
-    LOCK_TIMEOUT = 1
+    LOCK_TIMEOUT = 10
 
     def getargs(self, **kw):
         for k, v in kw.items():

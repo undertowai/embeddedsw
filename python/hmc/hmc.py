@@ -35,14 +35,14 @@ class HMC63xx(MLock):
     def IfGain_6300(self):
         fun = self.lib.HMC6300_SetIfGain
 
-        status = fun(self.devNamePtr, int(self.ic), self.val)
+        status = fun(self.devNamePtr, int(self.ic), self.gain)
         assert status == 0
 
     @MLock.Lock
     def RVGAGain_6300(self):
         fun = self.lib.HMC6300_SetRVGAGain
 
-        status = fun(self.devNamePtr, int(self.ic), self.val)
+        status = fun(self.devNamePtr, int(self.ic), self.gain)
         assert status == 0
 
     @MLock.Lock
@@ -147,7 +147,7 @@ class HMC63xx(MLock):
     def IfGain_6301(self):
         fun = self.lib.HMC6301_SetIfGain
 
-        status = fun(self.devNamePtr, int(self.ic), self.val)
+        status = fun(self.devNamePtr, int(self.ic), self.gain)
         assert status == 0
 
     def LNAGain_6301(self, ic, gain):

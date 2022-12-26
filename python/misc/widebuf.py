@@ -20,16 +20,18 @@ class WideBuf:
             if offset >= dst.size:
                 break
 
-    def decompose(self, dst, src, bufferNum, buffersCount, samplesPerFLit):
+    def decompose(self, src, numSamples, bufferNum, buffersCount, samplesPerFLit):
+        buffer = np.empty(numSamples, dtype=np.uint16)
         offset = bufferNum * samplesPerFLit
-        for i in range(0, dst.size, samplesPerFLit):
+        for i in range(0, buffer.size, samplesPerFLit):
 
             for j in range(samplesPerFLit):
-                dst[i + j] = src[offset + j]
+                buffer[i + j] = src[offset + j]
 
             offset += buffersCount * samplesPerFLit
             if offset >= src.size:
                 break
+        return buffer
 
     def make(self, buffer, tone, bufferNum, buffersCount, samplesPerFLit):
 
