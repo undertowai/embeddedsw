@@ -55,7 +55,7 @@ class Test_1x8_Sweep(TestSuite):
 
             if self.max_gain:
                 for rxi in rx:
-                    self.hmc(ic=rxi, i=0x0, q=0x0, att=0x0)
+                    self.hmc.SetAtt_6301(ic=rxi, i=0x0, q=0x0, att=0x0)
                     self.hmc.IfGain_6301(ic=rxi, val=0xF)
                     self.hmc.LNAGain_6301(ic=rxi, val=0x3)
 

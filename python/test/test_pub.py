@@ -81,9 +81,9 @@ if __name__ == "__main__":
 
     captureSize = 128 * 1024 * 2
     # Which radios to use:
-    tx = [i for i in range(8)]
+    #tx = [i for i in range(8)]
     # rx = [i for i in range(8)]
-    #tx = [0]
+    tx = [0]
     rx = [0]
     restart_rfdc    = False
     capture_data    = True
