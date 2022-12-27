@@ -9,8 +9,7 @@ import time
 
 sys.path.append("../lmx")
 sys.path.append("../hmc")
-sys.path.append("../gpio")
-sys.path.append("../axidma")
+sys.path.append("../axi")
 sys.path.append("../rfdc")
 sys.path.append("../xddr")
 sys.path.append("../dac")
@@ -22,6 +21,8 @@ from axidma import AxiDma
 from xddr import Xddr
 from rfdc import Rfdc
 from gpio import AxiGpio
+from axis_switch import AxisSwitch
+from widebuf import WideBuf
 
 from hw import Hw
 from inet import Inet
@@ -56,10 +57,16 @@ class TestSuite(AxiGpio):
         self.ddr0 = Xddr("ddr4_0")
         self.ddr1 = Xddr("ddr4_1")
         self.rfdc = Rfdc("rfdc2")
+        self.axis_switch = AxisSwitch("axis_switch_0")
 
         self.gpio_sync = self.getGpio("dma_sync_gpio_0")
         self.gpio_gate_0 = self.getGpio("axis_gate_0_axi_gpio_0")
         self.gpio_gate_1 = self.getGpio("axis_gate_1_axi_gpio_0")
+
+        self.set_loobback(False)
+
+    def set_loobback(self, loopback):
+        self.axis_switch.route(s=[0 if loopback else 1], m=[0])
 
     def mkdir(self, outputDir, suffix):
         if not os.path.exists(outputDir):
@@ -157,8 +164,6 @@ class TestSuite(AxiGpio):
         self.adc_dac_sync(True)
 
         sleep(self.calc_capture_time(size))
-
-        self.__reset_dma(ids)
 
         return self.__capture_memory(ddr, outputDir, paths, offset, size)
 

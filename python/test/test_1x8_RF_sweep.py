@@ -6,9 +6,6 @@ from time import sleep
 
 sys.path.append("../misc")
 
-from widebuf import WideBuf
-
-
 class Test_1x8_Sweep(TestSuite):
     def __init__(self):
         super().__init__()
@@ -21,6 +18,18 @@ class Test_1x8_Sweep(TestSuite):
         # Turn on all the dac player outputs
         self.dac_gate(0xFFFF)
 
+        ids0 = []
+        ids1 = []
+        for rx in self.rx:
+            if rx > 3:
+                ids1.extend([rx * 2, rx * 2 + 1])
+            else:
+                ids0.extend([rx * 2, rx * 2 + 1])
+                #ids0.extend([rx * 2])
+
+        paths0 = list(map(self.cap_name, ids0))
+        paths1 = list(map(self.cap_name, ids1))
+
         offset = 0x0
 
         for txi in self.tx:
@@ -30,19 +39,10 @@ class Test_1x8_Sweep(TestSuite):
 
             outputDir = self.mkdir(self.outputDir, str(txi))
 
-            ids = [i for i in range(8)]
-            paths = list(map(self.cap_name, ids))
-
             # input("Press Enter to continue...")
 
-            # Let the RF to settle the configuration
-            sleep(1)
-            self.capture(self.ddr0, outputDir, paths, ids, offset, self.captureSize)
-
-            ids = [i for i in range(8, 16, 1)]
-            paths = list(map(self.cap_name, ids))
-
-            self.capture(self.ddr1, outputDir, paths, ids, offset, self.captureSize)
+            for ids, paths, ddr in [(ids0, paths0, self.ddr0), (ids1, paths1, self.ddr1)]:
+                self.capture(ddr, outputDir, paths, ids, offset, self.captureSize)
 
             self.shutdown_RF()
 
@@ -55,17 +55,20 @@ if __name__ == "__main__":
     ticsFilePath = sys.argv[1]
 
     captureSize = 128 * 4096 * 2
-    #ext_bram_path = None
-    ext_bram_path = "/home/petalinux/Work/embeddedsw/python/test/"
     # Which radios to use:
-    tx = [i for i in range(8)]
-    rx = [i for i in range(8)]
+    #tx = [i for i in range(8)]
+    #rx = [i for i in range(8)]
+    tx = [0]
+    rx = [0]
     outputDir = "/home/captures"
 
     restart_rfdc = False
     capture_data = True
 
     test = Test_1x8_Sweep()
+    
+    test.set_loobback(True)
+    test.axis_switch.route(s=[0], m=[0])
 
     test.run_test(
         ticsFilePath=ticsFilePath,
@@ -75,5 +78,4 @@ if __name__ == "__main__":
         tx=tx,
         rx=rx,
         outputDir=outputDir,
-        ext_bram_path=ext_bram_path,
     )

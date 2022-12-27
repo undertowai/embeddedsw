@@ -37,13 +37,22 @@ class Wave:
         print("Adjusted Frequency:          {} Hz".format(newFreq))
         print("Calculated Amplitude: {}".format(amplitude))
 
-        buffer = np.empty(numSamples, dtype=np.uint16)
+        buffer = np.empty(numSamples, dtype=np.int16)
         for i in range(numSamples):
             rads = math.pi / 180
             val = amplitude * math.cos(stepSize * i * rads + phaseRads)
             buffer[i] = int(val)
 
         return buffer
+    
+    def setSaw(self, NumBytes, sampleSize):
+        numSamples = int(NumBytes / sampleSize)
+        buffer = np.empty(numSamples, dtype=np.int16)
+        for i in range(numSamples):
+            buffer[i] = int(i)
+        
+        return buffer
+        
 
     def strNegative(self, s):
         s = "minus_" + str(-s) if (s < 0) else str(s)

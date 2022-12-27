@@ -1,10 +1,11 @@
 import sys, argparse
 import numpy as np
+import os
 
 sys.path.append("../misc")
 sys.path.append("../bram")
 sys.path.append("../test")
-sys.path.append("../gpio")
+sys.path.append("../axi")
 sys.path.append("../rfdc")
 
 from bram import BramFactory
@@ -64,6 +65,26 @@ class DacPlayer(AxiGpio):
 
         return buffer, freq
 
+    def make_saw_bram(self):
+        sampleSize = self.hw.BYTES_PER_SAMPLE
+        buffersCount = self.hw.BUFFERS_IN_BRAM
+        numBytes = int(self.getBramSize() / buffersCount)
+        numSamples = int(numBytes / sampleSize)
+        samplesPerFLit = self.hw.SAMPLES_PER_FLIT
+
+        assert self.hw.BYTES_PER_SAMPLE == 2
+        dtype = np.int16
+
+        buffer = np.empty(buffersCount * numSamples, dtype=dtype)
+
+        tone = Wave().setSaw( numBytes, sampleSize )
+
+        for i in range(buffersCount):
+
+            WideBuf().make(buffer, tone, i, buffersCount, samplesPerFLit)
+
+        return buffer
+
     def load_dac_player(self, bram0_data, bram1_data):
         bram0_size = self.bram0.load(data=bram0_data)
         bram1_size = self.bram1.load(data=bram1_data)
@@ -73,7 +94,7 @@ class DacPlayer(AxiGpio):
         div = (
             self.hw.BUFFERS_IN_BRAM
             * self.hw.SAMPLES_PER_FLIT
-            * self.hw.BYTES_PER_SAMPLE
+            / 2
         )
         playerTicksPerBuffer = int(bram0_size / div)
 
@@ -157,6 +178,8 @@ if __name__ == "__main__":
     argparser.add_argument('--step', help='Specify tone step frequency', type=int)
     argparser.add_argument('--db', help='Specify tone amplitude', type=int)
 
+    argparser.add_argument('--saw', help='Generate Incrementing sequence between min and max values', action='store_true')
+
     args  = argparser.parse_args()
 
     player = DacPlayer()
@@ -193,4 +216,10 @@ if __name__ == "__main__":
         else: bram1 = bram0
 
         player.load_dac_player(bram0, bram1)
+    elif args.saw is not None:
+
+        print('Flattening BRAM using SAW ')
+        bram0 = player.make_saw_bram()
+
+        player.load_dac_player(bram0, bram0)
     print("Pass")
