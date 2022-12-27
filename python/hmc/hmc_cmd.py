@@ -15,11 +15,17 @@ class HMC_shell(cmd.Cmd):
 
     def do_6300_def(self, ic):
         "Write default configuration to 6300 [x] ic"
-        self.hmc.DefaultConfig_6300(ic=ic)
+        try:
+            self.hmc.DefaultConfig_6300(ic=ic)
+        except AssertionError:
+            pass
 
     def do_6301_def(self, ic):
         "Write default configuration to 6301 [x] ic"
-        self.hmc.DefaultConfig_6301(ic=ic)
+        try:
+            self.hmc.DefaultConfig_6301(ic=ic)
+        except AssertionError:
+            pass
 
     def do_6300_print(self, ic):
         "Dump registers"
@@ -33,35 +39,53 @@ class HMC_shell(cmd.Cmd):
         "Set ifgain"
         ic, ifgain = [int(s) for s in line.split()]
         print("Setting if gain ic={}, gain={}".format(ic, ifgain))
-        self.hmc.IfGain_6300(ic=ic, val=ifgain)
+        try:
+            self.hmc.IfGain_6300(ic=ic, gain=ifgain)
+        except AssertionError:
+            pass
 
     def do_6301_ifgain(self, line):
         "Set ifgain"
         ic, ifgain = [int(s) for s in line.split()]
         print("Setting if gain ic={}, gain={}".format(ic, ifgain))
-        self.hmc.IfGain_6301(ic=ic, val=ifgain)
+        try:
+            self.hmc.IfGain_6301(ic=ic, gain=ifgain)
+        except AssertionError:
+            pass
 
     def do_6300_rvga_gain(self, line):
         "Set rvga gain"
         ic, gain = [int(s) for s in line.split()]
         print("Setting rvga gain ic={}, gain={}".format(ic, gain))
-        self.hmc.RVGAGain_6300(ic=ic, val=gain)
+        try:
+            self.hmc.RVGAGain_6300(ic=ic, gain=gain)
+        except AssertionError:
+            pass
 
     def do_6300_power(self, ic, powerup):
         "Set power on/off"
-        self.hmc.Power_6300(ic=ic, pwup=powerup)
+        try:
+            self.hmc.Power_6300(ic=ic, pwup=powerup)
+        except AssertionError:
+            pass
 
     def do_6301_att(self, line):
         "Set i/q/att2 attenuation: 6301_att <ic> <i> <q> <att2>"
         ic, i, q, att = [int(s) for s in line.split()]
         print("Setting atttenuation ic={}, i={}, q={}, att={}".format(ic, i, q, att))
-        self.hmc.SetAtt_6301(ic=ic, i=i, q=q, att=att)
+        try:
+            self.hmc.SetAtt_6301(ic=ic, i=i, q=q, att=att)
+        except AssertionError:
+            pass
 
     def do_6301_lna_gain(self, line):
         "Set lna gain: 6301_lna_gain <ic> <gain>"
         ic, gain = [int(s) for s in line.split()]
         print("Setting lna gain ic={}, gain={}".format(ic, gain))
-        self.hmc.LNAGain_6301(ic=ic, gain=gain)
+        try:
+            self.hmc.LNAGain_6301(ic=ic, gain=gain)
+        except AssertionError:
+            pass
 
     def do_6300_t(self, ic):
         "Read temperature"
@@ -72,6 +96,9 @@ class HMC_shell(cmd.Cmd):
         self.hmc.Reset()
 
     def do_EOF(self, line):
+        return True
+    
+    def do_exit(self, line):
         return True
 
 

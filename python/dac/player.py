@@ -97,14 +97,28 @@ class DacPlayer(AxiGpio):
 
         buffer = np.empty(buffersCount * numSamples, dtype=dtype)
 
-        I = np.fromfile(Ipath, dtype=np.int16)
-        Q = np.fromfile(Qpath, dtype=np.int16)
+        _, Iext = os.path.splitext(Ipath)
+        _, Qext = os.path.splitext(Qpath)
+
+        assert Iext == Qext
+
+        if Iext == '.npy':
+            I = np.load(Ipath)
+            Q = np.load(Qpath)
+            assert I.dtype == np.int16
+        else:
+            I = np.fromfile(Ipath, dtype=np.int16)
+            Q = np.fromfile(Qpath, dtype=np.int16)
+
+        self.exposeToDdr(0, I)
+        self.exposeToDdr(1, Q)
+
         for i in range(0, buffersCount, 2):
             WideBuf().make(buffer, I, i, buffersCount, samplesPerFLit)
             WideBuf().make(buffer, Q, i + 1, buffersCount, samplesPerFLit)
 
         return buffer
-    
+
     def decompose(self, idx):
         sampleSize = self.hw.BYTES_PER_SAMPLE
         buffersCount = self.hw.BUFFERS_IN_BRAM
@@ -124,7 +138,8 @@ class DacPlayer(AxiGpio):
             buffers.append(buffer)
 
         for i, buffer in enumerate(buffers):
-            buffer.tofile('samples_{}.bin'.format(i))
+            with open('samples_{}.bin'.format(i), '+wb') as f:
+                np.save(f, buffer)
 
 if __name__ == "__main__":
 

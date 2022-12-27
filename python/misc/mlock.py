@@ -2,7 +2,7 @@ from filelock import Timeout, FileLock
 
 
 class MLock:
-    LOCK_PATH = "../metal.lock"
+    LOCK_PATH = "/tmp/metal.lock"
     LOCK_TIMEOUT = 10
 
     def getargs(self, **kw):

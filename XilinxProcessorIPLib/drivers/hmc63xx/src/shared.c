@@ -34,16 +34,19 @@ int HMC63xx_GpioInit(const char *devName)
 
 int HMC6300_SetIfGain(const char *devName, int ic, int val)
 {
+	int status = XST_SUCCESS;
     XGpio_t Gpio = {0};
 
 	if (XST_SUCCESS != HMC_Dev_Init(&Gpio, devName)) {
 		return XST_FAILURE;
 	}
-    hmc6300_SetIfGain(&Gpio, ic, val);
+    if (hmc6300_SetIfGain(&Gpio, ic, val)) {
+		status = XST_FAILURE;
+	}
 
 	metal_device_close(Gpio.device);
 	metal_finish();
-    return XST_SUCCESS;
+    return status;
 }
 
 int HMC6300_SetRVGAGain(const char *devName, int ic, int val)

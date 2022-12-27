@@ -15,11 +15,11 @@ class Make:
         assert ret == 0
 
     def __MakeLib(self, lib, keys=""):
-        ret = os.system("make -C {}/{} -s all".format(self.DRIVERS_PATH, lib))
+        ret = os.system("make -C {}/{} -s all {}".format(self.DRIVERS_PATH, lib, keys))
         assert ret == 0
 
-    def makeLibs(self, libName):
+    def makeLibs(self, libName, keys=""):
         print("Building lib '{}' ...".format(libName))
         self.__MakeMetal()
-        self.__MakeLib(libName + "/src")
+        self.__MakeLib(libName + "/src", keys=keys)
         return self.DRIVERS_PATH + "/" + libName + "/src/lib" + libName + ".so"
