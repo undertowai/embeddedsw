@@ -57,7 +57,8 @@ class TestSuite(AxiGpio):
         self.ddr0 = Xddr("ddr4_0")
         self.ddr1 = Xddr("ddr4_1")
         self.rfdc = Rfdc("rfdc2")
-        self.axis_switch = AxisSwitch("axis_switch_0")
+        self.axis_switch0 = AxisSwitch("axis_switch_0")
+        self.axis_switch1 = AxisSwitch("axis_switch_1")
 
         self.gpio_sync = self.getGpio("dma_sync_gpio_0")
         self.gpio_gate_0 = self.getGpio("axis_gate_0_axi_gpio_0")
@@ -66,7 +67,8 @@ class TestSuite(AxiGpio):
         self.set_loobback(False)
 
     def set_loobback(self, loopback):
-        self.axis_switch.route(s=[0 if loopback else 1], m=[0])
+        self.axis_switch0.route(s=[0 if loopback else 1], m=[0])
+        self.axis_switch1.route(s=[0 if loopback else 1], m=[0])
 
     def mkdir(self, outputDir, suffix):
         if not os.path.exists(outputDir):
@@ -123,15 +125,11 @@ class TestSuite(AxiGpio):
         for id in ids:
             data.append((addr, size))
             devName = self.dma.devIdToIpName(id)
+            print('__start_dma: {} {} {} {}'.format(devName, id, hex(addr), size))
+
             self.dma.startTransfer(devName=devName, addr=addr, len=size)
             addr = addr + size
         return data
-
-    def __reset_dma(self, ids):
-
-        for id in ids:
-            devName = self.dma.devIdToIpName(id)
-            self.dma.reset(devName=devName)
 
     def __write_cap_data(self, path, data):
         with open(path, "wb") as f:

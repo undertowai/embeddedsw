@@ -68,7 +68,6 @@ if __name__ == "__main__":
     test = Test_1x8_Sweep()
     
     test.set_loobback(True)
-    test.axis_switch.route(s=[0], m=[0])
 
     test.run_test(
         ticsFilePath=ticsFilePath,
