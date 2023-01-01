@@ -74,16 +74,25 @@ class TestSuite(AxiGpio):
         if not os.path.exists(outputDir):
             os.makedirs(outputDir)
 
-        if self.capture_data:
-            outputDir = "{}/TX_{}".format(outputDir, suffix)
-            if not os.path.exists(outputDir):
-                os.mkdir(outputDir)
-        else:
-            outputDir = None
+        outputDir = "{}/TX_{}".format(outputDir, suffix)
+        if not os.path.exists(outputDir):
+            os.mkdir(outputDir)
+
         return outputDir
 
     def cap_name(self, id):
         return "cap{}_{}.bin".format("I" if id % 2 == 0 else "Q", int(id / 2))
+
+    def map_rx_to_dma_id(self, rx_in):
+        ids0 = []
+        ids1 = []
+        for rx in rx_in:
+            if rx > 3:
+                ids1.extend([rx * 2, rx * 2 + 1])
+            else:
+                ids0.extend([rx * 2, rx * 2 + 1])
+
+        return ids0, ids1
 
     def setup_RF_Clk(self, ticsFilePath, restart_rfdc=True):
 

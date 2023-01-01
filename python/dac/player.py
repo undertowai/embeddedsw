@@ -131,9 +131,6 @@ class DacPlayer(AxiGpio):
             I = np.fromfile(Ipath, dtype=np.int16)
             Q = np.fromfile(Qpath, dtype=np.int16)
 
-        self.exposeToDdr(0, I)
-        self.exposeToDdr(1, Q)
-
         for i in range(0, buffersCount, 2):
             WideBuf().make(buffer, I, i, buffersCount, samplesPerFLit)
             WideBuf().make(buffer, Q, i + 1, buffersCount, samplesPerFLit)
