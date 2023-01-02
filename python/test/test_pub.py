@@ -22,8 +22,7 @@ class Test_Streaming(TestSuite):
         print("\n\n\n=== Running test ===")
 
         self.setup_RF_Clk(self.ticsFilePath, self.restart_rfdc)
-        # Turn on all the dac player outputs
-        self.dac_gate(0xFFFF)
+
         sn = 0x0
         offset = 0x0
 

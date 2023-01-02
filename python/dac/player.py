@@ -199,7 +199,7 @@ if __name__ == "__main__":
         player.load_dac_player(bram_data, bram_data)
     elif args.tone is not None:
         freq = int(args.tone)
-        step = int(5_000_000)
+        step = int(0)
         dBFS = int(-9)
         if args.step is not None:
             step = int(args.step)  

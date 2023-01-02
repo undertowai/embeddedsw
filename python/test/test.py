@@ -60,11 +60,11 @@ class TestSuite(AxiGpio):
         self.axis_switch0 = AxisSwitch("axis_switch_0")
         self.axis_switch1 = AxisSwitch("axis_switch_1")
 
-        self.gpio_sync = self.getGpio("dma_sync_gpio_0")
-        self.gpio_gate_0 = self.getGpio("axis_gate_0_axi_gpio_0")
-        self.gpio_gate_1 = self.getGpio("axis_gate_1_axi_gpio_0")
+        self.gpio_sync = self.getGpio("adc_dac_sync_gpio_0")
 
         self.set_loobback(False)
+
+        self.samplingFreq = self.rfdc.getSamplingFrequency()
 
     def set_loobback(self, loopback):
         self.axis_switch0.route(s=[0 if loopback else 1], m=[0])
@@ -80,7 +80,7 @@ class TestSuite(AxiGpio):
 
         return outputDir
 
-    def cap_name(self, id):
+    def map_id_to_cap_name(self, id):
         return "cap{}_{}.bin".format("I" if id % 2 == 0 else "Q", int(id / 2))
 
     def map_rx_to_dma_id(self, rx_in):
@@ -134,7 +134,6 @@ class TestSuite(AxiGpio):
         for id in ids:
             data.append((addr, size))
             devName = self.dma.devIdToIpName(id)
-            print('__start_dma: {} {} {} {}'.format(devName, id, hex(addr), size))
 
             self.dma.startTransfer(devName=devName, addr=addr, len=size)
             addr = addr + size
@@ -145,7 +144,7 @@ class TestSuite(AxiGpio):
             f.write(data)
             f.close()
 
-    def __capture_memory(self, ddr, outputdir, paths, offset, size):
+    def collect_captures_from_ddr(self, ddr, outputdir, paths, offset, size):
         base_address = ddr.base_address() + offset
 
         addr = base_address
@@ -155,24 +154,6 @@ class TestSuite(AxiGpio):
             if outputPath is not None:
                 self.__write_cap_data(outputPath, data)
             addr = addr + size
-
-    def dac_gate(self, val):
-        self.gpio_gate_0.set(val=(val >> 0) & 0xFF)
-        self.gpio_gate_1.set(val=(val >> 8) & 0xFF)
-
-    def capture(self, ddr, outputDir, paths, ids, offset, size):
-
-        assert len(paths) == len(ids)
-
-        self.adc_dac_sync(False)
-
-        self.__start_dma(ddr, ids, offset, size)
-
-        self.adc_dac_sync(True)
-
-        sleep(self.calc_capture_time(size))
-
-        return self.__capture_memory(ddr, outputDir, paths, offset, size)
 
     def publish(self, area, sn, freq, fs):
         for a in area:
@@ -204,8 +185,8 @@ class TestSuite(AxiGpio):
     def calc_capture_time(self, captureSize):
         numCaptures = 0x1
         batchSize = captureSize * numCaptures
-        numFlits = batchSize / (self.hw.SAMPLES_PER_FLIT * self.hw.BYTES_PER_SAMPLE)
-        t = numFlits / self.hw.FABRIC_CLOCK
+        numSamples = batchSize / (self.hw.BYTES_PER_SAMPLE)
+        t = numSamples / self.samplingFreq
         return t
 
 

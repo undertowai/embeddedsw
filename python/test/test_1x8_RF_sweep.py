@@ -15,13 +15,11 @@ class Test_1x8_Sweep(TestSuite):
         print("\n\n\n=== Running test ===")
 
         self.setup_RF_Clk(self.ticsFilePath, self.restart_rfdc)
-        # Turn on all the dac player outputs
-        self.dac_gate(0xFFFF)
 
         ids0, ids1 = self.map_rx_to_dma_id(self.rx)
 
-        paths0 = list(map(self.cap_name, ids0))
-        paths1 = list(map(self.cap_name, ids1))
+        paths0 = list(map(self.map_id_to_cap_name, ids0))
+        paths1 = list(map(self.map_id_to_cap_name, ids1))
 
         offset = 0x0
 
@@ -32,10 +30,17 @@ class Test_1x8_Sweep(TestSuite):
 
             outputDir = self.mkdir(self.outputDir, str(txi))
 
-            # input("Press Enter to continue...")
+            self.adc_dac_sync(False)
 
-            for ids, paths, ddr in [(ids0, paths0, self.ddr0), (ids1, paths1, self.ddr1)]:
-                self.capture(ddr, outputDir, paths, ids, offset, self.captureSize)
+            for ids, ddr in [(ids0, self.ddr0), (ids1, self.ddr1)]:
+                self.start_dma(ddr, ids, offset, self.captureSize)
+
+            self.adc_dac_sync(True)
+
+            sleep(self.calc_capture_time(self.captureSize))
+
+            for paths, ddr in [(paths0, self.ddr0), (paths1, self.ddr1)]:
+                self.collect_captures_from_ddr(ddr, outputDir, paths, offset, self.captureSize)
 
             self.shutdown_RF()
 
