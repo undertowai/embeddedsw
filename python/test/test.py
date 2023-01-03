@@ -3,7 +3,6 @@ import sys
 from time import sleep
 import traceback
 import logging
-import numpy as np
 import pickle
 import time
 
@@ -22,7 +21,6 @@ from xddr import Xddr
 from rfdc import Rfdc
 from gpio import AxiGpio
 from axis_switch import AxisSwitch
-from widebuf import WideBuf
 
 from hw import Hw
 from inet import Inet
@@ -61,6 +59,7 @@ class TestSuite(AxiGpio):
         self.axis_switch1 = AxisSwitch("axis_switch_1")
 
         self.gpio_sync = self.getGpio("adc_dac_sync_gpio_0")
+        self.gpio_flush = self.getGpio("adc_dac_flush_gpio_0")
 
         self.set_loobback(False)
 
@@ -123,7 +122,14 @@ class TestSuite(AxiGpio):
         self.hmc.Reset()
 
     def adc_dac_sync(self, sync):
-        self.gpio_sync.set(val=(0xFF if sync else 0x0))
+        if sync:
+            self.gpio_flush.set(val=0x00)
+            self.gpio_sync.set(val=0xff)
+        else:
+            self.gpio_flush.set(val=0xff)
+            #Use approximate time to flush the FIFO
+            sleep(self.calc_capture_time(512))
+            self.gpio_sync.set(val=0x00)
 
     def __start_dma(self, ddr, ids, offset, size):
 
@@ -149,7 +155,7 @@ class TestSuite(AxiGpio):
 
         addr = base_address
         for path in paths:
-            outputPath = None if outputdir is None else outputdir + "/" + path
+            outputPath = outputdir + "/" + path
             data = ddr.capture(addr, size)
             if outputPath is not None:
                 self.__write_cap_data(outputPath, data)

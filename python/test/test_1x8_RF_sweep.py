@@ -64,7 +64,7 @@ if __name__ == "__main__":
     test = Test_1x8_Sweep()
     captureSize = 64 * 1024 * 2 * test.hw.BYTES_PER_SAMPLE
 
-    test.set_loobback(False)
+    test.set_loobback(True)
 
     test.run_test(
         ticsFilePath=ticsFilePath,
