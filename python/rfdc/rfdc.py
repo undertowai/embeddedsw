@@ -34,6 +34,13 @@ class Rfdc(MLock):
         assert freq > 0
 
         return int(freq * 1_000_000)
+    
+    @MLock.Lock
+    def setRFdcMTS(self):
+        fun = self.lib.RFdcMTS
+        
+        status = fun(int(self.adc), int(self.dac))
+        assert status == 0
 
 
 if __name__ == "__main__":

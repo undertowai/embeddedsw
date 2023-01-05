@@ -14,35 +14,40 @@ class Test_1x8_Sweep(TestSuite):
     def run_test(self):
         print("\n\n\n=== Running test ===")
 
-        self.setup_RF_Clk(self.ticsFilePath, self.restart_rfdc)
+        self.setup_rfdc()
 
-        ids0, ids1 = self.map_rx_to_dma_id(self.rx)
+        if self.adc_dac_loopback == False:
+            self.setup_lmx(self.ticsFilePath)
 
-        paths0 = list(map(self.map_id_to_cap_name, ids0))
-        paths1 = list(map(self.map_id_to_cap_name, ids1))
+        dma_ids0, dma_ids1 = self.map_rx_to_dma_id(self.rx)
 
-        offset = 0x0
+        cap_names0 = list(map(self.map_id_to_cap_name, dma_ids0))
+        cap_names1 = list(map(self.map_id_to_cap_name, dma_ids1))
+
+        cap_ddr_offset = 0x0
 
         for txi in self.tx:
 
             print("*** Running Iteration : rx={}, tx={}".format(self.rx, txi))
-            self.setup_RF([txi], self.rx)
+            if self.adc_dac_loopback == False:
+                self.setup_hmc([txi], self.rx)
 
             outputDir = self.mkdir(self.outputDir, str(txi))
 
             self.adc_dac_sync(False)
 
-            for ids, ddr in [(ids0, self.ddr0), (ids1, self.ddr1)]:
-                self.start_dma(ddr, ids, offset, self.captureSize)
+            for ids, ddr in [(dma_ids0, self.ddr0), (dma_ids1, self.ddr1)]:
+                self.start_dma(ddr, ids, cap_ddr_offset, self.captureSize)
 
             self.adc_dac_sync(True)
 
             sleep(self.calc_capture_time(self.captureSize))
 
-            for paths, ddr in [(paths0, self.ddr0), (paths1, self.ddr1)]:
-                self.collect_captures_from_ddr(ddr, outputDir, paths, offset, self.captureSize)
+            for paths, ddr in [(cap_names0, self.ddr0), (cap_names1, self.ddr1)]:
+                self.collect_captures_from_ddr(ddr, outputDir, paths, cap_ddr_offset, self.captureSize)
 
-            self.shutdown_RF()
+            if self.adc_dac_loopback == False:
+                self.shutdown_hmc()
 
 
 if __name__ == "__main__":
@@ -59,18 +64,17 @@ if __name__ == "__main__":
     tx = [0]
     rx = [0]
 
-    restart_rfdc = False
-
     test = Test_1x8_Sweep()
     captureSize = 64 * 1024 * 2 * test.hw.BYTES_PER_SAMPLE
+    adc_dac_loopback = True
 
-    test.set_loobback(True)
+    test.set_loobback(False)
 
     test.run_test(
         ticsFilePath=ticsFilePath,
         captureSize=captureSize,
-        restart_rfdc=restart_rfdc,
         tx=tx,
         rx=rx,
         outputDir=outputDir,
+        adc_dac_loopback=adc_dac_loopback
     )

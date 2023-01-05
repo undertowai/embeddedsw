@@ -13,7 +13,7 @@ class Xddr:
         self.address = (reg[0] << 32) | reg[1]
         self.length = (reg[2] << 32) | reg[3]
 
-    def read(offset, length):
+    def read(offset, length, dtype=np.uint8):
         with open("/dev/mem", "r+b") as f:
             mm = mmap.mmap(
                 fileno=f.fileno(),
@@ -26,7 +26,7 @@ class Xddr:
 
             data = mm[:length]
             mm.close()
-            return np.frombuffer(data, dtype=np.uint8)
+            return np.frombuffer(data, dtype=dtype)
 
     def capture(self, offset, length):
         return Xddr.read(offset, length)

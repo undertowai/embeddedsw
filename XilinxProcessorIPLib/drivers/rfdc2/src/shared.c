@@ -122,7 +122,6 @@ static int _RFDC_Init (XRFdc *RFdcInstPtr)
 	Major = (Val >> 24) & 0xFF;
 	Minor = (Val >> 16) & 0xFF;
 
-	metal_finish();
 	return XST_SUCCESS;
 }
 
@@ -178,7 +177,7 @@ int RFDC_Restart(void)
 	dacCurrent(&RFdcInst);
 
 	metal_device_close(RFdcInst.device);
-
+	metal_finish();
 	return XST_SUCCESS;
 }
 
@@ -219,7 +218,89 @@ int RFDC_GetSamplingFreq (void)
 	SamplingFreq = SamplingFreq / (float)InterpolationFactor;
 
 	metal_device_close(RFdcInst.device);
+	metal_finish();
 	return (int)(SamplingFreq / 1000000.0);
+}
+
+int RFdcMTS(u32 ADC_mask, u32 DAC_mask)
+{
+	u16 RFdcDeviceId = 0;
+	int status, status_adc, status_dac, i;
+	u32 factor;
+	XRFdc_Config *ConfigPtr;
+	XRFdc RFdcInst = {0};      /* RFdc driver instance */
+
+	XRFdc *RFdcInstPtr = &RFdcInst;
+
+	status = _RFDC_Init(RFdcInstPtr);
+
+    if (status != XRFDC_SUCCESS) {
+        printf("RFdc Init Failure\n\r");
+		return XRFDC_FAILURE;
+    }
+
+    printf("=== RFdc Initialized - Running Multi-tile Sync ===\n");
+
+    /* ADC MTS Settings */
+    XRFdc_MultiConverter_Sync_Config ADC_Sync_Config;
+
+    /* DAC MTS Settings */
+    XRFdc_MultiConverter_Sync_Config DAC_Sync_Config;
+
+    /* Run MTS for the ADC & DAC */
+    printf("\n=== Run DAC Sync ===\n");
+
+    /* Initialize DAC MTS Settings */
+    XRFdc_MultiConverter_Init (&DAC_Sync_Config, 0, 0, XRFDC_TILE_ID0);
+    DAC_Sync_Config.Tiles = DAC_mask;
+
+    status_dac = XRFdc_MultiConverter_Sync(RFdcInstPtr, XRFDC_DAC_TILE,
+					&DAC_Sync_Config);
+    if(status_dac == XRFDC_MTS_OK){
+		printf("INFO : DAC Multi-Tile-Sync completed successfully\n");
+    }else{
+		printf("ERROR : DAC Multi-Tile-Sync did not complete successfully. Error code is %u \n",status_dac);
+	return status_dac;
+    }
+
+    printf("\n=== Run ADC Sync ===\n");
+
+    /* Initialize ADC MTS Settings */
+    XRFdc_MultiConverter_Init (&ADC_Sync_Config, 0, 0, XRFDC_TILE_ID0);
+    ADC_Sync_Config.Tiles = ADC_mask;
+
+    status_adc = XRFdc_MultiConverter_Sync(RFdcInstPtr, XRFDC_ADC_TILE,
+					&ADC_Sync_Config);
+    if(status_adc == XRFDC_MTS_OK){
+		printf("INFO : ADC Multi-Tile-Sync completed successfully\n");
+    }else{
+		printf("ERROR : ADC Multi-Tile-Sync did not complete successfully. Error code is %u \n",status_adc);
+		return status_adc;
+    }
+
+    /*
+     * Report Overall Latency in T1 (Sample Clocks) and
+     * Offsets (in terms of PL words) added to each FIFO
+     */
+     printf("\n\n=== Multi-Tile Sync Report ===\n");
+     for(i=0; i<4; i++) {
+         if((1<<i)&DAC_Sync_Config.Tiles) {
+                 XRFdc_GetInterpolationFactor(RFdcInstPtr, i, 0, &factor);
+                 printf("DAC%d: Latency(T1) =%3d, Adjusted Delay"
+				 "Offset(T%d) =%3d\n", i, DAC_Sync_Config.Latency[i],
+						 factor, DAC_Sync_Config.Offset[i]);
+         }
+     }
+     for(i=0; i<4; i++) {
+         if((1<<i)&ADC_Sync_Config.Tiles) {
+                 XRFdc_GetDecimationFactor(RFdcInstPtr, i, 0, &factor);
+                 printf("ADC%d: Latency(T1) =%3d, Adjusted Delay"
+				 "Offset(T%d) =%3d\n", i, ADC_Sync_Config.Latency[i],
+						 factor, ADC_Sync_Config.Offset[i]);
+         }
+     }
+	metal_finish();
+    return XRFDC_MTS_OK;
 }
 
 /****************************************************************************/
@@ -426,7 +507,6 @@ int printCLK104_settings(void)
 
 	return XST_SUCCESS;
 }
-
 
 
 void reverse32bArray(u32 *src, int size) {

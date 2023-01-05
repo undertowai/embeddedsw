@@ -162,6 +162,15 @@ class HMC63xx(MLock):
     def ReadReg_6300(self, ic, i):
         return self.RMW_6300(ic=ic, i=i, val=0x0, bp=[0, 7])
 
+    def ReadReg_6301(self, ic, i):
+        return self.RMW_6301(ic=ic, i=i, val=0x0, bp=[0, 7])
+
+    def WriteReg_6300(self, ic, i, val):
+        return self.RMW_6300(ic=ic, i=i, val=val, bp=[0, 7])
+
+    def WriteReg_6301(self, ic, i, val):
+        return self.RMW_6301(ic=ic, i=i, val=val, bp=[0, 7])
+
     def ReadTemp_6300(self, ic):
         # enable temperature sensor
         self.RMW_6300(ic=ic, i=3, val=0x1, bp=[0, 0])

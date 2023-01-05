@@ -92,6 +92,26 @@ class HMC_shell(cmd.Cmd):
         tempC = self.hmc.ReadTemp_6300(ic)
         print("6300_{} temperature = {}^C".format(ic, tempC))
 
+    def do_6300_rd(self, line):
+        "read register: 6300_rd <ic> <i>"
+        ic, i = [int(s) for s in line.split()]
+        self.hmc.ReadReg_6300(ic=ic, i=i)
+
+    def do_6301_rd(self, line):
+        "read register: 6301_rd <ic> <i>"
+        ic, i = [int(s) for s in line.split()]
+        self.hmc.ReadReg_6301(ic=ic, i=i)
+
+    def do_6300_wr(self, line):
+        "write register: 6300_rd <ic> <i>"
+        ic, i, val = [int(s) for s in line.split()]
+        self.hmc.WriteReg_6300(ic=ic, i=i, val=val)
+
+    def do_6301_wr(self, line):
+        "write register: 6301_rd <ic> <i>"
+        ic, i, val = [int(s) for s in line.split()]
+        self.hmc.WriteReg_6301(ic=ic, i=i, val=val)
+
     def do_reset(self, line):
         self.hmc.Reset()
 

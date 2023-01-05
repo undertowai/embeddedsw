@@ -16,24 +16,26 @@ class Test_Streaming(TestSuite):
         self.publisher.bind("tcp://0.0.0.0:%s" % port)
 
     @TestSuite.Test
-    def run_test(self):
+    def run_test(self, max_count=5):
         samplingFreq = self.rfdc.getSamplingFrequency()
 
-        self.setup_rfdc()
+        print("\n\n\n=== Running test ===")
 
-        if self.adc_dac_loopback == False:
-            self.setup_lmx(self.ticsFilePath)
-            self.setup_hmc(self.tx, self.rx)
+        self.setup_RF_Clk(self.ticsFilePath, self.restart_rfdc)
 
         sn = 0x0
-        cap_ddr_offset = 0x0
+        offset = 0x0
 
-        dma_ids0, dma_ids1 = self.map_rx_to_dma_id(self.rx)
+        ids0, ids1 = self.map_rx_to_dma_id(self.rx)
 
+        self.setup_RF(self.tx, self.rx)
         #for tx in self.tx:
         #    self.hmc.Power_6300(ic=tx, pwup=False)
 
-        while True:
+        count = 0
+
+        while count < max_count:
+            count = count +1
             #for tx in self.tx:
             #    self.hmc.Power_6300(ic=tx, pwup=True)
 
@@ -42,8 +44,8 @@ class Test_Streaming(TestSuite):
             self.adc_dac_sync(False)
 
             area = []
-            for ids, ddr in [(dma_ids0, self.ddr0), (dma_ids1, self.ddr1)]:
-                a = self.start_dma(ddr, ids, cap_ddr_offset, self.captureSize)
+            for ids, ddr in [(ids0, self.ddr0), (ids1, self.ddr1)]:
+                a = self.start_dma(ddr, ids, offset, self.captureSize)
                 area.append(a)
 
             self.adc_dac_sync(True)
@@ -68,20 +70,21 @@ if __name__ == "__main__":
     # Which radios to use:
     #tx = [i for i in range(8)]
     # rx = [i for i in range(8)]
-    tx = [0]
+    tx = [4]
     rx = [0]
-    adc_dac_loppback = True
+    restart_rfdc    = False
 
     test = Test_Streaming(Inet.PORT)
     captureSize = 64 * 1024 * 2 * test.hw.BYTES_PER_SAMPLE
 
-    test.set_loobback(False)
     #test.set_loobback(True)
+    test.set_loobback(False)
 
     test.run_test(
         ticsFilePath=ticsFilePath,
         captureSize=captureSize,
+        restart_rfdc=restart_rfdc,
         tx=tx,
         rx=rx,
-        adc_dac_loppback=adc_dac_loppback
+        count = 10
     )

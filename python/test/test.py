@@ -5,6 +5,7 @@ import traceback
 import logging
 import pickle
 import time
+import numpy as np
 
 sys.path.append("../lmx")
 sys.path.append("../hmc")
@@ -27,6 +28,9 @@ from inet import Inet
 
 
 class TestSuite(AxiGpio):
+    HAS_ADC_DAC_FLUSH=True
+    HAS_HW_LOOPBACK=True
+
     def getargs(self, **kw):
         for k, v in kw.items():
             setattr(self, k, v)
@@ -55,19 +59,28 @@ class TestSuite(AxiGpio):
         self.ddr0 = Xddr("ddr4_0")
         self.ddr1 = Xddr("ddr4_1")
         self.rfdc = Rfdc("rfdc2")
-        self.axis_switch0 = AxisSwitch("axis_switch_0")
-        self.axis_switch1 = AxisSwitch("axis_switch_1")
+
+        if self.HAS_HW_LOOPBACK:
+            self.axis_switch0 = AxisSwitch("axis_switch_0")
+            self.axis_switch1 = AxisSwitch("axis_switch_1")
+
+        if self.HAS_ADC_DAC_FLUSH:
+            self.gpio_flush = self.getGpio("adc_dac_flush_gpio_0")
+        else:
+            self.gpio_flush = None
 
         self.gpio_sync = self.getGpio("adc_dac_sync_gpio_0")
-        self.gpio_flush = self.getGpio("adc_dac_flush_gpio_0")
 
         self.set_loobback(False)
 
         self.samplingFreq = self.rfdc.getSamplingFrequency()
 
     def set_loobback(self, loopback):
-        self.axis_switch0.route(s=[0 if loopback else 1], m=[0])
-        self.axis_switch1.route(s=[0 if loopback else 1], m=[0])
+        if self.HAS_HW_LOOPBACK:
+            self.axis_switch0.route(s=[0 if loopback else 1], m=[0])
+            self.axis_switch1.route(s=[0 if loopback else 1], m=[0])
+        else:
+            print('set_loobback: not supported')
 
     def mkdir(self, outputDir, suffix):
         if not os.path.exists(outputDir):
@@ -93,14 +106,15 @@ class TestSuite(AxiGpio):
 
         return ids0, ids1
 
-    def setup_RF_Clk(self, ticsFilePath, restart_rfdc=True):
-
-        if restart_rfdc:
-            self.rfdc.restart()
-
-        print("Configuring RF clocks ...")
+    def setup_rfdc(self, adc_mts_mask=0x4, dac_mts_mask=0x4):
+        print('Configuring RFDC + Clk104 ...')
         self.rfdc.init_clk104()
+        self.rfdc.restart()
+        self.rfdc.setRFdcMTS(adc=adc_mts_mask, dac=dac_mts_mask)
 
+    def setup_lmx(self, ticsFilePath):
+
+        print('Configuring LMX2820 ...')
         self.lmx.power_reset(False, 0x0)
         self.lmx.power_reset(True, 0x0)
         self.lmx.power_reset(True, 0x1)
@@ -110,7 +124,7 @@ class TestSuite(AxiGpio):
 
         assert self.lmx.readLockedReg() == True
 
-    def setup_RF(self, hmc_6300_ics, hmc_6301_ics):
+    def setup_hmc(self, hmc_6300_ics, hmc_6301_ics):
         self.hmc.GpioInit()
         for ic in hmc_6300_ics:
             self.hmc.DefaultConfig_6300(ic=ic)
@@ -118,17 +132,19 @@ class TestSuite(AxiGpio):
         for ic in hmc_6301_ics:
             self.hmc.DefaultConfig_6301(ic=ic)
 
-    def shutdown_RF(self):
+    def shutdown_hmc(self):
         self.hmc.Reset()
 
     def adc_dac_sync(self, sync):
         if sync:
-            self.gpio_flush.set(val=0x00)
+            if self.gpio_flush is not None:
+                self.gpio_flush.set(val=0x00)
             self.gpio_sync.set(val=0xff)
         else:
-            self.gpio_flush.set(val=0xff)
-            #Use approximate time to flush the FIFO
-            sleep(self.calc_capture_time(512))
+            if self.gpio_flush is not None:
+                self.gpio_flush.set(val=0xff)
+                #Use approximate time to flush the FIFO
+                sleep(self.calc_capture_time(512))
             self.gpio_sync.set(val=0x00)
 
     def __start_dma(self, ddr, ids, offset, size):
@@ -140,7 +156,6 @@ class TestSuite(AxiGpio):
         for id in ids:
             data.append((addr, size))
             devName = self.dma.devIdToIpName(id)
-
             self.dma.startTransfer(devName=devName, addr=addr, len=size)
             addr = addr + size
         return data
@@ -161,26 +176,27 @@ class TestSuite(AxiGpio):
                 self.__write_cap_data(outputPath, data)
             addr = addr + size
 
-    def publish(self, area, sn, freq, fs):
+    def publish(self, I, Q, sn, freq, fs):
+        self.publisher.send_multipart(
+            [
+                bytes(str(Inet.TOPIC_FILTER), "utf-8"),
+                bytes(str(sn), "utf-8"),
+                bytes(str(fs), "utf-8"),
+                bytes(str(freq), "utf-8"),
+                bytes(str(time.time_ns() / 1_000_000_000), "utf-8"),
+                pickle.dumps(I),
+                pickle.dumps(Q),
+            ]
+        )
+
+    def proc_cap_data(self, func, area, sn, freq, fs, dtype=np.int16):
         for a in area:
             for j in range(0, len(a), 2):
                 addrI, sizeI = a[j]
                 addrQ, sizeQ = a[j + 1]
-                bytesI = Xddr.read(addrI, sizeI)
-                bytesQ = Xddr.read(addrQ, sizeQ)
-
-                print("publishing : I=%x:%x Q=%x:%x" % (addrI, sizeI, addrQ, sizeQ))
-                self.publisher.send_multipart(
-                    [
-                        bytes(str(Inet.TOPIC_FILTER), "utf-8"),
-                        bytes(str(sn), "utf-8"),
-                        bytes(str(fs), "utf-8"),
-                        bytes(str(freq), "utf-8"),
-                        bytes(str(time.time_ns() / 1_000_000_000), "utf-8"),
-                        pickle.dumps(bytesI),
-                        pickle.dumps(bytesQ),
-                    ]
-                )
+                I = Xddr.read(addrI, sizeI, dtype)
+                Q = Xddr.read(addrQ, sizeQ, dtype)
+                func(I, Q, sn, freq, fs)
 
     def start_dma(self, ddr, ids, offset, size):
         return self.__start_dma(ddr, ids, offset, size)
