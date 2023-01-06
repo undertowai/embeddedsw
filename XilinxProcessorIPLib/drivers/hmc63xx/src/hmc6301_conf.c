@@ -113,13 +113,13 @@ static void _hmc6301_init_config (hmc6301_reg_file_t *conf, u8 isExternalLo)
     conf->row3.if_refsel = 0b1;
     conf->row3.lna_refsel = 0b1;
     conf->row3.bg_monitor_sel = 0b00;
-    conf->row3.bbamp_selfastrec = 0b00;
+    conf->row3.bbamp_selfastrec = 0b10;
     //Selects the low-pass corner of the baseband amplifiers; 
     //500MHz
-    conf->row3.bbamp_selbw = 0b00;
+    conf->row3.bbamp_selbw = 0b01;
 
     //Active high to enable the digital control of the IF VGA gain 
-    conf->row4.enDigVGA = 0b1;
+    conf->row4.enDigVGA = 0b0;
     conf->row4.ifvga_tune = 0b1001111;
 
     conf->row5.rfmix_tune = 0b1111;
@@ -133,7 +133,7 @@ static void _hmc6301_init_config (hmc6301_reg_file_t *conf, u8 isExternalLo)
  
     // Controls the Q of the IF filter in the IF variable gain amplifier; ROW8[2:0] = 000 for the
     // highest Q and the highest gain.
-    conf->row8.ifvga_q_cntrl = 0b000;
+    conf->row8.ifvga_q_cntrl = 0b111;
     //11 is the lowest gain
     conf->row8.lna_gain = 0b11;
     //100 for normal operation. 
@@ -146,7 +146,7 @@ static void _hmc6301_init_config (hmc6301_reg_file_t *conf, u8 isExternalLo)
     //Active high to power down the temperature sensor. 
     conf->row9.enbar_TempS = 0b0;
     //Active high enable analog gain control of the LNA. 
-    conf->row9.enAnaV_LNA = 0b1;
+    conf->row9.enAnaV_LNA = 0b0;
 
     conf->row16.enbar_synthBG = 0b0;
     conf->row16.en_synth_LDO = SET_EN(!isExternalLo);

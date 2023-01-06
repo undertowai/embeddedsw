@@ -59,17 +59,24 @@ class HMC63xx(MLock):
         assert status >= 0
         return status
 
+    def __RMW_6301(self, ic, i, val, mask):
+        fun = self.lib.HMC6301_RMW
+
+        status = fun(self.devNamePtr, int(ic), i, val, mask)
+        assert status >= 0
+        return status
+
     @MLock.Lock
-    def RMW_6300(self):
+    def __RMW(self):
         mask = (1 << (self.bp[1] + 1)) - 1
         mask = mask >> self.bp[0]
 
         assert self.val <= mask
 
         val = self.val << self.bp[0]
-        mask = 0xFF ^ (mask << self.bp[0])
 
-        return self.__RMW_6300(self.ic, self.i, val, mask)
+        mask = 0xFF & (0xFF ^ (mask << self.bp[0]))
+        return self.func(self.ic, self.i, val, mask)
 
     def __CheckDefConfig_6300(self, ic):
         fun = self.lib.HMC6300_CheckConfig
@@ -86,6 +93,13 @@ class HMC63xx(MLock):
         assert status == 0
 
         self.__CheckDefConfig_6300(self.ic)
+
+    @MLock.Lock
+    def ExtConfig_6300(self):
+        fun = self.lib.HMC6300_SendExtConfig
+
+        status = fun(self.devNamePtr, int(self.ic), int(self.id))
+        assert status == 0
 
     @MLock.Lock
     def PrintConfig_6300(self):
@@ -111,30 +125,18 @@ class HMC63xx(MLock):
         self.__CheckDefConfig_6301(self.ic)
 
     @MLock.Lock
+    def ExtConfig_6301(self):
+        fun = self.lib.HMC6301_SendExtConfig
+
+        status = fun(self.devNamePtr, int(self.ic), int(self.id))
+        assert status == 0
+
+    @MLock.Lock
     def PrintConfig_6301(self):
         fun = self.lib.HMC6301_PrintConfig
 
         status = fun(self.devNamePtr, int(self.ic))
         assert status == 0
-
-    def __RMW_6301(self, ic, i, val, mask):
-        fun = self.lib.HMC6301_RMW
-
-        status = fun(self.devNamePtr, int(ic), i, val, mask)
-        assert status >= 0
-        return status
-
-    @MLock.Lock
-    def RMW_6301(self):
-        mask = (1 << (self.bp[1] + 1)) - 1
-        mask = mask >> self.bp[0]
-
-        assert self.val <= mask
-
-        val = self.val << self.bp[0]
-        mask = 0xFF ^ (mask << self.bp[0])
-
-        return self.__RMW_6301(self.ic, self.i, val, mask)
 
     @MLock.Lock
     def SetAtt_6301(self):
@@ -157,24 +159,24 @@ class HMC63xx(MLock):
 
         gain = maxGain - gain
 
-        self.RMW_6301(ic=ic, i=i, val=gain, bp=[3, 4])
+        self.__RMW(func=self.__RMW_6301, ic=ic, i=i, val=gain, bp=[3, 4])
 
     def ReadReg_6300(self, ic, i):
-        return self.RMW_6300(ic=ic, i=i, val=0x0, bp=[0, 7])
+        return self.__RMW(func=self.__RMW_6300, ic=ic, i=i, val=0x0, bp=[8, 8])
 
     def ReadReg_6301(self, ic, i):
-        return self.RMW_6301(ic=ic, i=i, val=0x0, bp=[0, 7])
+        return self.__RMW(func=self.__RMW_6301, ic=ic, i=i, val=0x0, bp=[8, 8])
 
     def WriteReg_6300(self, ic, i, val):
-        return self.RMW_6300(ic=ic, i=i, val=val, bp=[0, 7])
+        return self.__RMW(func=self.__RMW_6300, ic=ic, i=i, val=val, bp=[0, 7])
 
     def WriteReg_6301(self, ic, i, val):
-        return self.RMW_6301(ic=ic, i=i, val=val, bp=[0, 7])
+        return self.__RMW(func=self.__RMW_6301, ic=ic, i=i, val=val, bp=[0, 7])
 
     def ReadTemp_6300(self, ic):
         # enable temperature sensor
-        self.RMW_6300(ic=ic, i=3, val=0x1, bp=[0, 0])
-        self.RMW_6300(ic=ic, i=10, val=0x0, bp=[0, 0])
+        self.__RMW(func=self.__RMW_6300, ic=ic, i=3, val=0x1, bp=[0, 0])
+        self.__RMW(func=self.__RMW_6300, ic=ic, i=10, val=0x0, bp=[0, 0])
         temp = self.ReadReg_6300(ic, 27)
         tempC = ((85 - (-40)) * temp) / 0x1F
         return int(tempC)

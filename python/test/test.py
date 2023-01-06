@@ -43,7 +43,7 @@ class TestSuite(AxiGpio):
             except Exception as e:
                 logging.error(traceback.format_exc())
                 print("=== FAILED ===")
-                self.shutdown_RF()
+                self.shutdown_hmc()
             else:
                 print("=== PASS ===")
 
@@ -127,10 +127,10 @@ class TestSuite(AxiGpio):
     def setup_hmc(self, hmc_6300_ics, hmc_6301_ics):
         self.hmc.GpioInit()
         for ic in hmc_6300_ics:
-            self.hmc.DefaultConfig_6300(ic=ic)
+            self.hmc.ExtConfig_6300(ic=ic, id=0)
 
         for ic in hmc_6301_ics:
-            self.hmc.DefaultConfig_6301(ic=ic)
+            self.hmc.ExtConfig_6301(ic=ic, id=0)
 
     def shutdown_hmc(self):
         self.hmc.Reset()

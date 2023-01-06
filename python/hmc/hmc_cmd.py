@@ -20,10 +20,27 @@ class HMC_shell(cmd.Cmd):
         except AssertionError:
             pass
 
+
+    def do_6300_ext(self, line):
+        "Write External configuration to 6300: 6300_ext <ic> <config id>"
+        ic, id = [int(s) for s in line.split()]
+        try:
+            self.hmc.ExtConfig_6300(ic=ic, id=id)
+        except AssertionError:
+            pass
+
     def do_6301_def(self, ic):
         "Write default configuration to 6301 [x] ic"
         try:
             self.hmc.DefaultConfig_6301(ic=ic)
+        except AssertionError:
+            pass
+
+    def do_6301_ext(self, line):
+        "Write External configuration to 6300: 6301_ext <ic> <config id>"
+        ic, id = [int(s) for s in line.split()]
+        try:
+            self.hmc.ExtConfig_6301(ic=ic, id=id)
         except AssertionError:
             pass
 
@@ -62,10 +79,11 @@ class HMC_shell(cmd.Cmd):
         except AssertionError:
             pass
 
-    def do_6300_power(self, ic, powerup):
+    def do_6300_power(self, line):
         "Set power on/off"
+        ic, pwup = [int(s) for s in line.split()]
         try:
-            self.hmc.Power_6300(ic=ic, pwup=powerup)
+            self.hmc.Power_6300(ic=ic, pwup=pwup)
         except AssertionError:
             pass
 
@@ -95,12 +113,14 @@ class HMC_shell(cmd.Cmd):
     def do_6300_rd(self, line):
         "read register: 6300_rd <ic> <i>"
         ic, i = [int(s) for s in line.split()]
-        self.hmc.ReadReg_6300(ic=ic, i=i)
+        reg = self.hmc.ReadReg_6300(ic=ic, i=i)
+        print('reg={}'.format(hex(reg)))
 
     def do_6301_rd(self, line):
         "read register: 6301_rd <ic> <i>"
         ic, i = [int(s) for s in line.split()]
-        self.hmc.ReadReg_6301(ic=ic, i=i)
+        reg = self.hmc.ReadReg_6301(ic=ic, i=i)
+        print('reg={}'.format(hex(reg)))
 
     def do_6300_wr(self, line):
         "write register: 6300_rd <ic> <i>"

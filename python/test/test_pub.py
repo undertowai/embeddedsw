@@ -33,9 +33,7 @@ class Test_Streaming(TestSuite):
         #for tx in self.tx:
         #    self.hmc.Power_6300(ic=tx, pwup=False)
 
-        while True:
-            #for tx in self.tx:
-            #    self.hmc.Power_6300(ic=tx, pwup=True)
+        while sn < self.num_iterations:
 
             print("*** Running Iteration : sn={}, rx={}, tx={}".format(sn, self.rx, tx))
 
@@ -52,10 +50,8 @@ class Test_Streaming(TestSuite):
 
             self.proc_cap_data(self.publish, area, sn, 0, samplingFreq)
             sn += 1
-            #for tx in self.tx:
-            #    self.hmc.Power_6300(ic=tx, pwup=False)
 
-        self.shutdown_RF()
+        #self.shutdown_hmc()
 
 
 if __name__ == "__main__":
@@ -70,7 +66,7 @@ if __name__ == "__main__":
     # rx = [i for i in range(8)]
     tx = [0]
     rx = [0]
-    adc_dac_loppback = True
+    adc_dac_loopback = False
 
     test = Test_Streaming(Inet.PORT)
     captureSize = 64 * 1024 * 2 * test.hw.BYTES_PER_SAMPLE
@@ -83,5 +79,6 @@ if __name__ == "__main__":
         captureSize=captureSize,
         tx=tx,
         rx=rx,
-        adc_dac_loppback=adc_dac_loppback
+        adc_dac_loopback=adc_dac_loopback,
+        num_iterations=700
     )

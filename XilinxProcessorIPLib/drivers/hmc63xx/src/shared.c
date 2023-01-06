@@ -109,6 +109,20 @@ int HMC6300_SendDefaultConfig(const char *devName, int ic)
     return XST_SUCCESS;
 }
 
+int HMC6300_SendExtConfig(const char *devName, int ic, int id)
+{
+    XGpio_t Gpio = {0};
+
+	if (XST_SUCCESS != HMC_Dev_Init(&Gpio, devName)) {
+		return XST_FAILURE;
+	}
+    hmc6300_exp_init(&Gpio, ic, id);
+
+	metal_device_close(Gpio.device);
+	metal_finish();
+    return XST_SUCCESS;
+}
+
 int HMC6300_CheckConfig(const char *devName, int ic)
 {
     int Status = XST_SUCCESS;
@@ -149,6 +163,20 @@ int HMC6301_SendDefaultConfig(const char *devName, int ic)
 		return XST_FAILURE;
 	}
     hmc6301_def_init(&Gpio, ic, 0, TRUE);
+
+	metal_device_close(Gpio.device);
+	metal_finish();
+    return XST_SUCCESS;
+}
+
+int HMC6301_SendExtConfig(const char *devName, int ic, int id)
+{
+    XGpio_t Gpio = {0};
+
+	if (XST_SUCCESS != HMC_Dev_Init(&Gpio, devName)) {
+		return XST_FAILURE;
+	}
+    hmc6301_exp_init(&Gpio, ic, id);
 
 	metal_device_close(Gpio.device);
 	metal_finish();

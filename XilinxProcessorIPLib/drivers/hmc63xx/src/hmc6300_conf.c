@@ -108,12 +108,13 @@ static void _hmc6300_init_config (hmc6300_reg_file_t *conf, u8 isExternalLo)
     conf->row10.enable_FM = 0b0;
     conf->row10.if_refsel = 0b1;
     conf->row10.bg_monitor = 0b0;
-    conf->row10.enDig_IFVGA_Gain_Control = 0b1;
+    conf->row10.enDig_IFVGA_Gain_Control = 0b0;
     conf->row10.ipc_pwrdn = 0b0;
     conf->row10.if_bgmux_pwrdn = 0b0;
     conf->row10.upmix_cal_pwrdn = 0b1;
     conf->row10.TempSensor_pwrdn = 0b0;
 
+    conf->row11.enRFVGA_Ana = 0b0;
     conf->row11.RFVGA_ICtrl = ROW11_RFVGA_ICtrl_DEf;
     _hmc6300_RFVGAgain(&conf->row11, 0xf);
 

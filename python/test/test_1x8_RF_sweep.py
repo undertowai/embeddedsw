@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     test = Test_1x8_Sweep()
     captureSize = 64 * 1024 * 2 * test.hw.BYTES_PER_SAMPLE
-    adc_dac_loopback = True
+    adc_dac_loopback = False
 
     test.set_loobback(False)
 
