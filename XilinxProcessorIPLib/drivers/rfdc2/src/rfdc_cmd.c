@@ -1165,7 +1165,7 @@ void dacCurrent(XRFdc* RFdcInstPtr)
 	printf("\r\n###############################################\r\n");
 	printf("=== Data Current Report ===\n\r");
 
-	for ( Tile_Id=0; Tile_Id<=1; Tile_Id++) {
+	for ( Tile_Id=0; Tile_Id<=3; Tile_Id++) {
     	if (ipStatus.DACTileStatus[Tile_Id].IsEnabled == 1) {
 			for ( Block_Id=0; Block_Id<=3; Block_Id++) {
 				if (XRFdc_IsDACBlockEnabled(RFdcInstPtr, Tile_Id, Block_Id) != 0U) {

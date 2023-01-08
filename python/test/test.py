@@ -106,7 +106,7 @@ class TestSuite(AxiGpio):
 
         return ids0, ids1
 
-    def setup_rfdc(self, adc_mts_mask=0x4, dac_mts_mask=0x4):
+    def setup_rfdc(self, adc_mts_mask=0xf, dac_mts_mask=0xf):
         print('Configuring RFDC + Clk104 ...')
         self.rfdc.init_clk104()
         self.rfdc.restart()
@@ -175,28 +175,6 @@ class TestSuite(AxiGpio):
             if outputPath is not None:
                 self.__write_cap_data(outputPath, data)
             addr = addr + size
-
-    def publish(self, I, Q, sn, freq, fs):
-        self.publisher.send_multipart(
-            [
-                bytes(str(Inet.TOPIC_FILTER), "utf-8"),
-                bytes(str(sn), "utf-8"),
-                bytes(str(fs), "utf-8"),
-                bytes(str(freq), "utf-8"),
-                bytes(str(time.time_ns() / 1_000_000_000), "utf-8"),
-                pickle.dumps(I),
-                pickle.dumps(Q),
-            ]
-        )
-
-    def proc_cap_data(self, func, area, sn, freq, fs, dtype=np.int16):
-        for a in area:
-            for j in range(0, len(a), 2):
-                addrI, sizeI = a[j]
-                addrQ, sizeQ = a[j + 1]
-                I = Xddr.read(addrI, sizeI, dtype)
-                Q = Xddr.read(addrQ, sizeQ, dtype)
-                func(I, Q, sn, freq, fs)
 
     def start_dma(self, ddr, ids, offset, size):
         return self.__start_dma(ddr, ids, offset, size)

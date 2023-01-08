@@ -2,10 +2,15 @@ import sys
 from test import TestSuite
 from time import sleep
 import zmq
+import pickle
+import time
+import numpy as np
 
 from inet import Inet
 
 sys.path.append("../misc")
+sys.path.append("../xddr")
+from xddr import Xddr
 
 class Test_Streaming(TestSuite):
     def __init__(self, port):
@@ -14,6 +19,28 @@ class Test_Streaming(TestSuite):
         context = zmq.Context()
         self.publisher = context.socket(zmq.PUB)
         self.publisher.bind("tcp://0.0.0.0:%s" % port)
+
+    def proc_cap_data(self, area, sn, txn, freq, fs, dtype=np.int16):
+        iq_data = []
+        for a in area:
+            for j in range(0, len(a), 2):
+                addrI, sizeI = a[j]
+                addrQ, sizeQ = a[j + 1]
+                I = Xddr.read(addrI, sizeI, dtype)
+                Q = Xddr.read(addrQ, sizeQ, dtype)
+                iq_data.append((I, Q))
+        
+        mpart_data = [
+            bytes(str(Inet.TOPIC_FILTER), "utf-8"),
+            bytes(str(sn), "utf-8"),
+            bytes(str(txn), "utf-8"),
+            bytes(str(fs), "utf-8"),
+            bytes(str(freq), "utf-8"),
+            bytes(str(time.time_ns() / 1_000_000_000), "utf-8"),
+            pickle.dumps(iq_data)
+        ]
+        self.publisher.send_multipart(mpart_data)
+        print(txn)
 
     @TestSuite.Test
     def run_test(self):
@@ -25,33 +52,46 @@ class Test_Streaming(TestSuite):
             self.setup_lmx(self.ticsFilePath)
             self.setup_hmc(self.tx, self.rx)
 
-        sn = 0x0
+        sn = 0
         cap_ddr_offset = 0x0
 
         dma_ids0, dma_ids1 = self.map_rx_to_dma_id(self.rx)
 
-        #for tx in self.tx:
-        #    self.hmc.Power_6300(ic=tx, pwup=False)
+        for txn in self.tx:
+            self.hmc.Power_6300(ic=txn, pwup=False)
 
         while sn < self.num_iterations:
 
-            print("*** Running Iteration : sn={}, rx={}, tx={}".format(sn, self.rx, tx))
+            for txn in self.tx:
+                self.setup_hmc([txn], self.rx)
+                
+                print("Setting 6300 gains")
+                self.hmc.IfGain_6300(ic=txn, gain=6)
+                self.hmc.RVGAGain_6300(ic=txn, gain=7)
+               
+                for rxn in self.rx:
+                    print("Settings 6301 gains")
+                    self.hmc.SetAtt_6301(ic=rxn, i=3, q=1, att=0)
 
-            self.adc_dac_sync(False)
+                print("*** Running Iteration : sn={}, rx={}, tx={}".format(sn, self.rx, [txn]))
 
-            area = []
-            for ids, ddr in [(dma_ids0, self.ddr0), (dma_ids1, self.ddr1)]:
-                a = self.start_dma(ddr, ids, cap_ddr_offset, self.captureSize)
-                area.append(a)
+                self.adc_dac_sync(False)
 
-            self.adc_dac_sync(True)
+                area = []
+                for ids, ddr in [(dma_ids0, self.ddr0), (dma_ids1, self.ddr1)]:
+                    a = self.start_dma(ddr, ids, cap_ddr_offset, self.captureSize)
+                    area.append(a)
 
-            sleep(self.calc_capture_time(self.captureSize))
+                self.adc_dac_sync(True)
 
-            self.proc_cap_data(self.publish, area, sn, 0, samplingFreq)
+                sleep(self.calc_capture_time(self.captureSize))
+
+                self.proc_cap_data(area, sn, txn, 0, samplingFreq)
+
+                self.shutdown_hmc()
+
             sn += 1
-
-        #self.shutdown_hmc()
+            self.shutdown_hmc()
 
 
 if __name__ == "__main__":
@@ -64,8 +104,8 @@ if __name__ == "__main__":
     # Which radios to use:
     #tx = [i for i in range(8)]
     # rx = [i for i in range(8)]
-    tx = [0]
-    rx = [0]
+    tx = [7] #[4, 5, 6, 7]
+    rx = [0, 1, 2, 3]
     adc_dac_loopback = False
 
     test = Test_Streaming(Inet.PORT)
@@ -80,5 +120,5 @@ if __name__ == "__main__":
         tx=tx,
         rx=rx,
         adc_dac_loopback=adc_dac_loopback,
-        num_iterations=700
+        num_iterations=10000
     )

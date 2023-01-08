@@ -122,6 +122,8 @@ static int _RFDC_Init (XRFdc *RFdcInstPtr)
 	Major = (Val >> 24) & 0xFF;
 	Minor = (Val >> 16) & 0xFF;
 
+	printf("RFDC Version %d.%d\r\n", Major, Minor);
+
 	return XST_SUCCESS;
 }
 
@@ -239,7 +241,7 @@ int RFdcMTS(u32 ADC_mask, u32 DAC_mask)
 		return XRFDC_FAILURE;
     }
 
-    printf("=== RFdc Initialized - Running Multi-tile Sync ===\n");
+    printf("=== Running Multi-tile Sync ADC mask=%x DAC mask=%x ===\r\n", ADC_mask, DAC_mask);
 
     /* ADC MTS Settings */
     XRFdc_MultiConverter_Sync_Config ADC_Sync_Config;

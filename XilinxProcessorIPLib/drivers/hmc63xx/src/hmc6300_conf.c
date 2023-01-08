@@ -406,7 +406,7 @@ int hmc6300_rmw (XGpio_t *gpio, u8 ic, u32 i, u32 val, u32 mask)
         return row_prev;
     }
     row = (row & mask) | (val);
-    hmc6300_spi_write(gpio, ic, 7, row);
+    hmc6300_spi_write(gpio, ic, i, row);
 
     return row_prev;
 }

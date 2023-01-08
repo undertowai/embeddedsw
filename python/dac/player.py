@@ -32,6 +32,18 @@ class DacPlayer(AxiGpio):
         assert self.bram0.getSize() == self.bram1.getSize()
         return self.bram0.getSize()
 
+    def make_zero_bram(self):
+        sampleSize = self.hw.BYTES_PER_SAMPLE
+        buffersCount = self.hw.BUFFERS_IN_BRAM
+        numBytes = int(self.getBramSize() / buffersCount)
+        numSamples = int(numBytes / sampleSize)
+
+        assert self.hw.BYTES_PER_SAMPLE == 2
+        dtype = np.int16
+
+        buffer = np.empty(buffersCount * numSamples, dtype=dtype)
+        return buffer
+
     def make_sweep_tone_bram(self, samplingFreq, freq, dBFS, freqStep):
         sampleSize = self.hw.BYTES_PER_SAMPLE
         fullCycles = True
@@ -165,6 +177,8 @@ if __name__ == "__main__":
 
     argparser.add_argument('--dec', help='Decompose specified bram into linear samples', type=int)
 
+    argparser.add_argument('--zero', help='Zero BRAM content', action='store_true')
+
     argparser.add_argument('--bram0', help='specify file with bram0 content', type=str)
     argparser.add_argument('--bram1', help='specify file with bram1 content', type=str)
 
@@ -219,4 +233,9 @@ if __name__ == "__main__":
         bram0 = player.make_saw_bram()
 
         player.load_dac_player(bram0, bram0)
+    elif args.zero is not None:
+        print('Zeroing BRAM')
+        bram_data = player.make_zero_bram()
+        player.load_dac_player(bram_data, bram_data)
+
     print("Pass")
