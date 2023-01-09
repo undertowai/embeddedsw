@@ -37,13 +37,14 @@ int HMC6300_SetIfGain(const char *devName, int ic, int val)
 	int status = XST_SUCCESS;
     XGpio_t Gpio = {0};
 
+    //printf("C driver 6300 set gain chip %d val %d\n", ic, val);
 	if (XST_SUCCESS != HMC_Dev_Init(&Gpio, devName)) {
 		return XST_FAILURE;
 	}
     if (hmc6300_SetIfGain(&Gpio, ic, val)) {
 		status = XST_FAILURE;
 	}
-
+	//hmc6300_dump_regs(&Gpio, ic);
 	metal_device_close(Gpio.device);
 	metal_finish();
     return status;

@@ -1,7 +1,7 @@
 import sys
 from test import TestSuite
 from time import sleep
-
+import numpy as np
 from scipy.io import savemat
 
 
@@ -10,7 +10,9 @@ from iq_correction import computeIQcorrection2
 
 sys.path.append("../misc")
 sys.path.append("../dac")
+sys.path.append("../xddr")
 
+from xddr import Xddr
 from player import DacPlayer
 
 class Test_Streaming(TestSuite):
@@ -19,37 +21,61 @@ class Test_Streaming(TestSuite):
 
         self.coeff = {}
 
-    def IQ_correction_wrapper(self, I, Q, sn, freq, fs):
+    def IQ_correction_wrapper(self, I, Q, sc, sn, txn, rxn):
         _, _, coeff = computeIQcorrection2(I, Q)
-        self.coeff['sc_{}_{}'.format(self.sc, sn)] = coeff
+        self.coeff['sc_{}_{}_tx_{}_rx_{}'.format(sc, sn, int(txn), int(rxn))] = coeff
+
+    def proc_cap_data(self, area, sc, sn, txn, dtype=np.int16):
+        rxn = 0
+        for a in area:
+            for j in range(0, len(a), 2):
+                addrI, sizeI = a[j]
+                addrQ, sizeQ = a[j + 1]
+                I = Xddr.read(addrI, sizeI, dtype)
+                Q = Xddr.read(addrQ, sizeQ, dtype)
+                self.IQ_correction_wrapper(I, Q, sc, sn, txn, rxn/2)
+                rxn +=1
+
 
     def setup_rf_clocks(self, ticsFilePath, restart_rfdc):
         self.setup_RF_Clk(ticsFilePath, restart_rfdc)
 
     @TestSuite.Test
     def run_test(self):
-        samplingFreq = self.rfdc.getSamplingFrequency()
-
         offset = 0x0
 
         ids0, ids1 = self.map_rx_to_dma_id(self.rx)
 
-        count = 0
-        while count < self.count:
+        for txn in self.tx:
+            count = 0
 
-            self.adc_dac_sync(False)
+            self.setup_hmc([txn], self.rx)
+            
+            print("Setting 6300 gains")
+            self.hmc.IfGain_6300(ic=txn, gain=6)
+            self.hmc.RVGAGain_6300(ic=txn, gain=7)
 
-            area = []
-            for ids, ddr in [(ids0, self.ddr0), (ids1, self.ddr1)]:
-                a = self.start_dma(ddr, ids, offset, self.captureSize)
-                area.append(a)
+            for rxn in self.rx:
+                print("Settings 6301 gains")
+                self.hmc.SetAtt_6301(ic=rxn, i=3, q=1, att=0)
 
-            self.adc_dac_sync(True)
+            while count < self.count:
 
-            sleep(self.calc_capture_time(self.captureSize))
+                self.adc_dac_sync(False)
 
-            self.proc_cap_data(self.IQ_correction_wrapper, area, count, 0, samplingFreq)
-            count += 1
+                area = []
+                for ids, ddr in [(ids0, self.ddr0), (ids1, self.ddr1)]:
+                    a = self.start_dma(ddr, ids, offset, self.captureSize)
+                    area.append(a)
+
+                self.adc_dac_sync(True)
+
+                sleep(self.calc_capture_time(self.captureSize))
+
+                self.proc_cap_data(area, self.sc, count, txn)
+                count += 1
+
+            self.shutdown_hmc()
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
@@ -62,13 +88,14 @@ if __name__ == "__main__":
     # Which radios to use:
     #tx = [i for i in range(8)]
     # rx = [i for i in range(8)]
-    tx = [0]
-    rx = [0]
+    tx = [7]
+    rx = [0, 1, 2, 3]
+    num_trials = 5
 
     test = Test_Streaming()
     captureSize = 64 * 1024 * 2 * test.hw.BYTES_PER_SAMPLE
 
-    adc_dac_loopback = True
+    adc_dac_loopback = False
 
     #test.set_loobback(True)
     test.set_loobback(False)
@@ -79,7 +106,6 @@ if __name__ == "__main__":
 
     if adc_dac_loopback == False:
         test.setup_lmx(ticsFilePath)
-        test.setup_hmc(tx, rx)
 
     for sc in range(num_SC):
 
@@ -91,10 +117,13 @@ if __name__ == "__main__":
 
         test.run_test(
             captureSize=captureSize,
-            count = 3,
-            sc=sc
+            count = num_trials,
+            sc=sc,
+            tx=tx,
+            rx=rx
         )
 
     test.shutdown_hmc()
     print(test.coeff)
+    save_filename = 'IQcoeff_{}_{}.npy'.format(tx, rx)
     savemat('IQcoeff.mat', test.coeff)

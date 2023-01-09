@@ -3,9 +3,6 @@ import sys
 from time import sleep
 import traceback
 import logging
-import pickle
-import time
-import numpy as np
 
 sys.path.append("../lmx")
 sys.path.append("../hmc")
@@ -154,6 +151,7 @@ class TestSuite(AxiGpio):
 
         data = []
         for id in ids:
+
             data.append((addr, size))
             devName = self.dma.devIdToIpName(id)
             self.dma.startTransfer(devName=devName, addr=addr, len=size)

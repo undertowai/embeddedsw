@@ -40,7 +40,6 @@ class Test_Streaming(TestSuite):
             pickle.dumps(iq_data)
         ]
         self.publisher.send_multipart(mpart_data)
-        print(txn)
 
     @TestSuite.Test
     def run_test(self):
@@ -104,7 +103,7 @@ if __name__ == "__main__":
     # Which radios to use:
     #tx = [i for i in range(8)]
     # rx = [i for i in range(8)]
-    tx = [7] #[4, 5, 6, 7]
+    tx = [4, 5, 6, 7]
     rx = [0, 1, 2, 3]
     adc_dac_loopback = False
 

@@ -305,6 +305,8 @@ int hmc6300_RFVGAgain (XGpio_t *gpio, u8 ic, u8 steps_1_3dB)
     if (_hmc6300_RFVGAgain(&conf->row11, steps_1_3dB)) {
         return -1;
     }
+
+    //printf("Setting hmc6300 row 11 to %02x requested %d\n", conf->row11.RFVGAgain << 4 , steps_1_3dB);
     hmc6300_write_row(gpio, ic, 11);
 
     hmc6300_spi_read(gpio, ic, 11, &row);

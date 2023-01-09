@@ -1,6 +1,7 @@
 #ifndef HMC6300_REG_FILE_H
 #define HMC6300_REG_FILE_H
 
+#include "stdio.h"
 #include "hmc63xx_reg.h"
 
 //ROW0 not used

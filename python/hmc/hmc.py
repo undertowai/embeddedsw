@@ -33,6 +33,7 @@ class HMC63xx(MLock):
 
     @MLock.Lock
     def IfGain_6300(self):
+        #print("XXX 6300 IFGain XXX")
         fun = self.lib.HMC6300_SetIfGain
 
         status = fun(self.devNamePtr, int(self.ic), self.gain)

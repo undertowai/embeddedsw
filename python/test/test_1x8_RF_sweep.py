@@ -62,13 +62,13 @@ if __name__ == "__main__":
     #tx = [i for i in range(8)]
     #rx = [i for i in range(8)]
     tx = [0]
-    rx = [0]
+    rx = [4, 5, 6, 7]
 
     test = Test_1x8_Sweep()
     captureSize = 64 * 1024 * 2 * test.hw.BYTES_PER_SAMPLE
-    adc_dac_loopback = False
+    adc_dac_loopback = True
 
-    test.set_loobback(False)
+    test.set_loobback(True)
 
     test.run_test(
         ticsFilePath=ticsFilePath,
