@@ -78,34 +78,27 @@ class Test_Streaming(TestSuite):
             self.shutdown_hmc()
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: {} <lmx2820_regs_file_path.txt> <num SC>".format(sys.argv[0]))
+    if len(sys.argv) != 5:
+        print("Usage: {} <num SC> <TX array> <RX array> <num trials>".format(sys.argv[0]))
         exit()
 
-    ticsFilePath = sys.argv[1]
-    num_SC = int(sys.argv[2])
+    num_SC = int(sys.argv[1])
 
     # Which radios to use:
     #tx = [i for i in range(8)]
     # rx = [i for i in range(8)]
-    tx = [7]
-    rx = [0, 1, 2, 3]
-    num_trials = 5
+    tx = sys.argv[2].split(',')
+    rx = sys.argv[3].split(',')
+
+    num_trials = int(sys.argv[4])
 
     test = Test_Streaming()
     captureSize = 64 * 1024 * 2 * test.hw.BYTES_PER_SAMPLE
 
     adc_dac_loopback = False
-
-    #test.set_loobback(True)
     test.set_loobback(False)
 
     player = DacPlayer()
-
-    test.setup_rfdc()
-
-    if adc_dac_loopback == False:
-        test.setup_lmx(ticsFilePath)
 
     for sc in range(num_SC):
 
