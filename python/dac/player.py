@@ -106,9 +106,9 @@ class DacPlayer(AxiGpio):
         div = (
             self.hw.BUFFERS_IN_BRAM
             * self.hw.SAMPLES_PER_FLIT
-            / 2
+            / self.hw.BYTES_PER_SAMPLE
         )
-        playerTicksPerBuffer = int(bram0_size / div)
+        playerTicksPerBuffer = int(bram0_size / div) - 1
 
         self.gpio_bram_count.set(val=playerTicksPerBuffer)
         
@@ -149,7 +149,7 @@ class DacPlayer(AxiGpio):
 
         return buffer
 
-    def decompose(self, idx):
+    def decompose_buf(self, bram_idx, dac_idx=None):
         sampleSize = self.hw.BYTES_PER_SAMPLE
         buffersCount = self.hw.BUFFERS_IN_BRAM
         numBytes = int(self.getBramSize() / buffersCount)
@@ -159,13 +159,22 @@ class DacPlayer(AxiGpio):
         assert self.hw.BYTES_PER_SAMPLE == 2
         dtype = np.int16
 
-        bram = self.bram0 if idx == 0 else self.bram1
+        bram = self.bram0 if bram_idx == 0 else self.bram1
         bram_data = bram.read(dtype=dtype)
         
         buffers = []
-        for i in range(0, buffersCount, 1):
-            buffer = WideBuf().decompose(bram_data, numSamples, i, buffersCount, samplesPerFLit)
+        if dac_idx is not None:
+            buffer = WideBuf().decompose(bram_data, numSamples, dac_idx, buffersCount, samplesPerFLit)
             buffers.append(buffer)
+        else:
+            for i in range(0, buffersCount, 1):
+                buffer = WideBuf().decompose(bram_data, numSamples, i, buffersCount, samplesPerFLit)
+                buffers.append(buffer)
+
+        return buffers
+
+    def decompose(self, bram_idx):
+        buffers = self.decompose_buf(bram_idx)
 
         for i, buffer in enumerate(buffers):
             with open('samples_{}.bin'.format(i), '+wb') as f:

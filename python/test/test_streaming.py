@@ -45,32 +45,22 @@ class Test_Streaming(TestSuite):
     def run_test(self):
         samplingFreq = self.rfdc.getSamplingFrequency()
 
-        self.setup_rfdc()
-
-        if self.adc_dac_loopback == False:
-            self.setup_lmx(self.ticsFilePath)
-            self.setup_hmc(self.tx, self.rx)
-
         sn = 0
         cap_ddr_offset = 0x0
 
         dma_ids0, dma_ids1 = self.map_rx_to_dma_id(self.rx)
 
-        for txn in self.tx:
-            self.hmc.Power_6300(ic=txn, pwup=False)
-
         while sn < self.num_iterations:
 
             for txn in self.tx:
-                self.setup_hmc([txn], self.rx)
+                if self.adc_dac_loopback == False:
+                    self.setup_hmc([txn], self.rx)
                 
-                print("Setting 6300 gains")
-                self.hmc.IfGain_6300(ic=txn, gain=6)
-                self.hmc.RVGAGain_6300(ic=txn, gain=7)
-               
-                for rxn in self.rx:
-                    print("Settings 6301 gains")
-                    self.hmc.SetAtt_6301(ic=rxn, i=3, q=1, att=0)
+                    self.hmc.IfGain_6300(ic=txn, gain=6)
+                    self.hmc.RVGAGain_6300(ic=txn, gain=7)
+                
+                    for rxn in self.rx:
+                        self.hmc.SetAtt_6301(ic=rxn, i=3, q=1, att=0)
 
                 print("*** Running Iteration : sn={}, rx={}, tx={}".format(sn, self.rx, [txn]))
 
@@ -87,37 +77,34 @@ class Test_Streaming(TestSuite):
 
                 self.proc_cap_data(area, sn, txn, 0, samplingFreq)
 
-                self.shutdown_hmc()
+                if self.adc_dac_loopback == False:
+                    self.shutdown_hmc()
 
             sn += 1
-            self.shutdown_hmc()
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: {} <lmx2820_regs_file_path.txt>".format(sys.argv[0]))
-        exit()
-
-    ticsFilePath = sys.argv[1]
 
     # Which radios to use:
     #tx = [i for i in range(8)]
     # rx = [i for i in range(8)]
-    tx = [4, 5, 6, 7]
+    tx = [7]
     rx = [0, 1, 2, 3]
+
+    num_iterations = 100
     adc_dac_loopback = False
 
     test = Test_Streaming(Inet.PORT)
-    captureSize = 64 * 1024 * 2 * test.hw.BYTES_PER_SAMPLE
+    dwell_samples = 64 * 1024
+    captureSize = 4 * dwell_samples * test.hw.BYTES_PER_SAMPLE
 
     test.set_loobback(False)
     #test.set_loobback(True)
 
     test.run_test(
-        ticsFilePath=ticsFilePath,
         captureSize=captureSize,
         tx=tx,
         rx=rx,
         adc_dac_loopback=adc_dac_loopback,
-        num_iterations=10000
+        num_iterations=num_iterations
     )
