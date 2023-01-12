@@ -122,8 +122,6 @@ static int _RFDC_Init (XRFdc *RFdcInstPtr)
 	Major = (Val >> 24) & 0xFF;
 	Minor = (Val >> 16) & 0xFF;
 
-	printf("RFDC Version %d.%d\r\n", Major, Minor);
-
 	return XST_SUCCESS;
 }
 

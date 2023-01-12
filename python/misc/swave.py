@@ -36,6 +36,7 @@ class Wave:
 
         print("Adjusted Frequency:          {} Hz".format(newFreq))
         print("Calculated Amplitude: {}".format(amplitude))
+        print("Phase rads: {}".format(phaseRads))
 
         buffer = np.empty(numSamples, dtype=np.int16)
         for i in range(numSamples):

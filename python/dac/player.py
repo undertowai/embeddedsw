@@ -44,10 +44,10 @@ class DacPlayer(AxiGpio):
         buffer = np.empty(buffersCount * numSamples, dtype=dtype)
         return buffer
 
-    def make_sweep_tone_bram(self, samplingFreq, freq, dBFS, freqStep):
+    def make_sweep_tone_bram(self, samplingFreq, freq, dBFS, freqStep, phase_step):
         sampleSize = self.hw.BYTES_PER_SAMPLE
         fullCycles = True
-        phaseDegrees = 0x0
+        phaseDegrees = 0
         buffersCount = self.hw.BUFFERS_IN_BRAM
         numBytes = int(self.getBramSize() / buffersCount)
         numSamples = int(numBytes / sampleSize)
@@ -60,18 +60,21 @@ class DacPlayer(AxiGpio):
 
         for i in range(buffersCount):
 
+            tone = Wave().getSine(
+                numBytes,
+                freq,
+                dBFS,
+                samplingFreq,
+                sampleSize,
+                phaseDegrees,
+                fullCycles,
+            )
+
             # Keep same frequency for I & Q channels
             if i % 2 == 0:
-                tone = Wave().getSine(
-                    numBytes,
-                    freq,
-                    dBFS,
-                    samplingFreq,
-                    sampleSize,
-                    phaseDegrees,
-                    fullCycles,
-                )
                 freq = freq + freqStep
+
+            phaseDegrees += phase_step
 
             WideBuf().make(buffer, tone, i, buffersCount, samplesPerFLit)
 
@@ -197,6 +200,7 @@ if __name__ == "__main__":
     argparser.add_argument('--tone', help='Specify tone frequency to be loaded in BRAM', type=int)
     argparser.add_argument('--step', help='Specify tone step frequency', type=int)
     argparser.add_argument('--db', help='Specify tone amplitude', type=int)
+    argparser.add_argument('--pstep', help='Specify phase_step', type=int)
 
     argparser.add_argument('--saw', help='Generate Incrementing sequence between min and max values', action='store_true')
 
@@ -224,15 +228,18 @@ if __name__ == "__main__":
         freq = int(args.tone)
         step = int(0)
         dBFS = int(-9)
+        phase_step = 0
         if args.step is not None:
             step = int(args.step)  
         if args.db is not None:
             dBFS = int(args.db)
+        if args.pstep is not None:
+            phase_step = float(args.pstep)
 
-        print('Flattening BRAM using tone freq={} step={} dBFS={}'.format(freq, step, dBFS))
-        bram0, freq = player.make_sweep_tone_bram(player.samplingFreq, freq, dBFS, step)
+        print('Flattening BRAM using tone freq={} step={} dBFS={}, phase_step={}'.format(freq, step, dBFS, phase_step))
+        bram0, freq = player.make_sweep_tone_bram(player.samplingFreq, freq, dBFS, step, phase_step)
         if step != 0:
-            bram1, freq = player.make_sweep_tone_bram(player.samplingFreq, freq, dBFS, step)
+            bram1, freq = player.make_sweep_tone_bram(player.samplingFreq, freq, dBFS, step, phase_step)
         else: bram1 = bram0
 
         player.load_dac_player(bram0, bram1)

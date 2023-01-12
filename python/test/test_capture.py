@@ -1,11 +1,9 @@
 import sys
 from test import TestSuite
 from time import sleep
-import zmq
-import pickle
 import time
 import numpy as np
-import collections
+import os
 
 from inet import Inet
 
@@ -17,13 +15,7 @@ class Test_Streaming(TestSuite):
     def __init__(self, port):
         TestSuite.__init__(self)
 
-        context = zmq.Context()
-        self.publisher = context.socket(zmq.PUB)
-        self.publisher.bind("tcp://0.0.0.0:%s" % port)
-
     def proc_cap_data(self, area, sn, txn, freq, fs, dtype=np.int16):
-        iq_data = []
-        area = collections.OrderedDict(sorted(area.items()))
         for rxn in area.keys():
             a = area[rxn]
             addrI, sizeI = a["I"]
@@ -31,18 +23,18 @@ class Test_Streaming(TestSuite):
 
             I = Xddr.read(addrI, sizeI, dtype)
             Q = Xddr.read(addrQ, sizeQ, dtype)
-            iq_data.append((I, Q))
 
-        mpart_data = [
-            bytes(str(Inet.TOPIC_FILTER), "utf-8"),
-            bytes(str(sn), "utf-8"),
-            bytes(str(txn), "utf-8"),
-            bytes(str(fs), "utf-8"),
-            bytes(str(freq), "utf-8"),
-            bytes(str(time.time_ns() / 1_000_000_000), "utf-8"),
-            pickle.dumps(iq_data)
-        ]
-        self.publisher.send_multipart(mpart_data)
+            dir_path = self.output_dir + os.sep + f'TX_{txn}' + os.sep + f'RX_{rxn}'
+            
+            if not os.path.exists(dir_path):
+                os.makedirs(dir_path)
+                
+            ipath = dir_path + os.sep + f'I_{sn}'
+            qpath = dir_path + os.sep + f'Q_{sn}'
+
+            np.save(ipath, I)
+            np.save(qpath, Q)
+
 
     @TestSuite.Test
     def run_test(self):
@@ -87,22 +79,25 @@ class Test_Streaming(TestSuite):
 
 if __name__ == "__main__":
 
-    if len(sys.argv) != 3:
-        print(f"Usage: {sys.argv[0]} <num_iterations> <current sn>")
+    if len(sys.argv) != 4:
+        print(f"Usage: {sys.argv[0]} <output dir> <num_iterations> <current sn>")
 
     # Which radios to use:
     #tx = [i for i in range(8)]
     # rx = [i for i in range(8)]
     tx = [7]
-    rx = [0, 3, 1, 2]
+    rx = [0, 1, 2, 3]
 
-    num_iterations = int(sys.argv[1])
-    sn=int(sys.argv[2])
+    output_dir = sys.argv[1]
+    num_iterations = int(sys.argv[2])
+    sn=int(sys.argv[3])
+
     adc_dac_loopback = False
+
 
     test = Test_Streaming(Inet.PORT)
     dwell_samples = 64 * 1024
-    dwell_num = 2
+    dwell_num = 1023
     captureSize = dwell_num * dwell_samples * test.hw.BYTES_PER_SAMPLE
 
     test.set_loobback(False)
@@ -114,5 +109,6 @@ if __name__ == "__main__":
         rx=rx,
         adc_dac_loopback=adc_dac_loopback,
         num_iterations=num_iterations,
-        sn=sn
+        sn=sn,
+        output_dir=output_dir
     )

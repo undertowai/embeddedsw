@@ -3,6 +3,7 @@ import sys
 from time import sleep
 import traceback
 import logging
+import json
 
 sys.path.append("../hmc")
 sys.path.append("../axi")
@@ -24,34 +25,22 @@ from inet import Inet
 class TestSuiteMisc:
     def __init__(self) -> None:
         pass
-    def mkdir(self, outputDir, suffix):
-        if not os.path.exists(outputDir):
-            os.makedirs(outputDir)
 
-        outputDir = "{}/TX_{}".format(outputDir, suffix)
-        if not os.path.exists(outputDir):
-            os.mkdir(outputDir)
-
-        return outputDir
-
-    def map_id_to_cap_name(self, id):
-        return "cap{}_{}.bin".format("I" if id % 2 == 0 else "Q", int(id / 2))
-
-    def map_rx_to_dma_id(self, rx_in):
-        ids0 = []
-        ids1 = []
-        for rx in rx_in:
-            if rx > 3:
-                ids1.extend([rx * 2, rx * 2 + 1])
-            else:
-                ids0.extend([rx * 2, rx * 2 + 1])
-
-        return ids0, ids1
-
-    def write_cap_data(self, path, data):
-        with open(path, "wb") as f:
-            f.write(data)
+    def load_json(self, path):
+        with open(path, 'r') as f:
+            j = json.load(f)
             f.close()
+        return j
+
+    def map_rx_to_dma_id(self, rx):
+        rx_to_dma_map_path = './rx_to_dma_map.json'
+        j = self.load_json(rx_to_dma_map_path)
+        rx_dma_map = {"ddr0": [], "ddr1": []}
+        for rxn in rx:
+            m = j[f'rx{rxn}']
+            rx_dma_map[m['ddr']].append( (rxn, m['dma']) )
+        
+        return rx_dma_map
 
 class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk):
     HAS_ADC_DAC_FLUSH=True
@@ -131,20 +120,6 @@ class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk):
                 sleep(self.calc_capture_time(512))
             self.gpio_sync.set(val=0x00)
 
-    def __start_dma(self, ddr, ids, offset, size):
-
-        base_address = ddr.base_address() + offset
-        addr = base_address
-
-        data = []
-        for id in ids:
-
-            data.append((addr, size))
-            devName = self.dma.devIdToIpName(id)
-            self.dma.startTransfer(devName=devName, addr=addr, len=size)
-            addr = addr + size
-        return data
-
     def collect_captures_from_ddr(self, ddr, outputdir, paths, offset, size):
         base_address = ddr.base_address() + offset
 
@@ -156,8 +131,31 @@ class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk):
                 self.write_cap_data(outputPath, data)
             addr = addr + size
 
-    def start_dma(self, ddr, ids, offset, size):
-        return self.__start_dma(ddr, ids, offset, size)
+    def __start_dma(self, id, addr, size):
+        devName = self.dma.devIdToIpName(id)
+        self.dma.startTransfer(devName=devName, addr=addr, len=size)
+
+    def start_dma(self, rx_dma_map, offset, size):
+        area = {}
+        for _ddr in rx_dma_map.keys():
+            ddr = getattr(self, _ddr)
+            rx_dma_id = rx_dma_map[_ddr]
+
+            base_address = ddr.base_address() + offset
+            addr = base_address
+
+            for rxn, dma_id in rx_dma_id:
+                #2 DMA channels for I and Q
+                assert len(dma_id) == 2
+
+                addrI = addr
+                addrQ = addr + size
+                self.__start_dma(dma_id[0], addrI, size)
+                self.__start_dma(dma_id[1], addrQ, size)
+
+                addr += size * 2
+                area[rxn] = {"I": (addrI, size), "Q": (addrQ, size)}
+            return area
 
     def calc_capture_time(self, captureSize):
         numCaptures = 0x1
