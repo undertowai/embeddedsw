@@ -21,15 +21,15 @@ class Test_Sanity_1(TestSuite):
         self.data_proc = DataProc('misc')
         self.player = DacPlayer()
 
-    def check_cap_data(self, data, exp, offset_samples):
-        data = data[offset_samples:]
+    def check_cap_data(self, got, exp, offset_samples, assert_on_failure=True):
+        got = got[offset_samples:]
 
-        for i, s in enumerate(data):
+        for i, s in enumerate(got):
             s_exp = exp[i%exp.size]
             if s != s_exp:
-                print(data[i-10:i+10])
+                print(got[i-10:i+10])
                 print(f'Missmatch at {i}: exp={s_exp} != {s}')
-                assert False
+                assert not assert_on_failure
 
             p = '- \\ | /'.split()[int(i/self.dwell_samples) % 4]
             print(f'\r{p}', end='')
@@ -57,12 +57,11 @@ class Test_Sanity_1(TestSuite):
 
         print('Checking data averaging:')
 
-        #TODO : fix & uncomment
-        #I = self.data_proc.dwellAvg(addrI, self.dwell_samples, self.dwell_num, offset_samples)
-        #Q = self.data_proc.dwellAvg(addrQ, self.dwell_samples, self.dwell_num, offset_samples)
+        I = self.data_proc.dwellAvg(addrI, self.dwell_samples, self.dwell_num, offset_samples)
+        Q = self.data_proc.dwellAvg(addrQ, self.dwell_samples, self.dwell_num, offset_samples)
 
-        #self.check_cap_data(I, bramI, 0)
-        #self.check_cap_data(Q, bramQ, 0)
+        self.check_cap_data(I, bramI, 0, assert_on_failure=False)
+        self.check_cap_data(Q, bramQ, 0, assert_on_failure=False)
 
     @TestSuite.Test
     def run_test(self):

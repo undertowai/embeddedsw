@@ -96,7 +96,7 @@ if __name__ == "__main__":
 
 
     test = Test_Streaming(Inet.PORT)
-    dwell_samples = 64 * 1024
+    dwell_samples = 32 * 1024
     dwell_num = 1023
     captureSize = dwell_num * dwell_samples * test.hw.BYTES_PER_SAMPLE
 
