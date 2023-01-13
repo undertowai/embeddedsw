@@ -44,7 +44,7 @@ class DacPlayer(AxiGpio):
         buffer = np.empty(buffersCount * numSamples, dtype=dtype)
         return buffer
 
-    def make_sweep_tone_bram(self, samplingFreq, freq, dBFS, freqStep, phase_step):
+    def make_sweep_tone_bram(self, samplingFreq, freq, dBFS, freqStep, phase_degrees, phase_step):
         sampleSize = self.hw.BYTES_PER_SAMPLE
         fullCycles = True
         phaseDegrees = 0
@@ -78,7 +78,7 @@ class DacPlayer(AxiGpio):
 
             WideBuf().make(buffer, tone, i, buffersCount, samplesPerFLit)
 
-        return buffer, freq
+        return buffer, freq, phaseDegrees
 
     def make_saw_bram(self):
         sampleSize = self.hw.BYTES_PER_SAMPLE
@@ -237,9 +237,9 @@ if __name__ == "__main__":
             phase_step = float(args.pstep)
 
         print('Flattening BRAM using tone freq={} step={} dBFS={}, phase_step={}'.format(freq, step, dBFS, phase_step))
-        bram0, freq = player.make_sweep_tone_bram(player.samplingFreq, freq, dBFS, step, phase_step)
-        if step != 0:
-            bram1, freq = player.make_sweep_tone_bram(player.samplingFreq, freq, dBFS, step, phase_step)
+        bram0, freq, phaseDegrees = player.make_sweep_tone_bram(player.samplingFreq, freq, dBFS, step, 0, phase_step)
+        if step != 0 or phase_step != 0:
+            bram1, _, _ = player.make_sweep_tone_bram(player.samplingFreq, freq, dBFS, step, phaseDegrees, phase_step)
         else: bram1 = bram0
 
         player.load_dac_player(bram0, bram1)
