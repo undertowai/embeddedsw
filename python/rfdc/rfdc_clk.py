@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     rfdc_clk = RfdcClk()
 
-    rfdc_clk.setup_lmx(ticsFilePath)
     rfdc_clk.setup_rfdc()
+    rfdc_clk.setup_lmx(ticsFilePath)
 
     print("Pass")
