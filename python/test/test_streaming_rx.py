@@ -23,8 +23,9 @@ class Test_Streaming(TestSuite):
 
     def proc_cap_data(self, area, sn, txn, freq, fs, dtype=np.int16):
         iq_data = []
-        area = collections.OrderedDict(sorted(area.items()))
-        for rxn in area.keys():
+
+        print(area)
+        for rxn in self.rx:
             a = area[rxn]
             addrI, sizeI = a["I"]
             addrQ, sizeQ = a["Q"]
@@ -54,35 +55,29 @@ class Test_Streaming(TestSuite):
 
         rx_dma_map = self.map_rx_to_dma_id(self.rx)
 
+        self.setup_hmc([], self.rx)
+
+        for rxn in self.rx:
+            self.hmc.SetAtt_6301(ic=rxn, i=3, q=1, att=0)
+
         while iter_count < self.num_iterations:
+            
+            print("*** Running Iteration : sn={}, rx={}".format(sn, self.rx))
 
-            for txn in self.tx:
-                if self.adc_dac_hw_loppback == False:
-                    self.setup_hmc([txn], self.rx)
-                
-                    self.hmc.IfGain_6300(ic=txn, gain=6)
-                    self.hmc.RVGAGain_6300(ic=txn, gain=7)
-                
-                    for rxn in self.rx:
-                        self.hmc.SetAtt_6301(ic=rxn, i=3, q=1, att=0)
+            self.adc_dac_sync(False)
 
-                print("*** Running Iteration : sn={}, rx={}, tx={}".format(sn, self.rx, [txn]))
+            area = self.start_dma(rx_dma_map, cap_ddr_offset, self.capture_size)
 
-                self.adc_dac_sync(False)
+            self.adc_dac_sync(True)
 
-                area = self.start_dma(rx_dma_map, cap_ddr_offset, self.capture_size)
+            sleep(self.calc_capture_time(self.capture_size))
 
-                self.adc_dac_sync(True)
-
-                sleep(self.calc_capture_time(self.capture_size))
-
-                self.proc_cap_data(area, sn, txn, 0, samplingFreq)
-
-                if self.adc_dac_hw_loppback == False:
-                    self.shutdown_hmc()
+            self.proc_cap_data(area, sn, 0, 0, samplingFreq)
 
             sn += 1
             iter_count += 1
+
+        self.shutdown_hmc()
 
 
 if __name__ == "__main__":

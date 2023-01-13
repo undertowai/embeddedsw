@@ -41,6 +41,24 @@ class TestSuiteMisc:
             rx_dma_map[m['ddr']].append( (rxn, m['dma']) )
         
         return rx_dma_map
+    
+    def load_config(self, path):
+        j = self.load_json(path)
+
+        self.rx = list(j['rx'])
+        self.tx = list(j['tx'])
+
+        self.dwell_samples = int(j['dwell_samples'])
+        self.dwell_num = int(j['dwell_num'])
+        capture_num_samples = int(self.dwell_samples * self.dwell_num)
+        self.capture_size = int(capture_num_samples * self.hw.BYTES_PER_SAMPLE)
+        self.cap_ddr_offset = int(j['cap_ddr_offset'])
+
+        self.adc_dac_hw_loppback = bool(j['adc_dac_hw_loppback'])
+        self.adc_dac_sw_loppback = bool(j['adc_dac_sw_loppback'])
+
+
+        self.set_loobback(self.adc_dac_sw_loppback)
 
 class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk):
     HAS_ADC_DAC_FLUSH=True
@@ -155,7 +173,7 @@ class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk):
 
                 addr += size * 2
                 area[rxn] = {"I": (addrI, size), "Q": (addrQ, size)}
-            return area
+        return area
 
     def calc_capture_time(self, captureSize):
         numCaptures = 0x1

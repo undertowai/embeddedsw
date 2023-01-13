@@ -20,7 +20,7 @@ python ../rfdc/rfdc_clk.py $ticsfilePath
 [[ $? != 0 ]] && exit 1
 
 while [ $sn -lt $max_iterations ]; do
-    python test_capture.py $output_dir $num_iterations $sn $config
+    python test_capture_rx.py $output_dir $num_iterations $sn $config
     [[ $? != 0 ]] && exit 1
 
     sn=$(($sn + 1))

@@ -1,21 +1,21 @@
 #!/bin/bash
 
-if [ $# -lt 1 ]; then
-    echo "Usage $0 <ticsFilePath>"
+if [ $# -lt 2 ]; then
+    echo "Usage $0 <config.json> <ticsFilePath>"
     exit 1
 fi
 
-ticsfilePath=$1
-num_iterations=10
+config=$1
+ticsfilePath=$2
+num_iterations=300
 sn=0
 
 python ../rfdc/rfdc_clk.py $ticsfilePath
+[[ $? != 0 ]] && exit 1
 
 while true; do
-    python test_streaming.py $num_iterations $sn
-    if [[ $? != 0 ]];
-    then
-        exit 1
-    fi
+    python test_streaming.py $num_iterations $sn $config
+    [[ $? != 0 ]] && exit 1
+    
     sn=$(($sn + $num_iterations))
 done

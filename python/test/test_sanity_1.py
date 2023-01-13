@@ -67,39 +67,31 @@ class Test_Sanity_1(TestSuite):
     def run_test(self):
         print('Running Sanity #1: Check Data coherence using SW loopback')
 
-        cap_ddr_offset = 0x0
-
         rx_dma_map = self.map_rx_to_dma_id(self.rx)
 
         for txn in self.tx:
 
             self.adc_dac_sync(False)
 
-            area = self.start_dma(rx_dma_map, cap_ddr_offset, self.captureSize)
+            area = self.start_dma(rx_dma_map, self.cap_ddr_offset, self.capture_size)
 
             self.adc_dac_sync(True)
 
-            sleep(self.calc_capture_time(self.captureSize))
+            sleep(self.calc_capture_time(self.capture_size))
 
             self.proc_cap_data(area)
 
 
 
-if __name__ == "__main__":  
-    tx = [0]
-    rx = [0, 1, 2, 3]
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print(f"Usage: {sys.argv[0]} <config.json path>")
+        assert False
+
+    config_path = sys.argv[1]
 
     test = Test_Sanity_1()
-    dwell_samples = 64 * 1024
-    dwell_num = 2
-    captureSize = dwell_samples * dwell_num * test.hw.BYTES_PER_SAMPLE
 
-    test.set_loobback(True)
+    test.load_config(config_path)
 
-    test.run_test(
-        captureSize=captureSize,
-        tx=tx,
-        rx=rx,
-        dwell_samples=dwell_samples,
-        dwell_num=dwell_num
-    )
+    test.run_test()
