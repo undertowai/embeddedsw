@@ -37,7 +37,8 @@ XAxiDma_Config *XDMA_LookupConfig(struct metal_device **Deviceptr, XAxiDma_Confi
 		CfgPtr->S2MmBurstSize = 0x100;
 		CfgPtr->S2MmDataWidth = 0x100;
 		CfgPtr->S2MmNumChannels = 1;
-		CfgPtr->SgLengthWidth = 31;
+		//TODO: Get this from DTS
+		CfgPtr->SgLengthWidth = 26;
 	} else {
 		metal_log(METAL_LOG_ERROR, "\n Failed to read device tree property \"reg\"");
 		metal_device_close(*Deviceptr);
