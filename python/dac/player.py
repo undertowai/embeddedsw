@@ -41,13 +41,13 @@ class DacPlayer(AxiGpio):
         assert self.hw.BYTES_PER_SAMPLE == 2
         dtype = np.int16
 
-        buffer = np.empty(buffersCount * numSamples, dtype=dtype)
+        buffer = np.zeros(buffersCount * numSamples, dtype=dtype)
         return buffer
 
     def make_sweep_tone_bram(self, samplingFreq, freq, dBFS, freqStep, phase_degrees, phase_step):
         sampleSize = self.hw.BYTES_PER_SAMPLE
         fullCycles = True
-        phaseDegrees = 0
+        phaseDegrees = phase_degrees
         buffersCount = self.hw.BUFFERS_IN_BRAM
         numBytes = int(self.getBramSize() / buffersCount)
         numSamples = int(numBytes / sampleSize)
@@ -70,10 +70,7 @@ class DacPlayer(AxiGpio):
                 fullCycles,
             )
 
-            # Keep same frequency for I & Q channels
-            if i % 2 == 0:
-                freq = freq + freqStep
-
+            freq = freq + freqStep
             phaseDegrees += phase_step
 
             WideBuf().make(buffer, tone, i, buffersCount, samplesPerFLit)
@@ -114,7 +111,11 @@ class DacPlayer(AxiGpio):
         playerTicksPerBuffer = int(bram0_size / div) - 1
 
         self.gpio_bram_count.set(val=playerTicksPerBuffer)
-        
+
+
+    def load_single(self, bram1_data):
+        self.bram1.load(data=bram1_data)
+
     def load_dac_player_from_file(self, bram0_path, bram1_path):
         data0 = np.fromfile(bram0_path, dtype=np.uint8)
         data1 = np.fromfile(bram1_path, dtype=np.uint8)
@@ -202,7 +203,7 @@ if __name__ == "__main__":
     argparser.add_argument('--db', help='Specify tone amplitude', type=int)
     argparser.add_argument('--pstep', help='Specify phase_step', type=int)
 
-    argparser.add_argument('--saw', help='Generate Incrementing sequence between min and max values', action='store_true')
+    argparser.add_argument('--saw', help='Generate Incrementing sequence between min and max values (int16)', action='store_true')
 
     args  = argparser.parse_args()
 
@@ -243,13 +244,13 @@ if __name__ == "__main__":
         else: bram1 = bram0
 
         player.load_dac_player(bram0, bram1)
-    elif args.saw is not None:
+    elif args.saw is True:
 
         print('Flattening BRAM using SAW ')
         bram0 = player.make_saw_bram()
 
         player.load_dac_player(bram0, bram0)
-    elif args.zero is not None:
+    elif args.zero is True:
         print('Zeroing BRAM')
         bram_data = player.make_zero_bram()
         player.load_dac_player(bram_data, bram_data)

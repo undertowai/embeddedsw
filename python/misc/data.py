@@ -28,4 +28,3 @@ class DataProc:
         
         assert status == 0
         return dwell
-        
