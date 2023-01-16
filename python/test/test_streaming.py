@@ -28,8 +28,11 @@ class Test_Streaming(TestSuite):
             addrI, sizeI = a["I"]
             addrQ, sizeQ = a["Q"]
 
-            I = Xddr.read(addrI, sizeI, dtype)
-            Q = Xddr.read(addrQ, sizeQ, dtype)
+            if self.DEBUG:
+                print(f'I: {hex(addrI)}:{hex(sizeI)}, Q: {hex(addrQ)}:{hex(sizeQ)}')
+
+            I = self.xddr_read(addrI, sizeI, dtype)
+            Q = self.xddr_read(addrQ, sizeQ, dtype)
             iq_data.append((I, Q))
 
         mpart_data = [

@@ -4,6 +4,7 @@ from time import sleep
 import traceback
 import logging
 import json
+import numpy as np
 
 sys.path.append("../hmc")
 sys.path.append("../axi")
@@ -61,8 +62,7 @@ class TestSuiteMisc:
         self.set_loobback(self.adc_dac_sw_loppback)
 
 class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk):
-    HAS_ADC_DAC_FLUSH=True
-    HAS_HW_LOOPBACK=True
+    DEBUG=False
 
     def getargs(self, **kw):
         for k, v in kw.items():
@@ -93,29 +93,25 @@ class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk):
         self.ddr0 = Xddr("ddr4_0")
         self.ddr1 = Xddr("ddr4_1")
 
-        if self.HAS_HW_LOOPBACK:
-            self.axis_switch0 = AxisSwitch("axis_switch_0")
-            self.axis_switch1 = AxisSwitch("axis_switch_1")
+        self.axis_switch0 = AxisSwitch("axis_switch_0")
+        self.axis_switch1 = AxisSwitch("axis_switch_1")
 
-        if self.HAS_ADC_DAC_FLUSH:
-            self.gpio_flush = self.getGpio("adc_dac_flush_gpio_0")
-        else:
-            self.gpio_flush = None
+        self.gpio_flush = self.getGpio("adc_dac_flush_gpio_0")
 
         self.gpio_sync = self.getGpio("adc_dac_sync_gpio_0")
 
         self.set_loobback(False)
 
         self.samplingFreq = self.rfdc.getSamplingFrequency()
+        
+        if self.DEBUG:
+            print(f'Test Init Done; Sampling frequency {self.samplingFreq}')
 
     def set_loobback(self, loopback):
-        if self.HAS_HW_LOOPBACK:
-            s = [0, 2] if loopback else [1, 3]
+        s = [0, 2] if loopback else [1, 3]
 
-            self.axis_switch0.route(s, m=[0, 1])
-            self.axis_switch1.route(s, m=[0, 1])
-        else:
-            print('set_loobback: not supported')
+        self.axis_switch0.route(s, m=[0, 1])
+        self.axis_switch1.route(s, m=[0, 1])
 
     def setup_hmc(self, hmc_6300_ics, hmc_6301_ics):
         self.hmc.GpioInit()
@@ -138,8 +134,17 @@ class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk):
         devName = self.dma.devIdToIpName(id)
         self.dma.startTransfer(devName=devName, addr=addr, len=size)
 
+    #TODO: Do this properly (Assuning mmap need 4096 aligned addr and size)
+    def __dma_fix_size(self, size):
+        hw_del = self.hw.HW_AXIS_DELAY_SAMPLES * self.hw.BYTES_PER_SAMPLE
+        size += hw_del
+        size = int(((size - 1) / 4096) + 1) * 4096
+
+        return size
+
     def start_dma(self, rx_dma_map, offset, size):
         area = {}
+        size = self.__dma_fix_size(size)
         for _ddr in rx_dma_map.keys():
             ddr = getattr(self, _ddr)
             rx_dma_id = rx_dma_map[_ddr]
@@ -147,10 +152,15 @@ class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk):
             base_address = ddr.base_address() + offset
             addr = base_address
 
+            if self.DEBUG:
+                print(f'start_dma: DDR={ddr} base address={hex(base_address)}')
+
             for rxn, dma_id in rx_dma_id:
                 #2 DMA channels for I and Q
                 assert len(dma_id) == 2
 
+                if self.DEBUG:
+                    print(f'dma id={dma_id}')
                 addrI = addr
                 addrQ = addr + size
                 self.__start_dma(dma_id[0], addrI, size)
@@ -159,6 +169,10 @@ class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk):
                 addr += size * 2
                 area[rxn] = {"I": (addrI, size), "Q": (addrQ, size)}
         return area
+
+    #HW delay, etc.. is to be applied here
+    def xddr_read(self, addr, size, dtype):
+        return Xddr.read(addr, size, dtype)[self.hw.HW_AXIS_DELAY_SAMPLES:]
 
     def calc_capture_time(self, captureSize):
         numCaptures = 0x1
