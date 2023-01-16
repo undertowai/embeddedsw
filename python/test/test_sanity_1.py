@@ -27,8 +27,8 @@ class Test_Sanity_1(TestSuite):
         for i, s in enumerate(got):
             s_exp = exp[i%exp.size]
             if s != s_exp:
-                print(got[i-10:i+10])
-                print(f'Missmatch at {i}: exp={s_exp} != {s}')
+                print(got[i:i+32])
+                print(exp[i:i+10])
                 assert not assert_on_failure
 
             p = '- \\ | /'.split()[int(i/self.dwell_samples) % 4]
@@ -36,32 +36,42 @@ class Test_Sanity_1(TestSuite):
         print()
 
     def proc_cap_data(self, area, dtype=np.int16):
-        #Note: Only RX0 (I, Q) has loopback enabled so far
-        loopback_rx_id = 0
+        #Note: Only RX0, RX4 (I, Q) has loopback enabled so far
+        a0 = area[0]
+        a4 = area[4]
 
-        a = area[loopback_rx_id]
+        aI, sI = a0["I"]
+        aQ, sQ = a0["Q"]
+        I0 = Xddr.read(aI, sI, dtype)
+        Q0 = Xddr.read(aQ, sQ, dtype)
 
-        addrI, sizeI = a["I"]
-        addrQ, sizeQ = a["Q"]
-        I = Xddr.read(addrI, sizeI, dtype)
-        Q = Xddr.read(addrQ, sizeQ, dtype)
+        aI, sI = a4["I"]
+        aQ, sQ = a4["Q"]
+        I4 = Xddr.read(aI, sI, dtype)
+        Q4 = Xddr.read(aQ, sQ, dtype)
 
-        bramI = self.player.decompose_buf(0, 0)[0]
-        bramQ = self.player.decompose_buf(0, 1)[0]
+        bramI0 = self.player.decompose_buf(0, 0)[0]
+        bramQ0 = self.player.decompose_buf(0, 1)[0]
+
+        bramI4 = self.player.decompose_buf(1, 0)[0]
+        bramQ4 = self.player.decompose_buf(1, 1)[0]
 
         print('Checking data sequence:')
 
-        offset_samples = 24
-        self.check_cap_data(I, bramI, offset_samples)
-        self.check_cap_data(Q, bramQ, offset_samples)
+        offset_samples = 256+40
+        self.check_cap_data(I0, bramI0, offset_samples)
+        self.check_cap_data(Q0, bramQ0, offset_samples)
 
-        print('Checking data averaging:')
+        self.check_cap_data(I4, bramI4, offset_samples)
+        self.check_cap_data(Q4, bramQ4, offset_samples)
 
-        I = self.data_proc.dwellAvg(addrI, self.dwell_samples, self.dwell_num, offset_samples)
-        Q = self.data_proc.dwellAvg(addrQ, self.dwell_samples, self.dwell_num, offset_samples)
+        #print('Checking data averaging:')
 
-        self.check_cap_data(I, bramI, 0, assert_on_failure=False)
-        self.check_cap_data(Q, bramQ, 0, assert_on_failure=False)
+        #I = self.data_proc.dwellAvg(addrI, self.dwell_samples, self.dwell_num, offset_samples)
+        #Q = self.data_proc.dwellAvg(addrQ, self.dwell_samples, self.dwell_num, offset_samples)
+
+        #self.check_cap_data(I, bramI, 0, assert_on_failure=False)
+        #self.check_cap_data(Q, bramQ, 0, assert_on_failure=False)
 
     @TestSuite.Test
     def run_test(self):
