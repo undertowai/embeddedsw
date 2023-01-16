@@ -194,14 +194,7 @@ if __name__ == "__main__":
 
     hmc = HMC63xx("spi_gpio")
 
-    limit = 1
-
     hmc.GpioInit()
-    for i in range(limit):
-        # hmc.DefaultConfig_6300(ic=i)
-        hmc.PrintConfig_6300(ic=i)
-        # hmc.DefaultConfig_6300(ic=i)
-        hmc.PrintConfig_6301(ic=i)
 
     hmc.Reset()
 

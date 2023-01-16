@@ -95,10 +95,14 @@ if __name__ == "__main__":
     config_path = sys.argv[3]
 
     test = Test_Streaming(Inet.PORT)
-    
-    test.load_config(config_path)
 
-    test.run_test(
-        num_iterations=num_iterations,
-        sn=sn
-    )
+    try:
+        test.load_config(config_path)
+
+        test.run_test(
+            num_iterations=num_iterations,
+            sn=sn
+        )
+    except KeyboardInterrupt:
+        test.shutdown_hmc()
+        sys.exit(-1)
