@@ -110,8 +110,10 @@ class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk):
 
     def set_loobback(self, loopback):
         if self.HAS_HW_LOOPBACK:
-            self.axis_switch0.route(s=[0 if loopback else 1], m=[0])
-            self.axis_switch1.route(s=[0 if loopback else 1], m=[0])
+            s = [0, 2] if loopback else [1, 3]
+
+            self.axis_switch0.route(s, m=[0, 1])
+            self.axis_switch1.route(s, m=[0, 1])
         else:
             print('set_loobback: not supported')
 
@@ -128,26 +130,9 @@ class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk):
 
     def adc_dac_sync(self, sync):
         if sync:
-            if self.gpio_flush is not None:
-                self.gpio_flush.set(val=0x00)
             self.gpio_sync.set(val=0xff)
         else:
-            if self.gpio_flush is not None:
-                self.gpio_flush.set(val=0xff)
-                #Use approximate time to flush the FIFO
-                sleep(self.calc_capture_time(512))
-            self.gpio_sync.set(val=0x00)
-
-    def collect_captures_from_ddr(self, ddr, outputdir, paths, offset, size):
-        base_address = ddr.base_address() + offset
-
-        addr = base_address
-        for path in paths:
-            outputPath = outputdir + "/" + path
-            data = ddr.capture(addr, size)
-            if outputPath is not None:
-                self.write_cap_data(outputPath, data)
-            addr = addr + size
+            self.gpio_sync.set(val=0x0)
 
     def __start_dma(self, id, addr, size):
         devName = self.dma.devIdToIpName(id)
