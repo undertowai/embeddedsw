@@ -23,8 +23,7 @@ class Test_Streaming(TestSuite):
 
     def proc_cap_data(self, area, sn, txn, freq, fs, dtype=np.int16):
         iq_data = []
-        area = collections.OrderedDict(sorted(area.items()))
-        for rxn in area.keys():
+        for rxn in self.rx:
             a = area[rxn]
             addrI, sizeI = a["I"]
             addrQ, sizeQ = a["Q"]

@@ -1003,6 +1003,18 @@ static u32 XRFClk_SetConfigLMK(u32 ConfigId)
 	return XST_SUCCESS;
 }
 
+static u32 XRFClk_SetConfigLMK_External(const unsigned int *Config, u32 Count)
+{
+	for (int i = 0; i < LMK_COUNT; i++) {
+		if (XST_SUCCESS !=
+		    XRFClk_WriteReg(RFCLK_LMK, Config[i])) {
+			LOG;
+			return XST_FAILURE;
+		}
+	}
+	return XST_SUCCESS;
+}
+
 /****************************************************************************/
 /**
 *
@@ -1023,6 +1035,19 @@ static u32 XRFClk_SetConfigLMX(u32 ChipID, u32 ConfigId)
 	for (int i = 0; i < LMX2594_COUNT; i++) {
 		if (XST_SUCCESS !=
 		    XRFClk_WriteReg(ChipID, LMX2594[ConfigId][i])) {
+			LOG;
+			return XST_FAILURE;
+		}
+	}
+	return XST_SUCCESS;
+}
+
+static u32 XRFClk_SetConfigLMX_External(u32 ChipID, const unsigned int *Config, u32 Count)
+{
+	Xil_AssertNonvoid(Count == LMX2594_COUNT);
+	for (int i = 0; i < LMK_COUNT; i++) {
+		if (XST_SUCCESS !=
+		    XRFClk_WriteReg(ChipID, Config[i])) {
 			LOG;
 			return XST_FAILURE;
 		}
@@ -1058,6 +1083,16 @@ u32 XRFClk_SetConfigOnOneChipFromConfigId(u32 ChipId, u32 ConfigId)
 	}
 	Xil_AssertNonvoid(ConfigId < sizeof(LMX2594) / sizeof(LMX2594[0]));
 	return XRFClk_SetConfigLMX(ChipId, ConfigId);
+}
+
+u32 XRFClk_SetConfigOnOneChipFromConfig(u32 ChipId, const unsigned int *Config, u32 ConfigSize)
+{
+	Xil_AssertNonvoid(ChipId < RFCLK_CHIP_NUM);
+
+	if (ChipId == RFCLK_LMK) {
+		return XRFClk_SetConfigLMK_External(Config, ConfigSize);
+	}
+	return XRFClk_SetConfigLMX_External(ChipId, Config, ConfigSize);
 }
 
 /****************************************************************************/

@@ -135,6 +135,7 @@ u32 XRFClk_Init(int GpioId);
 void XRFClk_Close();
 u32 XRFClk_ResetChip(u32 ChipId);
 u32 XRFClk_SetConfigOnOneChipFromConfigId(u32 ChipId, u32 ConfigId);
+u32 XRFClk_SetConfigOnOneChipFromConfig(u32 ChipId, const unsigned int *Config, u32 ConfigSize);
 u32 XRFClk_SetConfigOnOneChip(u32 ChipId, u32 *cfgData, u32 len);
 u32 XRFClk_GetConfigFromOneChip(u32 ChipId, u32 *cfgData);
 u32 XRFClk_SetConfigOnAllChipsFromConfigId(u32 ConfigId_LMK, u32 ConfigId_RF1,

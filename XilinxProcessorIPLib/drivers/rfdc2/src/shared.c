@@ -158,6 +158,47 @@ int RFDC_Init_Clk104(void)
 	return XST_SUCCESS;
 }
 
+int RFDC_Init_Clk104_External(const unsigned int *LMK_config, u32 LMK_ConfigSize,
+					const unsigned int *LMX_RF1_config, u32 LMX_RF1_ConfigSize,
+					const unsigned int *LMX_RF2_config, u32 LMX_RF2_ConfigSize)
+{
+	int Status = XST_SUCCESS;
+	int gpioID = 343;
+
+
+	printf("Configuring LMK/LMX From external configs...\r\n");
+	/* The parameter is a gpioID, see Linux boot logging */
+	XRFClk_Init(gpioID);
+
+	if (LMK_config != NULL && LMK_ConfigSize != 0)
+		Status = XRFClk_SetConfigOnOneChipFromConfig(RFCLK_LMK, LMK_config, LMK_ConfigSize);
+
+	if (Status == XST_FAILURE) {
+		goto RETURN_PATH;
+	}
+
+	if (LMX_RF1_config != NULL && LMX_RF1_ConfigSize != 0)
+		Status = XRFClk_SetConfigOnOneChipFromConfig(RFCLK_LMX2594_1, LMX_RF1_config, LMX_RF1_ConfigSize);
+
+	if (Status == XST_FAILURE) {
+		goto RETURN_PATH;
+	}
+
+	if (LMX_RF2_config != NULL && LMX_RF2_ConfigSize != 0)
+		Status = XRFClk_SetConfigOnOneChipFromConfig(RFCLK_LMX2594_2, LMX_RF2_config, LMX_RF2_ConfigSize);
+
+	if (Status == XST_FAILURE) {
+		goto RETURN_PATH;
+	}
+
+	Status = printCLK104_settings();
+
+RETURN_PATH:
+	XRFClk_Close();
+
+	return Status;
+}
+
 int RFDC_Restart(void)
 {
 	int Status;
@@ -222,7 +263,7 @@ int RFDC_GetSamplingFreq (void)
 	return (int)(SamplingFreq / 1000000.0);
 }
 
-int RFdcMTS(u32 ADC_mask, u32 DAC_mask)
+int RFdcMTS(u32 ADC_mask, u32 DAC_mask, u32 ADC_ref, u32 DAC_ref)
 {
 	u16 RFdcDeviceId = 0;
 	int status, status_adc, status_dac, i;
@@ -251,7 +292,7 @@ int RFdcMTS(u32 ADC_mask, u32 DAC_mask)
     printf("\n=== Run DAC Sync ===\n");
 
     /* Initialize DAC MTS Settings */
-    XRFdc_MultiConverter_Init (&DAC_Sync_Config, 0, 0, XRFDC_TILE_ID0);
+    XRFdc_MultiConverter_Init (&DAC_Sync_Config, 0, 0, DAC_ref);
     DAC_Sync_Config.Tiles = DAC_mask;
 
     status_dac = XRFdc_MultiConverter_Sync(RFdcInstPtr, XRFDC_DAC_TILE,
@@ -266,7 +307,7 @@ int RFdcMTS(u32 ADC_mask, u32 DAC_mask)
     printf("\n=== Run ADC Sync ===\n");
 
     /* Initialize ADC MTS Settings */
-    XRFdc_MultiConverter_Init (&ADC_Sync_Config, 0, 0, XRFDC_TILE_ID0);
+    XRFdc_MultiConverter_Init (&ADC_Sync_Config, 0, 0, ADC_ref);
     ADC_Sync_Config.Tiles = ADC_mask;
 
     status_adc = XRFdc_MultiConverter_Sync(RFdcInstPtr, XRFDC_ADC_TILE,

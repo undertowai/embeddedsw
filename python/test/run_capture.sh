@@ -16,7 +16,7 @@ sn=0
 
 [ -d $output_dir ] && rm -rf $output_dir
 
-python ../rfdc/rfdc_clk.py $ticsfilePath
+python ../rfdc/rfdc_clk.py --cfg $config --lmx2820 $ticsfilePath
 [[ $? != 0 ]] && exit 1
 
 while [ $sn -lt $max_iterations ]; do

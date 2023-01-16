@@ -1,10 +1,12 @@
 import sys
 import numpy as np
+import ctypes as ct
 import mmap
 
 sys.path.append("../misc")
 
 from dts import Dts
+from make import Make
 
 class Xddr:
     def __init__(self, ipName):
