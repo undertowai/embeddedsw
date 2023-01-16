@@ -64,6 +64,37 @@ int dwell_avg (s32 *dst, u32 ddr_addr_hi, u32 ddr_addr_lo, u32 dwell_offset, u32
         dwell_ptr += dwell_samples;
     }
     dsell_sub_avg(dst, dwell_samples, dwell_num);
-
+    close(fd);
     return 0;
+}
+
+int ddr_test(u32 ddr_addr_hi, u32 ddr_addr_lo, u32 size)
+{
+    u64 ddr_addr = (u64)ddr_addr_lo | ((u64)ddr_addr_hi << 32);
+    int fd = open("/dev/mem", O_SYNC | O_RDWR);
+    u32 *ddr_mem = (u32 *)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, ddr_addr);
+    u32 words = size/4;
+    u32 i = 0;
+    u32 error_count = 0;
+
+    printf("ddr_test: addr=%p, size=0x%x\r\n", ddr_addr, size);
+
+    if (ddr_mem == MAP_FAILED) {
+        printf("Can't map memory \r\n");
+        return -1;
+    }
+
+    for (i = 0; i < words; i++) {
+        ddr_mem[i] = i;
+    }
+
+    for (i = 0; i < words; i++) {
+        if (ddr_mem[i] != i) {
+            error_count++;
+        }
+    }
+
+    printf("DDR test finished; errors=%d\r\n", error_count);
+    close(fd);
+    return error_count;
 }

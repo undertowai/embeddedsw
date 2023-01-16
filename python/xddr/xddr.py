@@ -15,6 +15,16 @@ class Xddr:
         self.address = (reg[0] << 32) | reg[1]
         self.length = (reg[2] << 32) | reg[3]
 
+        libPath = Make().makeLibs('misc')
+        self.lib = ct.CDLL(libPath)
+
+    def test(self, addr, size):
+        fun = self.lib.ddr_test
+
+        addr += self.address
+        status = fun(int((addr>>32) & 0xffffffff), int(addr & 0xffffffff), int(size))
+        assert status == 0
+
     def read(offset, length, dtype=np.uint8):
         with open("/dev/mem", "r+b") as f:
             mm = mmap.mmap(
@@ -42,8 +52,13 @@ class Xddr:
 
 if __name__ == "__main__":
 
-    ddr = Xddr("ddr4_0")
+    print('Performing DDR test')
 
-    # ddr.capture('cap0.bin', 0x48_0000_0000, 0x1000)
+    ddr0 = Xddr("ddr4_0")
+    ddr1 = Xddr("ddr4_1")
+
+    ddr0.test(0x0, 0x1000000)
+    ddr1.test(0x0, 0x1000000)
+
 
     print("Pass")
