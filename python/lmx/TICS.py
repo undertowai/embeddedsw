@@ -19,6 +19,9 @@ def read(path):
 
     return buffer
 
+def LMK_get_reg_id(reg):
+    return (int(reg, 16) >> 8) & 0x1fff
+
 def write(csv_like_file_path, output_file_path):
 
     with open(csv_like_file_path) as f:
@@ -32,7 +35,7 @@ def write(csv_like_file_path, output_file_path):
     with open(output_file_path, '+w') as f:
         f.write('R0\t(INIT)\t{}\r\n'.format(regs[0]))
         for i, reg in enumerate(regs[1:]):
-            f.write('R{}\t{}\r\n'.format(i+1, reg))
+            f.write('R{}\t{}\r\n'.format(LMK_get_reg_id(reg), reg))
         f.close()
 
 def generateDummy(length, value):

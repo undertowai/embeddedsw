@@ -21,8 +21,8 @@ class Test_Streaming(TestSuite):
             addrI, sizeI = a["I"]
             addrQ, sizeQ = a["Q"]
 
-            I = Xddr.read(addrI, sizeI, dtype)
-            Q = Xddr.read(addrQ, sizeQ, dtype)
+            I = self.xddr_read(addrI, sizeI, dtype)
+            Q = self.xddr_read(addrQ, sizeQ, dtype)
 
             dir_path = self.output_dir + os.sep + f'TX_{txn}' + os.sep + f'RX_{rxn}'
             
@@ -50,12 +50,6 @@ class Test_Streaming(TestSuite):
             for txn in self.tx:
                 if self.adc_dac_hw_loppback == False:
                     self.setup_hmc([txn], self.rx)
-                
-                    self.hmc.IfGain_6300(ic=txn, gain=6)
-                    self.hmc.RVGAGain_6300(ic=txn, gain=7)
-                
-                    for rxn in self.rx:
-                        self.hmc.SetAtt_6301(ic=rxn, i=3, q=1, att=0)
 
                 print("*** Running Iteration : sn={}, rx={}, tx={}".format(sn, self.rx, [txn]))
 

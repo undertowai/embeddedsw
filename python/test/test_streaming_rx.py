@@ -30,8 +30,8 @@ class Test_Streaming(TestSuite):
             addrI, sizeI = a["I"]
             addrQ, sizeQ = a["Q"]
 
-            I = Xddr.read(addrI, sizeI, dtype)
-            Q = Xddr.read(addrQ, sizeQ, dtype)
+            I = self.xddr_read(addrI, sizeI, dtype)
+            Q = self.xddr_read(addrQ, sizeQ, dtype)
             iq_data.append((I, Q))
 
         mpart_data = [
@@ -56,9 +56,6 @@ class Test_Streaming(TestSuite):
         rx_dma_map = self.map_rx_to_dma_id(self.rx)
 
         self.setup_hmc([], self.rx)
-
-        for rxn in self.rx:
-            self.hmc.SetAtt_6301(ic=rxn, i=3, q=1, att=0)
 
         while iter_count < self.num_iterations:
             

@@ -164,14 +164,17 @@ int RFDC_Init_Clk104_External(const unsigned int *LMK_config, u32 LMK_ConfigSize
 {
 	int Status = XST_SUCCESS;
 	int gpioID = 343;
+	int lmkConfigIndex = 3;
 
 
-	printf("Configuring LMK/LMX From external configs...\r\n");
+	printf("Configuring LMK/LMX From external configs... %p, %p, %p\r\n", LMK_config, LMX_RF1_config, LMX_RF2_config);
 	/* The parameter is a gpioID, see Linux boot logging */
 	XRFClk_Init(gpioID);
 
 	if (LMK_config != NULL && LMK_ConfigSize != 0)
 		Status = XRFClk_SetConfigOnOneChipFromConfig(RFCLK_LMK, LMK_config, LMK_ConfigSize);
+	else
+		Status = XRFClk_SetConfigOnOneChipFromConfigId(RFCLK_LMK, lmkConfigIndex);
 
 	if (Status == XST_FAILURE) {
 		goto RETURN_PATH;
@@ -179,6 +182,8 @@ int RFDC_Init_Clk104_External(const unsigned int *LMK_config, u32 LMK_ConfigSize
 
 	if (LMX_RF1_config != NULL && LMX_RF1_ConfigSize != 0)
 		Status = XRFClk_SetConfigOnOneChipFromConfig(RFCLK_LMX2594_1, LMX_RF1_config, LMX_RF1_ConfigSize);
+	else
+		Status = XRFClk_SetConfigOnOneChipFromConfigId(RFCLK_LMX2594_1, LMX2594_FREQ_300M00_PD);
 
 	if (Status == XST_FAILURE) {
 		goto RETURN_PATH;
@@ -186,6 +191,8 @@ int RFDC_Init_Clk104_External(const unsigned int *LMK_config, u32 LMK_ConfigSize
 
 	if (LMX_RF2_config != NULL && LMX_RF2_ConfigSize != 0)
 		Status = XRFClk_SetConfigOnOneChipFromConfig(RFCLK_LMX2594_2, LMX_RF2_config, LMX_RF2_ConfigSize);
+	else
+		Status = XRFClk_SetConfigOnOneChipFromConfigId(RFCLK_LMX2594_1, LMX2594_FREQ_300M00_PD);
 
 	if (Status == XST_FAILURE) {
 		goto RETURN_PATH;

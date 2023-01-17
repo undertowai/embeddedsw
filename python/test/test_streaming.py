@@ -61,12 +61,6 @@ class Test_Streaming(TestSuite):
             for txn in self.tx:
                 if self.adc_dac_hw_loppback == False:
                     self.setup_hmc([txn], self.rx)
-                
-                    self.hmc.IfGain_6300(ic=txn, gain=6)
-                    self.hmc.RVGAGain_6300(ic=txn, gain=7)
-                
-                    for rxn in self.rx:
-                        self.hmc.SetAtt_6301(ic=rxn, i=3, q=1, att=0)
 
                 print("*** Running Iteration : sn={}, rx={}, tx={}".format(sn, self.rx, [txn]))
 

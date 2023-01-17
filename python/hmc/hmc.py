@@ -183,12 +183,22 @@ class HMC63xx(MLock):
         return int(tempC)
 
     @MLock.Lock
-    def Reset(self):
-        fun = self.lib.HMC63xx_Reset
+    def Reset_6300(self):
+        fun = self.lib.HMC6300_Reset
 
         status = fun(self.devNamePtr)
         assert status == 0
 
+    @MLock.Lock
+    def Reset_6301(self):
+        fun = self.lib.HMC6301_Reset
+
+        status = fun(self.devNamePtr)
+        assert status == 0
+
+    def Reset(self):
+        self.Reset_6300()
+        self.Reset_6301()
 
 if __name__ == "__main__":
 

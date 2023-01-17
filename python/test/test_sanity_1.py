@@ -58,7 +58,7 @@ class Test_Sanity_1(TestSuite):
 
         print('Checking data sequence:')
 
-        offset_samples = 256+40
+        offset_samples = self.hw.HW_AXIS_DELAY_SAMPLES + 40
         self.check_cap_data(I0, bramI0, offset_samples)
         self.check_cap_data(Q0, bramQ0, offset_samples)
 
@@ -104,4 +104,5 @@ if __name__ == "__main__":
 
     test.load_config(config_path)
 
-    test.run_test()
+    for i in range(10):
+        test.run_test()

@@ -265,7 +265,7 @@ int HMC6301_PrintConfig(const char *devName, int ic)
     return XST_SUCCESS;
 }
 
-int HMC63xx_Reset (const char *devName)
+int HMC6300_Reset (const char *devName)
 {
     XGpio_t Gpio = {0};
 
@@ -273,6 +273,19 @@ int HMC63xx_Reset (const char *devName)
 		return XST_FAILURE;
 	}
     hmc6300_set_reset(&Gpio);
+
+	metal_device_close(Gpio.device);
+	metal_finish();
+    return XST_SUCCESS;
+}
+
+int HMC6301_Reset (const char *devName)
+{
+    XGpio_t Gpio = {0};
+
+	if (XST_SUCCESS != HMC_Dev_Init(&Gpio, devName)) {
+		return XST_FAILURE;
+	}
     hmc6301_set_reset(&Gpio);
 
 	metal_device_close(Gpio.device);

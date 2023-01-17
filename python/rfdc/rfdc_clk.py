@@ -66,6 +66,8 @@ if __name__ == "__main__":
     argparser.add_argument('--lmk', help='specify LMK configuration file', type=str)
     argparser.add_argument('--lmx_rf1', help='specify LMX RF1 configuration file', type=str)
     argparser.add_argument('--lmx_rf2', help='specify LMX RF2 configuration file', type=str)
+    
+    argparser.add_argument('--no_rfdc', help='Skip RFDC init', action='store_true')
 
     args  = argparser.parse_args()
 
@@ -75,14 +77,20 @@ if __name__ == "__main__":
         config = load_json(args.cfg)
         adc_dac_hw_loppback = config['adc_dac_hw_loppback']
 
+    print(f'adc_dac_hw_loppback={adc_dac_hw_loppback}')
+
     rfdc_clk = RfdcClk()
 
     rfdc_clk.setup_clk104(args.lmk, args.lmx_rf1, args.lmx_rf2)
-    rfdc_clk.setup_rfdc()
+
+    if args.no_rfdc == False:
+        rfdc_clk.setup_rfdc()
+    else:
+        print('Skipping RFDC initialization')
 
     if args.lmx2820 is not None and adc_dac_hw_loppback == False:
         rfdc_clk.setup_lmx(args.lmx2820)
     else:
-        print(f'Skip LMX2820 configuration: adc_dac_hw_loppback={adc_dac_hw_loppback}')
+        print('Skipping LMX2820 configuration')
 
     print("Pass")

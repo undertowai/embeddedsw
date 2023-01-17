@@ -58,8 +58,9 @@ class TestSuiteMisc:
         self.adc_dac_hw_loppback = bool(j['adc_dac_hw_loppback'])
         self.adc_dac_sw_loppback = bool(j['adc_dac_sw_loppback'])
 
+        self.rf_config = self.load_json('./rf_power.json')
 
-        self.set_loobback(self.adc_dac_sw_loppback)
+        self.set_loopback(self.adc_dac_sw_loppback)
 
 class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk):
     DEBUG=False
@@ -100,14 +101,14 @@ class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk):
 
         self.gpio_sync = self.getGpio("adc_dac_sync_gpio_0")
 
-        self.set_loobback(False)
+        self.set_loopback(False)
 
         self.samplingFreq = self.rfdc.getSamplingFrequency()
         
         if self.DEBUG:
             print(f'Test Init Done; Sampling frequency {self.samplingFreq}')
 
-    def set_loobback(self, loopback):
+    def set_loopback(self, loopback):
         s = [0, 2] if loopback else [1, 3]
 
         self.axis_switch0.route(s, m=[0, 1])
@@ -117,9 +118,21 @@ class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk):
         self.hmc.GpioInit()
         for ic in hmc_6300_ics:
             self.hmc.ExtConfig_6300(ic=ic, id=0)
+            tx_conf = self.rf_config['TX'][ic]
+
+            ifgain = tx_conf['ifgain_1.3db_step']
+            rvgain = tx_conf['rvga_gain_1.3db_step']
+            self.hmc.IfGain_6300(ic=ic, gain=ifgain)
+            self.hmc.RVGAGain_6300(ic=ic, gain=rvgain)
 
         for ic in hmc_6301_ics:
             self.hmc.ExtConfig_6301(ic=ic, id=0)
+            rx_conf = self.rf_config['RX'][ic]
+            att_i = rx_conf['RX_att_I_6db_step']
+            att_q = rx_conf['RX_att_Q_6db_step']
+            att_comm = rx_conf['RX_att_comm_6db_step']
+
+            self.hmc.SetAtt_6301(ic=ic, i=att_i, q=att_q, att=att_comm)
 
     def shutdown_hmc(self):
         self.hmc.Reset()
