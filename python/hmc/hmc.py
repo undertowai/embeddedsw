@@ -228,6 +228,7 @@ if __name__ == "__main__":
     hmc = HMC63xx("spi_gpio")
 
     hmc.GpioInit()
+    hmc.Reset()
 
     cfg_path = sys.argv[1]
     rf_cfg_path = sys.argv[2]
