@@ -1,5 +1,6 @@
 import sys
 import ctypes as ct
+import json
 
 sys.path.append("../misc")
 
@@ -23,6 +24,24 @@ class HMC63xx(MLock):
         self.lib = ct.CDLL(self.libPath)
 
         self.devNamePtr = ct.c_char_p(self.devName.encode("UTF-8"))
+
+    def load_json(self, path):
+        with open(path, 'r') as f:
+            j = json.load(f)
+            f.close()
+        return j
+
+    def read_conf(path):
+        lines=[]
+        with open(path) as f:
+            lines = f.readlines()
+
+        regs=[]
+        for line in lines:
+            sline = line.replace('\n','').split(':')
+            regs.append( (sline[1] ) )
+
+        return regs
 
     @MLock.Lock
     def GpioInit(self):
@@ -202,10 +221,37 @@ class HMC63xx(MLock):
 
 if __name__ == "__main__":
 
+    if len(sys.argv) != 3:
+        print(f"Usage: {sys.argv[0]} <config.json> <rf_config.json>")
+        assert False
+
     hmc = HMC63xx("spi_gpio")
 
     hmc.GpioInit()
 
-    hmc.Reset()
+    cfg_path = sys.argv[1]
+    rf_cfg_path = sys.argv[2]
+    config = hmc.load_json(cfg_path)
+    rf_config = hmc.load_json(rf_cfg_path)
+    
+    print('Configuring TX (HMC6300)')
+    for ic in config['tx']:
+        hmc.ExtConfig_6300(ic=ic, id=0)
+        tx_conf = rf_config['TX'][ic]
+
+        ifgain = tx_conf['ifgain_1.3db_step']
+        rvgain = tx_conf['rvga_gain_1.3db_step']
+        hmc.IfGain_6300(ic=ic, gain=ifgain)
+        hmc.RVGAGain_6300(ic=ic, gain=rvgain)
+
+    print('Configuring RX (HMC6301)')
+    for ic in config['rx']:
+        hmc.ExtConfig_6301(ic=ic, id=0)
+        rx_conf = rf_config['RX'][ic]
+        att_i = rx_conf['RX_att_I_6db_step']
+        att_q = rx_conf['RX_att_Q_6db_step']
+        att_comm = rx_conf['RX_att_comm_6db_step']
+
+        hmc.SetAtt_6301(ic=ic, i=att_i, q=att_q, att=att_comm)
 
     print("Pass")

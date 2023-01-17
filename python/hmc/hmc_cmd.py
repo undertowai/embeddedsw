@@ -1,4 +1,5 @@
 import cmd
+import json
 
 from hmc import HMC63xx
 
@@ -12,6 +13,13 @@ class HMC_shell(cmd.Cmd):
         super(HMC_shell, self).__init__()
         self.hmc = HMC63xx("spi_gpio")
         self.hmc.GpioInit()
+
+
+    def load_json(self, path):
+        with open(path, 'r') as f:
+            j = json.load(f)
+            f.close()
+        return j
 
     def do_6300_def(self, ic):
         "Write default configuration to 6300 [x] ic"
@@ -131,6 +139,31 @@ class HMC_shell(cmd.Cmd):
         "write register: 6301_rd <ic> <i>"
         ic, i, val = [int(s) for s in line.split()]
         self.hmc.WriteReg_6301(ic=ic, i=i, val=val)
+
+    def do_reset_tx(self, line):
+        self.hmc.Reset_6300()
+
+    def do_reset_rx(self, line):
+        self.hmc.Reset_6301()
+
+    def do_config_pwr_tx(self, line):
+        config_path = line
+        tx_cfg = self.load_json(config_path)['TX']
+        for ic, cfg in enumerate(tx_cfg):
+            ifgain = cfg['ifgain_1.3db_step']
+            rvgain = cfg['rvga_gain_1.3db_step']
+            self.hmc.IfGain_6300(ic=ic, gain=ifgain)
+            self.hmc.RVGAGain_6300(ic=ic, gain=rvgain)
+
+    def do_config_pwr_rx(self, line):
+        config_path = line
+        rx_cfg = self.load_json(config_path)['RX']
+        for ic, cfg in enumerate(rx_cfg):
+            att_i = cfg['RX_att_I_6db_step']
+            att_q = cfg['RX_att_Q_6db_step']
+            att_comm = cfg['RX_att_comm_6db_step']
+
+            self.hmc.SetAtt_6301(ic=ic, i=att_i, q=att_q, att=att_comm)
 
     def do_reset(self, line):
         self.hmc.Reset()

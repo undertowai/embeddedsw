@@ -4,7 +4,6 @@ from time import sleep
 import traceback
 import logging
 import json
-import numpy as np
 
 sys.path.append("../hmc")
 sys.path.append("../axi")
@@ -21,7 +20,6 @@ from gpio import AxiGpio
 from axis_switch import AxisSwitch
 
 from hw import Hw
-from inet import Inet
 
 class TestSuiteMisc:
     def __init__(self) -> None:
@@ -58,7 +56,8 @@ class TestSuiteMisc:
         self.adc_dac_hw_loppback = bool(j['adc_dac_hw_loppback'])
         self.adc_dac_sw_loppback = bool(j['adc_dac_sw_loppback'])
 
-        self.rf_config = self.load_json('./rf_power.json')
+        #TODO: Find another way to get path
+        self.rf_config = self.load_json('../hmc/configs/rf_power.json')
 
         self.set_loopback(self.adc_dac_sw_loppback)
 
