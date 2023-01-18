@@ -20,6 +20,7 @@ from gpio import AxiGpio
 from axis_switch import AxisSwitch
 
 from hw import Hw
+from inet import Inet
 
 class TestSuiteMisc:
     def __init__(self) -> None:
@@ -61,7 +62,7 @@ class TestSuiteMisc:
 
         self.set_loopback(self.adc_dac_sw_loppback)
 
-class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk):
+class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk, Inet):
     DEBUG=False
 
     def getargs(self, **kw):
@@ -87,6 +88,7 @@ class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk):
         TestSuiteMisc.__init__(self)
         AxiGpio.__init__(self, 'axi_gpio')
         RfdcClk.__init__(self)
+        Inet.__init__(self)
         self.hw = Hw()
 
         self.hmc = HMC63xx("spi_gpio")
@@ -172,6 +174,13 @@ class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk):
     #HW delay, etc.. is to be applied here
     def xddr_read(self, addr, size, dtype):
         return Xddr.read(addr, size, dtype)[self.hw.HW_AXIS_DELAY_SAMPLES:]
+
+    def xddr_clear_area(self, area):
+        for ai in area:
+            for iq in area[ai]:
+                addr, size = area[ai][iq]
+                #Use ddr0 as source for C library
+                self.ddr0.clear(addr, size)
 
     def calc_capture_time(self, captureSize):
         numCaptures = 0x1

@@ -89,6 +89,7 @@ class Test_Sanity_1(TestSuite):
 
         self.adc_dac_sync(False)
         area = self.start_dma(rx_dma_map, self.cap_ddr_offset, self.capture_size)
+        #self.xddr_clear_area(area)
         self.adc_dac_sync(True)
 
         sleep(self.calc_capture_time(self.capture_size))

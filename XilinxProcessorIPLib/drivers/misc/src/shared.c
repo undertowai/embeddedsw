@@ -108,7 +108,7 @@ int ddr_zero(u32 ddr_addr_hi, u32 ddr_addr_lo, u32 size)
     u32 words = size/4;
     u32 i = 0;
 
-    printf("ddr_test: addr=%p, size=0x%x\r\n", ddr_addr, size);
+    printf("ddr_zero: addr=%p, size=0x%x\r\n", ddr_addr, size);
 
     if (ddr_mem == MAP_FAILED) {
         printf("Can't map memory \r\n");

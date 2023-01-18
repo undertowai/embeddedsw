@@ -17,10 +17,6 @@ class Test_Streaming(TestSuite):
     def __init__(self, port):
         TestSuite.__init__(self)
 
-        context = zmq.Context()
-        self.publisher = context.socket(zmq.PUB)
-        self.publisher.bind("tcp://0.0.0.0:%s" % port)
-
     def proc_cap_data(self, area, sn, txn, freq, fs, dtype=np.int16):
         iq_data = []
 
@@ -34,16 +30,7 @@ class Test_Streaming(TestSuite):
             Q = self.xddr_read(addrQ, sizeQ, dtype)
             iq_data.append((I, Q))
 
-        mpart_data = [
-            bytes(str(Inet.TOPIC_FILTER), "utf-8"),
-            bytes(str(sn), "utf-8"),
-            bytes(str(txn), "utf-8"),
-            bytes(str(fs), "utf-8"),
-            bytes(str(freq), "utf-8"),
-            bytes(str(time.time_ns() / 1_000_000_000), "utf-8"),
-            pickle.dumps(iq_data)
-        ]
-        self.publisher.send_multipart(mpart_data)
+        self.publish(sn, txn, fs, freq, self.rx, iq_data)
 
     @TestSuite.Test
     def run_test(self):

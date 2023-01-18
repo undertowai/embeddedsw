@@ -1,1 +1,5 @@
-*.lock
+*
+!.gitignore
+!*.py
+!*.sh
+!*.json
