@@ -109,7 +109,7 @@ class Lmx2820(MLock, AxiGpio):
     def ctrl(self, sync=False, mute=False):
         sync = 0x2 if sync else 0x0
         mute = 0x1 if mute else 0x0
-        self.set(val=(sync | mute))
+        self.ctrl_gpio.set(val=(sync | mute))
 
     @MLock.Lock
     def config(self):

@@ -32,10 +32,10 @@ class Gpio(MLock):
 class AxiGpio:
     def __init__(self, libName):
         libPath = Make().makeLibs(libName)
-        self.lib = ct.CDLL(libPath)
+        self.lib_gpio = ct.CDLL(libPath)
 
     def getGpio(self, ipName):
-        return Gpio(self.lib, ipName)
+        return Gpio(self.lib_gpio, ipName)
 
 
 if __name__ == "__main__":
