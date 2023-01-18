@@ -77,6 +77,7 @@ class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk):
                 logging.error(traceback.format_exc())
                 print("=== FAILED ===")
                 self.shutdown_hmc()
+                raise Exception()
             else:
                 print("=== PASS ===")
 
@@ -108,30 +109,15 @@ class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk):
             print(f'Test Init Done; Sampling frequency {self.samplingFreq}')
 
     def set_loopback(self, loopback):
-        s = [0, 2] if loopback else [1, 3]
+        s = [0, 2, 4, 6, 8, 10, 12, 14] if loopback else [1, 3, 5, 7, 9, 11, 13, 15]
+        m = [0, 1, 2, 3, 4, 5, 6, 7]
 
-        self.axis_switch0.route(s, m=[0, 1])
-        self.axis_switch1.route(s, m=[0, 1])
+        self.axis_switch0.route(s, m)
+        self.axis_switch1.route(s, m)
 
-    def setup_hmc(self, hmc_6300_ics, hmc_6301_ics):
+    def setup_hmc(self, tx, rx):
         self.hmc.GpioInit()
-        for ic in hmc_6300_ics:
-            self.hmc.ExtConfig_6300(ic=ic, id=0)
-            tx_conf = self.rf_config['TX'][ic]
-
-            ifgain = tx_conf['ifgain_1.3db_step']
-            rvgain = tx_conf['rvga_gain_1.3db_step']
-            self.hmc.IfGain_6300(ic=ic, gain=ifgain)
-            self.hmc.RVGAGain_6300(ic=ic, gain=rvgain)
-
-        for ic in hmc_6301_ics:
-            self.hmc.ExtConfig_6301(ic=ic, id=0)
-            rx_conf = self.rf_config['RX'][ic]
-            att_i = rx_conf['RX_att_I_6db_step']
-            att_q = rx_conf['RX_att_Q_6db_step']
-            att_comm = rx_conf['RX_att_comm_6db_step']
-
-            self.hmc.SetAtt_6301(ic=ic, i=att_i, q=att_q, att=att_comm)
+        self.hmc.setup(tx, rx, self.rf_config)
 
     def shutdown_hmc(self):
         self.hmc.Reset()
@@ -148,9 +134,10 @@ class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk):
 
     #TODO: Do this properly (Assuning mmap need 4096 aligned addr and size)
     def __dma_fix_size(self, size):
+        cpu_page = int(4096)
         hw_del = self.hw.HW_AXIS_DELAY_SAMPLES * self.hw.BYTES_PER_SAMPLE
         size += hw_del
-        size = int(((size - 1) / 4096) + 1) * 4096
+        size = int(((size - 1) / cpu_page) + 1) * cpu_page
 
         return size
 

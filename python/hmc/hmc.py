@@ -1,6 +1,7 @@
 import sys
 import ctypes as ct
 import json
+from time import sleep
 
 sys.path.append("../misc")
 
@@ -35,6 +36,7 @@ class HMC63xx(MLock):
         lines=[]
         with open(path) as f:
             lines = f.readlines()
+            f.close()
 
         regs=[]
         for line in lines:
@@ -52,7 +54,6 @@ class HMC63xx(MLock):
 
     @MLock.Lock
     def IfGain_6300(self):
-        #print("XXX 6300 IFGain XXX")
         fun = self.lib.HMC6300_SetIfGain
 
         status = fun(self.devNamePtr, int(self.ic), self.gain)
@@ -218,6 +219,27 @@ class HMC63xx(MLock):
     def Reset(self):
         self.Reset_6300()
         self.Reset_6301()
+    
+    def setup(self, tx, rx, rf_config):
+        print('Configuring TX (HMC6300)')
+        for ic in tx:
+            self.ExtConfig_6300(ic=ic, id=0)
+            tx_conf = rf_config['TX'][ic]
+
+            ifgain = tx_conf['ifgain_1.3db_step']
+            rvgain = tx_conf['rvga_gain_1.3db_step']
+            self.IfGain_6300(ic=ic, gain=ifgain)
+            self.RVGAGain_6300(ic=ic, gain=rvgain)
+
+        print('Configuring RX (HMC6301)')
+        for ic in rx:
+            self.ExtConfig_6301(ic=ic, id=0)
+            rx_conf = rf_config['RX'][ic]
+            att_i = rx_conf['RX_att_I_6db_step']
+            att_q = rx_conf['RX_att_Q_6db_step']
+            att_comm = rx_conf['RX_att_comm_6db_step']
+
+            self.SetAtt_6301(ic=ic, i=att_i, q=att_q, att=att_comm)
 
 if __name__ == "__main__":
 
@@ -233,26 +255,18 @@ if __name__ == "__main__":
     cfg_path = sys.argv[1]
     rf_cfg_path = sys.argv[2]
     config = hmc.load_json(cfg_path)
-    rf_config = hmc.load_json(rf_cfg_path)
-    
-    print('Configuring TX (HMC6300)')
-    for ic in config['tx']:
-        hmc.ExtConfig_6300(ic=ic, id=0)
-        tx_conf = rf_config['TX'][ic]
 
-        ifgain = tx_conf['ifgain_1.3db_step']
-        rvgain = tx_conf['rvga_gain_1.3db_step']
-        hmc.IfGain_6300(ic=ic, gain=ifgain)
-        hmc.RVGAGain_6300(ic=ic, gain=rvgain)
+    adc_dac_hw_loppback = config['adc_dac_hw_loppback']
+    adc_dac_sw_loppback = config['adc_dac_sw_loppback']
 
-    print('Configuring RX (HMC6301)')
-    for ic in config['rx']:
-        hmc.ExtConfig_6301(ic=ic, id=0)
-        rx_conf = rf_config['RX'][ic]
-        att_i = rx_conf['RX_att_I_6db_step']
-        att_q = rx_conf['RX_att_Q_6db_step']
-        att_comm = rx_conf['RX_att_comm_6db_step']
+    adc_dac_loppback = adc_dac_hw_loppback or adc_dac_sw_loppback
 
-        hmc.SetAtt_6301(ic=ic, i=att_i, q=att_q, att=att_comm)
+    if adc_dac_loppback == False:
+        sleep(10)
+        rf_config = hmc.load_json(rf_cfg_path)
+        hmc.setup(config['tx'], config['rx'], rf_config)
+
+    else:
+        print('Skipping RF configuration as loopback is enabled')
 
     print("Pass")

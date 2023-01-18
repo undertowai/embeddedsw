@@ -6,13 +6,15 @@ import numpy as np
 from TICS import read as TICSread
 
 sys.path.append("../misc")
+sys.path.append("../axi")
 
 from dts import Dts
 from make import Make
+from gpio import AxiGpio
 from mlock import MLock
 
 
-class Lmx2820(MLock):
+class Lmx2820(MLock, AxiGpio):
     RO_REGS = [71, 72, 73, 74, 75, 76, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122]
 
     LOCKED_REG = 74
@@ -20,10 +22,13 @@ class Lmx2820(MLock):
     RF_DATA_READ_BIT = 0x80
 
     def __init__(self, ipName):
+        MLock.__init__(self)
+        AxiGpio.__init__(self, 'axi_gpio')
         libPath = Make().makeLibs("spi")
         self.devName = Dts().ipToDtsName(ipName)
         self.lib = ct.CDLL(libPath)
         self.devNamePtr = ct.c_char_p(self.devName.encode("UTF-8"))
+        self.ctrl_gpio = self.getGpio('axi_gpio_lmx_ctrl')
 
     def __getRegIndex(self, regs, id):
         for i, d in enumerate(regs):
@@ -100,6 +105,11 @@ class Lmx2820(MLock):
             wait_lock += 1
             if wait_lock >= 10:
                 raise Exception("PLL is not locked")
+
+    def ctrl(self, sync=False, mute=False):
+        sync = 0x2 if sync else 0x0
+        mute = 0x1 if mute else 0x0
+        self.set(val=(sync | mute))
 
     @MLock.Lock
     def config(self):

@@ -32,6 +32,9 @@ class RfdcClk:
 
         assert self.lmx.readLockedReg() == True
 
+    def lmx_ctrl(self, sync=False, mute=False):
+        self.lmx.ctrl(sync, mute)
+
     def setup_rfdc_external(self, lmk_path, lmx_rf1_path, lmx_rf2_path):
         lmk_data = TICSread(lmk_path) if lmk_path is not None else None
         lmx_rf1_data = TICSread(lmx_rf1_path) if lmx_rf1_path is not None else None
@@ -71,11 +74,13 @@ if __name__ == "__main__":
 
     args  = argparser.parse_args()
 
-    adc_dac_hw_loppback = False
+    adc_dac_loppback = False
 
     if args.cfg is not None:
         config = load_json(args.cfg)
         adc_dac_hw_loppback = config['adc_dac_hw_loppback']
+        adc_dac_sw_loppback = config['adc_dac_sw_loppback']
+        adc_dac_loppback = adc_dac_hw_loppback or adc_dac_sw_loppback
 
     print(f'adc_dac_hw_loppback={adc_dac_hw_loppback}')
 
@@ -88,8 +93,9 @@ if __name__ == "__main__":
     else:
         print('Skipping RFDC initialization')
 
-    if args.lmx2820 is not None and adc_dac_hw_loppback == False:
+    if args.lmx2820 is not None and adc_dac_loppback == False:
         rfdc_clk.setup_lmx(args.lmx2820)
+        rfdc_clk.lmx_ctrl(sync=False, mute=False)
     else:
         print('Skipping LMX2820 configuration')
 

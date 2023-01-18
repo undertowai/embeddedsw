@@ -25,6 +25,9 @@ class Xddr:
         status = fun(int((addr>>32) & 0xffffffff), int(addr & 0xffffffff), int(size))
         assert status == 0
 
+    def zero(self):
+        pass
+
     def read(offset, length, dtype=np.uint8):
         with open("/dev/mem", "r+b") as f:
             mm = mmap.mmap(

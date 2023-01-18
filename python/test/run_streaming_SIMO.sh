@@ -18,8 +18,8 @@ sn=0
 $py ../rfdc/rfdc_clk.py --cfg $config --lmk $lmk_config  --lmx2820 $ticsfilePath
 [[ $? != 0 ]] && exit 1
 
-sleep 10
 $py ../hmc/hmc.py $config $rf_pwr_config
+[[ $? != 0 ]] && exit 1
 
 while true; do
     $py $test $num_iterations $sn $config
