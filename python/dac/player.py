@@ -7,6 +7,7 @@ sys.path.append("../bram")
 sys.path.append("../test")
 sys.path.append("../axi")
 sys.path.append("../rfdc")
+sys.path.append("../hw")
 
 from bram import BramFactory
 from gpio import AxiGpio
