@@ -82,7 +82,7 @@ if __name__ == "__main__":
         adc_dac_sw_loppback = config['adc_dac_sw_loppback']
         adc_dac_loppback = adc_dac_hw_loppback or adc_dac_sw_loppback
 
-    print(f'adc_dac_hw_loppback={adc_dac_hw_loppback}')
+    print(f'adc_dac_loppback={adc_dac_loppback}')
 
     rfdc_clk = RfdcClk()
 

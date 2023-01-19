@@ -96,7 +96,18 @@ class Test_Sanity_1(TestSuite):
 
         self.proc_cap_data(area)
 
+    @TestSuite.Test
+    def warm_up(self):
+        """
+        This function is needed to fill FIFO's so, offset are applied correctly
+        """
+        print('Warming up...')
 
+        rx_dma_map = self.map_rx_to_dma_id(self.rx)
+
+        self.start_dma(rx_dma_map, self.cap_ddr_offset, self.capture_size)
+        self.adc_dac_sync(True)
+        sleep(self.calc_capture_time(self.capture_size))
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -109,6 +120,7 @@ if __name__ == "__main__":
 
     test.load_config(config_path)
 
-    for i in range(100):
+    test.warm_up()
+    for i in range(10):
         print(f'Iteration {i}')
         test.run_test()
