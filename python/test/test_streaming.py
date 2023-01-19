@@ -1,20 +1,14 @@
 import sys
 from test import TestSuite
 from time import sleep
-import zmq
-import pickle
-import time
 import numpy as np
-import collections
-
-from inet import Inet
 
 sys.path.append("../misc")
 sys.path.append("../xddr")
 from xddr import Xddr
 
 class Test_Streaming(TestSuite):
-    def __init__(self, port):
+    def __init__(self):
         TestSuite.__init__(self)
 
     def proc_cap_data(self, area, sn, txn, freq, fs, dtype=np.int16):
@@ -56,7 +50,6 @@ class Test_Streaming(TestSuite):
                 area = self.start_dma(rx_dma_map, cap_ddr_offset, self.capture_size)
 
                 self.adc_dac_sync(True)
-
                 sleep(self.calc_capture_time(self.capture_size))
 
                 self.proc_cap_data(area, sn, txn, 0, samplingFreq)
@@ -66,7 +59,6 @@ class Test_Streaming(TestSuite):
 
             sn += 1
             iter_count += 1
-
 
 if __name__ == "__main__":
 
@@ -78,7 +70,7 @@ if __name__ == "__main__":
     sn=int(sys.argv[2])
     config_path = sys.argv[3]
 
-    test = Test_Streaming(Inet.PORT)
+    test = Test_Streaming()
 
     try:
         test.load_config(config_path)

@@ -11,6 +11,7 @@ sys.path.append("../rfdc")
 sys.path.append("../xddr")
 sys.path.append("../dac")
 sys.path.append("../misc")
+sys.path.append("../hw")
 
 from hmc import HMC63xx
 from axidma import AxiDma
@@ -33,7 +34,7 @@ class TestSuiteMisc:
         return j
 
     def map_rx_to_dma_id(self, rx):
-        rx_to_dma_map_path = './rx_to_dma_map.json'
+        rx_to_dma_map_path = '../hw/rx_to_dma_map.json'
         j = self.load_json(rx_to_dma_map_path)
         rx_dma_map = {"ddr0": [], "ddr1": []}
         for rxn in rx:

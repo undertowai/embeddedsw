@@ -1083,9 +1083,6 @@ void rfdcStartup (XRFdc* RFdcInstPtr) {
 	printf("\r\n###############################################\r\n");
 	printf("Data Converter startup up in progress...\n\r");
 
-	Xil_Out32(RFdcInstPtr->io, 0x0004, 0);
-	usleep(1000);
-
 	Xil_Out32(RFdcInstPtr->io, 0x0004, 1);
 	printf("RF Data Converters Powered up.\r\n");
 	sleep(1);

@@ -8,44 +8,48 @@
 XAxiDma_Config *XDMA_LookupConfig(struct metal_device **Deviceptr, XAxiDma_Config *CfgPtr, const char *DeviceName)
 {
 	s32 Status = 0;
-	u32 AddrWidth = 0;
+	char const * property = "xlnx,addrwidth";
+	u32 property_val = 0;
 
 	Status = metal_device_open_wrap("platform", DeviceName, Deviceptr);
 	if (Status != XST_SUCCESS) {
 		metal_log(METAL_LOG_ERROR, "\n Failed to open device %s.\n", DeviceName);
 		return NULL;
 	}
-	Status = metal_linux_get_device_property(*Deviceptr, "xlnx,addrwidth", &AddrWidth, sizeof(AddrWidth));
-
-	AddrWidth = ntohl(AddrWidth);
-
-	if (Status == XST_SUCCESS) {
-		//TODO:
-		CfgPtr->AddrWidth = AddrWidth;
-		CfgPtr->BaseAddr = 0;
-		CfgPtr->DeviceId = 0;
-		CfgPtr->HasMm2S = 0;
-		CfgPtr->HasMm2SDRE = 0;
-		CfgPtr->HasS2Mm = 1;
-		CfgPtr->HasS2MmDRE = 0;
-		CfgPtr->HasSg = 0;
-		CfgPtr->HasStsCntrlStrm = 0;
-		CfgPtr->MicroDmaMode = 0;
-		CfgPtr->Mm2SBurstSize = 0;
-		CfgPtr->Mm2SDataWidth = 0;
-		CfgPtr->Mm2sNumChannels = 0;
-		CfgPtr->S2MmBurstSize = 0x100;
-		CfgPtr->S2MmDataWidth = 0x100;
-		CfgPtr->S2MmNumChannels = 1;
-		//TODO: Get this from DTS
-		CfgPtr->SgLengthWidth = 26;
-	} else {
-		metal_log(METAL_LOG_ERROR, "\n Failed to read device tree property \"reg\"");
-		metal_device_close(*Deviceptr);
-		return NULL;
+	Status = metal_linux_get_device_property(*Deviceptr, property, &property_val, sizeof(property_val));
+	if (Status != XST_SUCCESS) {
+		goto RETURN_ERROR_PATH;
 	}
+	CfgPtr->AddrWidth = ntohl(property_val);
+
+	property = "xlnx,sg-length-width";
+	Status = metal_linux_get_device_property(*Deviceptr, property, &property_val, sizeof(property_val));
+	if (Status != XST_SUCCESS) {
+		goto RETURN_ERROR_PATH;
+	}
+	CfgPtr->SgLengthWidth = ntohl(property_val);
+
+	CfgPtr->BaseAddr = 0;
+	CfgPtr->DeviceId = 0;
+	CfgPtr->HasMm2S = 0;
+	CfgPtr->HasMm2SDRE = 0;
+	CfgPtr->HasS2Mm = 1;
+	CfgPtr->HasS2MmDRE = 0;
+	CfgPtr->HasSg = 0;
+	CfgPtr->HasStsCntrlStrm = 0;
+	CfgPtr->MicroDmaMode = 0;
+	CfgPtr->Mm2SBurstSize = 0;
+	CfgPtr->Mm2SDataWidth = 0;
+	CfgPtr->Mm2sNumChannels = 0;
+	CfgPtr->S2MmBurstSize = 0x100;
+	CfgPtr->S2MmDataWidth = 0x100;
+	CfgPtr->S2MmNumChannels = 1;
 
 	return CfgPtr;
+RETURN_ERROR_PATH:
+	metal_log(METAL_LOG_ERROR, "\n Failed to read device tree property \"$s\"", property);
+	metal_device_close(*Deviceptr);
+	return NULL;
 }
 
 u32 XAxiDma_RegisterMetal(XAxiDma *InstancePtr)
