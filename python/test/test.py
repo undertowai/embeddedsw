@@ -58,8 +58,20 @@ class TestSuiteMisc:
         self.adc_dac_hw_loppback = bool(j['adc_dac_hw_loppback'])
         self.adc_dac_sw_loppback = bool(j['adc_dac_sw_loppback'])
 
+        num_iterations = 1
+        if 'num_iterations' in j:
+            num_iterations = j['num_iterations']
+        self.num_iterations = num_iterations
+
+        do_dwell_avg = False
+        if 'do_dwell_avg' in j:
+            do_dwell_avg = j['do_dwell_avg']
+        self.do_dwell_avg = do_dwell_avg
+
         #TODO: Find another way to get path
         self.rf_config = self.load_json('../hmc/configs/rf_power.json')
+        
+        self.hw_offset_map = self.load_json('../hw/hw_offset.json')
 
         self.set_loopback(self.adc_dac_sw_loppback)
 
@@ -144,14 +156,14 @@ class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk, Inet):
 
         return size
 
-    def start_dma(self, rx_dma_map, offset, size):
+    def start_dma(self, rx_dma_map, _, size):
         area = {}
         size = self.__dma_fix_size(size)
         for _ddr in rx_dma_map.keys():
             ddr = getattr(self, _ddr)
             rx_dma_id = rx_dma_map[_ddr]
 
-            base_address = ddr.base_address() + offset
+            base_address = ddr.base_address()
             addr = base_address
 
             if self.DEBUG:
@@ -173,8 +185,11 @@ class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk, Inet):
         return area
 
     #HW delay, etc.. is to be applied here
-    def xddr_read(self, addr, size, dtype):
-        return Xddr.read(addr, size, dtype)[self.hw.HW_AXIS_DELAY_SAMPLES:]
+    def xddr_read(self, addr, size, dtype, offset_samples = 0):
+        #FIXME !!! Add proper offset per Rx n TX !!!
+        capture_samples = self.dwell_num * self.dwell_samples
+        offset_samples = offset_samples + self.hw.HW_AXIS_DELAY_SAMPLES
+        return Xddr.read(addr, size, dtype)[offset_samples:capture_samples+offset_samples]
 
     def xddr_clear_area(self, area):
         for ai in area:

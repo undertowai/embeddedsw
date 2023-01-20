@@ -12,7 +12,6 @@ from inet import Inet
 sys.path.append("../misc")
 sys.path.append("../xddr")
 sys.path.append("../dac")
-from xddr import Xddr
 from data import DataProc
 from player import DacPlayer
 
@@ -38,7 +37,7 @@ class Test_Sanity_1(TestSuite):
             print(f'\r{p}', end='')
         print()
 
-    def proc_cap_data(self, area, dtype=np.int16):
+    def proc_cap_data(self, area, do_average=False, dtype=np.int16):
         for rxn in self.rx:
             a = area[rxn]
 
@@ -53,33 +52,47 @@ class Test_Sanity_1(TestSuite):
 
             hwOffsetSamples = 40
 
-            wOffset = self.dwell_samples * wDwellOffset + hwOffsetSamples
+            wOffset = self.dwell_samples * wDwellOffset
             wSize = self.dwell_samples * wDwellSize
 
-            I = self.xddr_read(aI, sI, dtype)[wOffset:wOffset+wSize]
-            Q = self.xddr_read(aQ, sQ, dtype)[wOffset:wOffset+wSize]
+            I = self.xddr_read(aI, sI, dtype, hwOffsetSamples)
+            Q = self.xddr_read(aQ, sQ, dtype, hwOffsetSamples)
+
+            Iw = I[wOffset:wOffset+wSize]
+            Qw = Q[wOffset:wOffset+wSize]
 
             bram_id = self.rx_to_bram_map[rxn]
             dac_channel = self.rx_to_bram_channel_map[rxn]
             bramI = self.player.decompose_buf(bram_id, dac_channel[0])[0]
             bramQ = self.player.decompose_buf(bram_id, dac_channel[1])[0]
 
-            bramI = np.tile(bramI, wDwellSize)
-            bramQ = np.tile(bramQ, wDwellSize)
+            bramTileI = np.tile(bramI, wDwellSize)
+            bramTileQ = np.tile(bramQ, wDwellSize)
 
-            assert np.array_equal(I, bramI)
-            assert np.array_equal(Q, bramQ)
+            assert np.array_equal(Iw, bramTileI)
+            assert np.array_equal(Qw, bramTileQ)
+            
+            if do_average:
+                
+                assert (self.dwell_num % 2) == 0, "self.dwell_num should be multiply of 2"
 
-            #self.check_cap_data(I, bramI)
-            #self.check_cap_data(Q, bramQ)
+                I = np.asarray(I, dtype=np.int32)
+                Q = np.asarray(Q, dtype=np.int32)
+                
+                wAvg = 2
+                shape = (int(self.dwell_num / wAvg), int(self.dwell_samples * wAvg))
+                I = np.reshape(I, shape)
+                Q = np.reshape(Q, shape)
 
-            #print('Checking data averaging:')
+                I = np.mean(I, axis=0, dtype=np.int32)
+                Q = np.mean(Q, axis=0, dtype=np.int32)
+                
+                bramTileI = np.tile(bramI, wAvg)
+                bramTileQ = np.tile(bramQ, wAvg)
+                
+                assert np.array_equal(I, bramTileI)
+                assert np.array_equal(Q, bramTileQ)
 
-            #I = self.data_proc.dwellAvg(addrI, self.dwell_samples, self.dwell_num, offset_samples)
-            #Q = self.data_proc.dwellAvg(addrQ, self.dwell_samples, self.dwell_num, offset_samples)
-
-            #self.check_cap_data(I, bramI, 0, assert_on_failure=False)
-            #self.check_cap_data(Q, bramQ, 0, assert_on_failure=False)
 
     @TestSuite.Test
     def run_test(self):
@@ -94,7 +107,7 @@ class Test_Sanity_1(TestSuite):
 
         sleep(self.calc_capture_time(self.capture_size))
 
-        self.proc_cap_data(area)
+        self.proc_cap_data(area, do_average=self.do_average)
 
     @TestSuite.Test
     def warm_up(self):
@@ -123,4 +136,7 @@ if __name__ == "__main__":
     test.warm_up()
     for i in range(10):
         print(f'Iteration {i}')
-        test.run_test()
+        test.run_test(do_average=False)
+
+    print('Checking Average :')
+    test.run_test(do_average=True)

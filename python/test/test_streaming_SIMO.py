@@ -5,10 +5,6 @@ import numpy as np
 
 from inet import Inet
 
-sys.path.append("../misc")
-sys.path.append("../xddr")
-from xddr import Xddr
-
 class Test_Streaming(TestSuite):
     def __init__(self, port):
         TestSuite.__init__(self)
@@ -23,8 +19,26 @@ class Test_Streaming(TestSuite):
             if self.DEBUG:
                 print(f'I: {hex(addrI)}:{hex(sizeI)}, Q: {hex(addrQ)}:{hex(sizeQ)}')
 
-            I = self.xddr_read(addrI, sizeI, dtype)
-            Q = self.xddr_read(addrQ, sizeQ, dtype)
+            hwOffsetSamples = self.hw_offset_map[f'TX{txn}'][rxn]
+
+            I = self.xddr_read(addrI, sizeI, dtype, hwOffsetSamples)
+            Q = self.xddr_read(addrQ, sizeQ, dtype, hwOffsetSamples)
+            
+            if self.do_dwell_avg:
+                print('Do Dwell Averaging ...')
+                assert (self.dwell_num % 2) == 0, "self.dwell_num should be multiply of 2"
+
+                I = np.asarray(I, dtype=np.int32)
+                Q = np.asarray(Q, dtype=np.int32)
+                
+                wAvg = 2
+                shape = (int(self.dwell_num / wAvg), int(self.dwell_samples * wAvg))
+                I = np.reshape(I, shape)
+                Q = np.reshape(Q, shape)
+
+                I = np.mean(I, axis=0, dtype=np.int32)
+                Q = np.mean(Q, axis=0, dtype=np.int32)
+
             iq_data.append((I, Q))
 
         self.publish(sn, txn, fs, freq, self.rx, iq_data)
@@ -58,13 +72,12 @@ class Test_Streaming(TestSuite):
 
 if __name__ == "__main__":
 
-    if len(sys.argv) != 4:
-        print(f"Usage: {sys.argv[0]} <num_iterations> <current sn> <config.json>")
+    if len(sys.argv) != 3:
+        print(f"Usage: {sys.argv[0]} <start sn> <config.json>")
         assert False
 
-    num_iterations = int(sys.argv[1])
-    sn=int(sys.argv[2])
-    config_path = sys.argv[3]
+    sn=int(sys.argv[1])
+    config_path = sys.argv[2]
 
     test = Test_Streaming(Inet.PORT)
 
@@ -72,7 +85,6 @@ if __name__ == "__main__":
         test.load_config(config_path)
 
         test.run_test(
-            num_iterations=num_iterations,
             sn=sn
         )
     except KeyboardInterrupt:
