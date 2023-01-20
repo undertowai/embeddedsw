@@ -30,6 +30,12 @@ class Rfdc(MLock):
         )
         assert status == 0
 
+    def reset_clk104(self):
+        fun = self.lib.resetAllClk104
+
+        status = fun()
+        assert status == 0
+
     def init_clk104(self):
         fun = self.lib.RFDC_Init_Clk104
 

@@ -46,6 +46,7 @@ class RfdcClk:
 
         print('Configuring CLK104 ...')
 
+        self.rfdc.reset_clk104()
         if lmk_path is None and lmx_rf1_path is None and lmx_rf2_path is None:
             self.rfdc.init_clk104()
         else:

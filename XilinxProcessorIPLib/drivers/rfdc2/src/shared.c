@@ -52,7 +52,6 @@
 void my_metal_default_log_handler(enum metal_log_level level,
 			       const char *format, ...);
 
-static int resetAllClk104(void);
 void reverse32bArray(u32 *src, int size);
 int printCLK104_settings(void);
 
@@ -365,36 +364,45 @@ int RFdcMTS(u32 ADC_mask, u32 DAC_mask, u32 ADC_ref, u32 DAC_ref)
 * @note		None
 *
 ****************************************************************************/
-static int resetAllClk104(void)
+int resetAllClk104(void)
 {
 	int ret = EXIT_FAILURE;
+	int gpioID = 343;
+
+
+	printf("resetting LMK/LMX...\r\n");
+	/* The parameter is a gpioID, see Linux boot logging */
+	XRFClk_Init(gpioID);
 //	printf("Reset LMK\n\r");
 	if (XST_FAILURE == XRFClk_ResetChip(RFCLK_LMK)) {
 		printf("Failure in XRFClk_ResetChip(RFCLK_LMK)\n\r");
-		return ret;
+		goto ERROR_PATH;
 	}
 
 //	printf("Reset LMX2594_1\n\r");
 	if (XST_FAILURE == XRFClk_ResetChip(RFCLK_LMX2594_1)) {
 		printf("Failure in XRFClk_ResetChip(RFCLK_LMX2594_1)\n\r");
-		return ret;
+		goto ERROR_PATH;
 	}
 
 //	printf("Reset LMX2594_2\n\r");
 	if (XST_FAILURE == XRFClk_ResetChip(RFCLK_LMX2594_2)) {
 		printf("Failure in XRFClk_ResetChip(RFCLK_LMX2594_2)\n\r");
-		return ret;
+		goto ERROR_PATH;
 	}
 
 #ifdef XPS_BOARD_ZCU111
 //	printf("Reset LMX2594_3\n\r");
 	if (XST_FAILURE == XRFClk_ResetChip(RFCLK_LMX2594_3)) {
 		printf("Failure in XRFClk_ResetChip(RFCLK_LMX2594_3)\n\r");
-		return ret;
+		goto ERROR_PATH;
 	}
 #endif
-
+	XRFClk_Close();
 	return EXIT_SUCCESS;
+ERROR_PATH:
+	XRFClk_Close();
+	return EXIT_FAILURE;
 }
 
 
