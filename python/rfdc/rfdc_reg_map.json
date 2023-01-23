@@ -1,0 +1,18 @@
+{
+    "ip": {
+        "0x0": "IP Versioning Information",
+        "0x4": "Master Reset Register",
+        "0x100": "Common Interrupt Status Register",
+        "0x104": "Common Interrupt Enable Register"
+    },
+    "tiles": {
+        "RF-DAC Tile 0": "0x04000",
+        "RF-DAC Tile 1": "0x08000",
+        "RF-DAC Tile 2": "0x0C000",
+        "RF-DAC Tile 3": "0x10000",
+        "RF-ADC Tile 0": "0x14000",
+        "RF-ADC Tile 1": "0x18000",
+        "RF-ADC Tile 2": "0x1C000",
+        "RF-ADC Tile 3": "0x20000"
+    }
+}

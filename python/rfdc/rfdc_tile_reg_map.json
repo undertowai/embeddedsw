@@ -1,0 +1,20 @@
+{
+    "0x4": "Restart Power-On State Machine Register",
+    "0x8": "Restart State Register",
+    "0xc": "Current State Register",
+    "0x38": "Reset Count Register",
+    "0x84": "Clock detector status (Gen 3/DFE)",
+    "0x100": "Post-Implementation Simulation Speedup Register",
+    "0x200": "Interrupt Status Register",
+    "0x204": "Interrupt Enable Register",
+    "0x208": "Converter 0 Interrupt Register",
+    "0x20c": "Converter 0 Interrupt Enable Register",
+    "0x210": "Converter 1 Interrupt Register",
+    "0x214": "Converter 1 Interrupt Enable Register",
+    "0x218": "Converter 2 Interrupt Register",
+    "0x21c": "Converter 2 Interrupt Enable Register",
+    "0x220": "Converter 3 Interrupt Register",
+    "0x224": "Converter 3 Interrupt Enable Register",
+    "0x228": "RF-DAC/RF-ADC Tile <n> Common Status Register",
+    "0x230": "RF-DAC/RF-ADC Tile <n> Disable Register"
+}

@@ -34,6 +34,8 @@
 #include "adcDisableCoeffOvrd.h"
 #endif
 
+#include "metal_api.h"
+
 /******************** Constant Definitions **********************************/
 #define ENABLE_METAL_PRINTS
 
@@ -225,6 +227,45 @@ int RFDC_Restart(void)
 
 	metal_device_close(RFdcInst.device);
 	metal_finish();
+	return XST_SUCCESS;
+}
+
+int RFDC_ReadReg (u32 BaseAddr, u32 RegAddr, u32 *val)
+{
+	float SamplingFreq;
+	int Status;
+	XRFdc RFdcInst = {0};      /* RFdc driver instance */
+
+	Status = _RFDC_Init(&RFdcInst);
+
+	if (Status != XST_SUCCESS) {
+		printf("RFdc Init Failure\n\r");
+		return XST_FAILURE;
+	}
+
+	*val = Xil_In32(RFdcInst.io, BaseAddr + RegAddr);
+
+	return XST_SUCCESS;
+}
+
+int RFDC_ReadRegRange (u32 BaseAddr, u32 *RegAddr, u32 *val)
+{
+	float SamplingFreq;
+	int Status;
+	XRFdc RFdcInst = {0};      /* RFdc driver instance */
+
+	Status = _RFDC_Init(&RFdcInst);
+
+	if (Status != XST_SUCCESS) {
+		printf("RFdc Init Failure\n\r");
+		return XST_FAILURE;
+	}
+
+	while (*RegAddr != (u32)(0xffffffff)) {
+		*val = Xil_In32(RFdcInst.io, BaseAddr + *RegAddr);
+		RegAddr++;
+		val++;
+	}
 	return XST_SUCCESS;
 }
 
