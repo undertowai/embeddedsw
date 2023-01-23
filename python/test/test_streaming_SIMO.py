@@ -30,7 +30,7 @@ class Test_Streaming(TestSuite):
 
                 I = np.asarray(I, dtype=np.int32)
                 Q = np.asarray(Q, dtype=np.int32)
-                
+
                 wAvg = 2
                 shape = (int(self.dwell_num / wAvg), int(self.dwell_samples * wAvg))
                 I = np.reshape(I, shape)

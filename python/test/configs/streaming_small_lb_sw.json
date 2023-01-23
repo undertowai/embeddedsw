@@ -5,5 +5,7 @@
     "dwell_num": 4,
     "cap_ddr_offset": 0,
     "adc_dac_hw_loppback": true,
-    "adc_dac_sw_loppback": true
+    "adc_dac_sw_loppback": true,
+    "do_dwell_avg": false,
+    "num_iterations": 100
 }

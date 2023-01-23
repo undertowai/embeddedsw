@@ -90,14 +90,18 @@ if __name__ == "__main__":
     elif args.dump_adc is not None:
         print(f'Dumping RFDC ADC tile{args.dump_adc}: ')
         regs = rfdc_clk.rfdc.readADCTileRegAll(args.dump_adc)
-        for name, addr, val in regs:
+        for name, addr, val, bits in regs:
             print(f'{hex(addr)} = {hex(val)}: {name}')
+            for b, val in bits:
+                print(f'\t{hex(val)}: {b}')
 
     elif args.dump_dac is not None:
         print(f'Dumping RFDC DAC tile{args.dump_dac}: ')
         regs = rfdc_clk.rfdc.readDACTileRegAll(args.dump_dac)
-        for name, addr, val in regs:
+        for name, addr, val, bits in regs:
             print(f'{hex(addr)} = {hex(val)}: {name}')
+            for b, val in bits:
+                print(f'\t{hex(val)}: {b}')
 
     else:
         adc_dac_loppback = False

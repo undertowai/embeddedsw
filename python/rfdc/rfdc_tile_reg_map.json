@@ -1,20 +1,54 @@
 {
-    "0x4": "Restart Power-On State Machine Register",
-    "0x8": "Restart State Register",
-    "0xc": "Current State Register",
-    "0x38": "Reset Count Register",
-    "0x84": "Clock detector status (Gen 3/DFE)",
-    "0x100": "Post-Implementation Simulation Speedup Register",
-    "0x200": "Interrupt Status Register",
-    "0x204": "Interrupt Enable Register",
-    "0x208": "Converter 0 Interrupt Register",
-    "0x20c": "Converter 0 Interrupt Enable Register",
-    "0x210": "Converter 1 Interrupt Register",
-    "0x214": "Converter 1 Interrupt Enable Register",
-    "0x218": "Converter 2 Interrupt Register",
-    "0x21c": "Converter 2 Interrupt Enable Register",
-    "0x220": "Converter 3 Interrupt Register",
-    "0x224": "Converter 3 Interrupt Enable Register",
-    "0x228": "RF-DAC/RF-ADC Tile <n> Common Status Register",
-    "0x230": "RF-DAC/RF-ADC Tile <n> Disable Register"
+    "0x4": {
+            "name": "Restart Power-On State Machine Register",
+            "bits": {
+                "Restart": "0:0"
+            }
+    },
+    "0x8": {
+            "name": "Restart State Register",
+            "bits": {
+                "Restart State Register: Start": "15:8",
+                "Restart State Register: End": "7:0"
+            }
+    },
+    "0xc": {
+            "name": "Current State Register",
+            "bits": {
+                "Current state of Power-on state machine": "7:0"
+            }
+    },
+    "0x38": {
+            "name": "Reset Count Register"
+    },
+    "0x84": {
+            "name": "Clock detector status (Gen 3/DFE)"
+    },
+    "0x100": {
+        "name": "Post-Implementation Simulation Speedup Register"
+    },
+    "0x200": {"name": "Interrupt Status Register"
+    },
+    "0x204": {"name": "Interrupt Enable Register"
+    },
+    "0x208": {"name": "Converter 0 Interrupt Register"
+    },
+    "0x20c": {"name": "Converter 0 Interrupt Enable Register"
+    },
+    "0x210": {"name": "Converter 1 Interrupt Register"
+    },
+    "0x214": {"name": "Converter 1 Interrupt Enable Register"
+    },
+    "0x218": {"name": "Converter 2 Interrupt Register"
+    },
+    "0x21c": {"name": "Converter 2 Interrupt Enable Register"
+    },
+    "0x220": {"name": "Converter 3 Interrupt Register"  
+    },
+    "0x224": {"name": "Converter 3 Interrupt Enable Register"
+    },
+    "0x228": {"name": "RF-DAC/RF-ADC Tile <n> Common Status Register"
+    },
+    "0x230": {"name": "RF-DAC/RF-ADC Tile <n> Disable Register"
+    }
 }

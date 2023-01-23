@@ -114,10 +114,37 @@ class Rfdc(MLock):
 
         return val
 
+    def __bp_to_mask(self, bp):
+        return (1<<(bp+1)) - 1
+
+    def __getMask(self, string):
+        mask = 0x0
+        for b in string.split(','):
+            bits = b.split(':')
+            hi = int(bits[0])
+            lo = int(bits[1])
+
+            mask |= self.__bp_to_mask(hi) ^ self.__bp_to_mask(lo) | (1<<lo)
+        return mask
+
+    def __procRegs(self, tile_reg_map, data):
+        regs = []
+        for i, reg in enumerate(tile_reg_map):
+            name = tile_reg_map[reg]['name']
+            reg_data = data[i]
+            reg_addr = int(reg, 16)
+            bits = []
+            if 'bits' in tile_reg_map[reg]:
+                for b in tile_reg_map[reg]['bits']:
+                    mask = self.__getMask(tile_reg_map[reg]['bits'][b])
+                    val = reg_data & mask
+                    bits.append( (b, val) )
+            regs.append( (name, reg_addr, reg_data, bits) )
+        return regs
+
     @MLock.Lock
     def __readTileRegAll(self):
         fun = self.lib.RFDC_ReadRegRange
-        val = ct.c_int()
 
         tile_id = self.tile_id
         assert tile_id <= 0x3, "Incorrect Tile ID"
@@ -137,7 +164,7 @@ class Rfdc(MLock):
         status = fun(int(base_addr), ct.c_void_p(regs.ctypes.data), ct.c_void_p(data.ctypes.data))
         assert status == 0
 
-        return [ (tile_reg_map[reg], int(reg, 16), data[i]) for i, reg in enumerate(tile_reg_map)]
+        return self.__procRegs(tile_reg_map, data)
 
     def readReg(self, base_addr, reg_addr):
         return self.__readReg(base_addr=base_addr, reg_addr=reg_addr)
