@@ -15,16 +15,16 @@ class Test_Streaming(TestSuite):
     def __init__(self, port):
         TestSuite.__init__(self)
 
-    def proc_cap_data(self, area, sn, dtype=np.int16):
+    def proc_cap_data(self, area, sn, txn, freq, fs, dtype=np.int16):
         for rxn in area.keys():
             a = area[rxn]
             addrI, sizeI = a["I"]
             addrQ, sizeQ = a["Q"]
 
-            I = Xddr.read(addrI, sizeI, dtype)
-            Q = Xddr.read(addrQ, sizeQ, dtype)
+            I = self.xddr_read(addrI, sizeI, dtype)
+            Q = self.xddr_read(addrQ, sizeQ, dtype)
 
-            dir_path = self.output_dir + os.sep + f'RX_{rxn}'
+            dir_path = self.output_dir + os.sep + f'TX_{txn}' + os.sep + f'RX_{rxn}'
             
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
@@ -40,16 +40,17 @@ class Test_Streaming(TestSuite):
     def run_test(self):
         samplingFreq = self.rfdc.getSamplingFrequency()
 
+        assert len(self.tx) == 1
+        txn = self.tx[0]
+
         sn = self.sn
         iter_count = 0
 
         rx_dma_map = self.map_rx_to_dma_id(self.rx)
 
-        self.setup_hmc([], self.rx)
-
         while iter_count < self.num_iterations:
 
-            print("*** Running Iteration : sn={}, rx={}".format(sn, self.rx))
+            print("*** Running Iteration : sn={}, rx={}, tx={}".format(sn, self.rx, [txn]))
 
             self.adc_dac_sync(False)
 
@@ -59,12 +60,10 @@ class Test_Streaming(TestSuite):
 
             sleep(self.calc_capture_time(self.capture_size))
 
-            self.proc_cap_data(area, sn)
+            self.proc_cap_data(area, sn, txn, 0, samplingFreq)
 
             sn += 1
             iter_count += 1
-
-        self.shutdown_hmc()
 
 
 if __name__ == "__main__":
@@ -79,10 +78,14 @@ if __name__ == "__main__":
 
     test = Test_Streaming(Inet.PORT)
 
-    test.load_config(config_path)
+    try:
+        test.load_config(config_path)
 
-    test.run_test(
-        num_iterations=num_iterations,
-        sn=sn,
-        output_dir=output_dir
-    )
+        test.run_test(
+            num_iterations=num_iterations,
+            sn=sn,
+            output_dir=output_dir
+        )
+    except KeyboardInterrupt:
+        test.shutdown_hmc()
+        sys.exit(-1)

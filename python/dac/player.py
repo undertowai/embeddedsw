@@ -275,7 +275,7 @@ if __name__ == "__main__":
 
         player.load_dac_player(bram0, bram0)
     elif args.zero is True:
-        print('Zeroing BRAM')
+        print('Zero BRAM')
         bram_data = player.make_zero_bram()
         player.load_dac_player(bram_data, bram_data)
 

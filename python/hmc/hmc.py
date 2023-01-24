@@ -317,7 +317,9 @@ if __name__ == "__main__":
     config = load_json(cfg_path)
     rf_config = load_json(rf_cfg_path)
 
-    hmc = HMC63xx("spi_gpio", config['debug'])
+    debug = config['debug'] if 'debug' in config else False
+
+    hmc = HMC63xx("spi_gpio", debug)
 
     hmc.GpioInit()
     hmc.Reset()
