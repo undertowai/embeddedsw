@@ -19,6 +19,27 @@
         }
     },
     "RX": [
-        {}, {}, {}, {}, {}, {}, {}, {}
+        {}, {},
+        {
+            "RX_att_I_1db_step":2,
+            "RX_att_Q_1db_step":0,
+            "RX_att_comm_6db_step":0
+        },
+        {
+            "RX_att_I_1db_step":2,
+            "RX_att_Q_1db_step":0,
+            "RX_att_comm_6db_step":0
+        },
+        {
+            "RX_att_I_1db_step":2,
+            "RX_att_Q_1db_step":0,
+            "RX_att_comm_6db_step":0
+        },
+        {
+            "RX_att_I_1db_step":2,
+            "RX_att_Q_1db_step":0,
+            "RX_att_comm_6db_step":0
+        },
+        {}, {}
     ]
 }

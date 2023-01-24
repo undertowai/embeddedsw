@@ -174,7 +174,7 @@ if __name__ == "__main__":
 
     lmx.config(ticsFilePath=args.lmx2820)
 
-    assert lmx.lmx.readLockedReg() == True
+    assert lmx.readLockedReg() == True
     
     lmx.ctrl(sync=False, mute=False)
 
