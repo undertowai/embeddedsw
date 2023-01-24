@@ -1,4 +1,4 @@
-import sys
+import sys, argparse
 from time import sleep
 import ctypes as ct
 import numpy as np
@@ -158,11 +158,24 @@ class Lmx2820(MLock, AxiGpio):
 
 if __name__ == "__main__":
 
-    lmx = Lmx2820("axi_quad_spi_0")
-    if len(sys.argv) == 2:
-        ticsFilePath = sys.argv[1]
-        lmx.config(ticsFilePath=ticsFilePath)
+    argparser=argparse.ArgumentParser()
+    argparser.add_argument('--lmx2820', help='specify TICS file path', type=str)
+    args  = argparser.parse_args()
 
-    print("locked= %d" % lmx.readLockedReg())
-    lmx.dumpRegs()
-    print("Pass")
+    assert args.lmx2820 is not None
+
+    lmx = Lmx2820("axi_quad_spi_0")
+
+    print('Configuring LMX2820 ...')
+    lmx.power_reset(False, 0x0)
+    lmx.power_reset(True, 0x0)
+    lmx.power_reset(True, 0x1)
+    sleep(1)
+
+    lmx.config(ticsFilePath=args.lmx2820)
+
+    assert lmx.lmx.readLockedReg() == True
+    
+    lmx.ctrl(sync=False, mute=False)
+
+    print('Pass')

@@ -54,7 +54,7 @@ class Bram(MLock):
         data = self.data
         data = data.view(dtype=np.uint32)
 
-        assert int(data.size * 4) <= self.size
+        assert int(data.size * 4) <= self.size, f'BRAM content is too large : data.size={data.size * 4}'
 
         self.__writeData(data)
         gotData = np.empty(data.size, dtype=data.dtype)

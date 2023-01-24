@@ -17,23 +17,7 @@ def load_json(path):
 
 class RfdcClk:
     def __init__(self):
-        self.lmx = Lmx2820("axi_quad_spi_0")
         self.rfdc = Rfdc("rfdc2")
-
-    def setup_lmx(self, ticsFilePath):
-
-        print('Configuring LMX2820 ...')
-        self.lmx.power_reset(False, 0x0)
-        self.lmx.power_reset(True, 0x0)
-        self.lmx.power_reset(True, 0x1)
-        sleep(1)
-
-        self.lmx.config(ticsFilePath=ticsFilePath)
-
-        assert self.lmx.readLockedReg() == True
-
-    def lmx_ctrl(self, sync=False, mute=False):
-        self.lmx.ctrl(sync, mute)
 
     def setup_rfdc_external(self, lmk_path, lmx_rf1_path, lmx_rf2_path):
         lmk_data = TICSread(lmk_path) if lmk_path is not None else None
@@ -63,15 +47,12 @@ if __name__ == "__main__":
 
     argparser=argparse.ArgumentParser()
 
-    argparser.add_argument('--cfg', help='specify config.json used for setup', type=str)
-    argparser.add_argument('--lmx2820', help='specify LMX2820 configuration file', type=str)
-
-
     argparser.add_argument('--lmk', help='specify LMK configuration file', type=str)
     argparser.add_argument('--lmx_rf1', help='specify LMX RF1 configuration file', type=str)
     argparser.add_argument('--lmx_rf2', help='specify LMX RF2 configuration file', type=str)
     
-    argparser.add_argument('--no_rfdc', help='Skip RFDC init', action='store_true')
+    argparser.add_argument('--rfdc', help='Init RFDC', action='store_true')
+    argparser.add_argument('--clk_104', help='Init CLK 104', action='store_true')
 
     argparser.add_argument('--dump_adc', help='Dump reg file from <N> TIle according to the rfdc_tile_reg_map.json', type=int)
     argparser.add_argument('--dump_dac', help='Dump reg file from <N> TIle according to the rfdc_tile_reg_map.json', type=int)
@@ -104,27 +85,11 @@ if __name__ == "__main__":
                 print(f'\t{hex(val)}: {b}')
 
     else:
-        adc_dac_loppback = False
 
-        if args.cfg is not None:
-            config = load_json(args.cfg)
-            adc_dac_hw_loppback = config['adc_dac_hw_loppback']
-            adc_dac_sw_loppback = config['adc_dac_sw_loppback']
-            adc_dac_loppback = adc_dac_hw_loppback or adc_dac_sw_loppback
+        if args.clk_104 == True:
+            rfdc_clk.setup_clk104(args.lmk, args.lmx_rf1, args.lmx_rf2)
 
-        print(f'adc_dac_loppback={adc_dac_loppback}')
-
-        rfdc_clk.setup_clk104(args.lmk, args.lmx_rf1, args.lmx_rf2)
-
-        if args.no_rfdc == False:
+        if args.rfdc == True:
             rfdc_clk.setup_rfdc()
-        else:
-            print('Skipping RFDC initialization')
-
-        if args.lmx2820 is not None and adc_dac_loppback == False:
-            rfdc_clk.setup_lmx(args.lmx2820)
-            rfdc_clk.lmx_ctrl(sync=False, mute=False)
-        else:
-            print('Skipping LMX2820 configuration')
 
     print("Pass")

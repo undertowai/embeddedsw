@@ -1,4 +1,4 @@
-import sys
+import sys, argparse
 import ctypes as ct
 import json
 from time import sleep
@@ -219,54 +219,90 @@ class HMC63xx(MLock):
     def Reset(self):
         self.Reset_6300()
         self.Reset_6301()
-    
-    def setup(self, tx, rx, rf_config):
+
+    def __write_row_comm(self, func, row, val):
+        row = int(row.replace('ROW', ''))
+        func(row, int(val, 16))
+
+    def __write_rows_comm(self, func, config):
+        if 'regs' in config:
+            regs  =config['regs']
+            for row in regs:
+                self.__write_row_comm(func, row, regs[row])
+
+    def __get_param(self, conf, param, default):
+        return conf[param] if param in conf else default
+
+    def __setup_tx(self, tx, rf_config):
         print('Configuring TX (HMC6300)')
         for ic in tx:
             self.ExtConfig_6300(ic=ic, id=0)
             tx_conf = rf_config['TX'][ic]
+            tx_conf_w = rf_config['TX*']
 
-            ifgain = tx_conf['ifgain_1.3db_step']
-            rvgain = tx_conf['rvga_gain_1.3db_step']
-            self.IfGain_6300(ic=ic, gain=ifgain)
-            self.RVGAGain_6300(ic=ic, gain=rvgain)
+            ifgain = self.__get_param(tx_conf_w, 'ifgain_1.3db_step', None)
+            ifgain = self.__get_param(tx_conf, 'ifgain_1.3db_step', ifgain)
+
+            if  ifgain is not None:
+                self.IfGain_6300(ic=ic, gain=ifgain)
+
+            rvgain = self.__get_param(tx_conf_w, 'rvga_gain_1.3db_step', None)
+            rvgain = self.__get_param(tx_conf, 'rvga_gain_1.3db_step', rvgain)
+
+            if rvgain is not None:
+                self.RVGAGain_6300(ic=ic, gain=rvgain)
+
+            self.__write_rows_comm(self.WriteReg_6300, tx_conf_w)
+            self.__write_rows_comm(self.WriteReg_6300, tx_conf)
+
+    def setup(self, tx, rx, rf_config):
 
         print('Configuring RX (HMC6301)')
         for ic in rx:
             self.ExtConfig_6301(ic=ic, id=0)
             rx_conf = rf_config['RX'][ic]
-            att_i = rx_conf['RX_att_I_6db_step']
-            att_q = rx_conf['RX_att_Q_6db_step']
-            att_comm = rx_conf['RX_att_comm_6db_step']
+            rx_conf_w = rf_config['RX*']
 
-            self.SetAtt_6301(ic=ic, i=att_i, q=att_q, att=att_comm)
+            att_i = self.__get_param(rx_conf_w, 'RX_att_I_1db_step', None)
+            att_i = self.__get_param(rx_conf, 'RX_att_I_1db_step', att_i)
+
+            att_q = self.__get_param(rx_conf_w, 'RX_att_Q_1db_step', None)
+            att_q = self.__get_param(rx_conf, 'RX_att_Q_1db_step', att_q)
+
+            att_comm = self.__get_param(rx_conf_w, 'RX_att_comm_6db_step', None)
+            att_comm = self.__get_param(rx_conf, 'RX_att_comm_6db_step', att_comm)
+
+            if att_i is not None and att_q is not None and att_comm is not None:
+                self.SetAtt_6301(ic=ic, i=att_i, q=att_q, att=att_comm)
+
+            self.__write_rows_comm(self.WriteReg_6301, rx_conf_w)
+            self.__write_rows_comm(self.WriteReg_6301, rx_conf)
 
 if __name__ == "__main__":
 
-    if len(sys.argv) != 3:
-        print(f"Usage: {sys.argv[0]} <config.json> <rf_config.json>")
-        assert False
+    argparser=argparse.ArgumentParser()
+    argparser.add_argument('--cfg', help='specify TEST config', type=str)
+    argparser.add_argument('--rf_cfg', help='specify RF config', type=str)
+
+    args  = argparser.parse_args()
+
+    assert args.cfg is not None
+    assert args.rf_cfg is not None
 
     hmc = HMC63xx("spi_gpio")
 
     hmc.GpioInit()
     hmc.Reset()
 
-    cfg_path = sys.argv[1]
-    rf_cfg_path = sys.argv[2]
+    cfg_path = args.cfg
+    rf_cfg_path = args.rf_cfg
+
     config = hmc.load_json(cfg_path)
+    rf_config = hmc.load_json(rf_cfg_path)
 
-    adc_dac_hw_loppback = config['adc_dac_hw_loppback']
-    adc_dac_sw_loppback = config['adc_dac_sw_loppback']
-
-    adc_dac_loppback = adc_dac_hw_loppback or adc_dac_sw_loppback
-
-    if adc_dac_loppback == False:
-        sleep(10)
-        rf_config = hmc.load_json(rf_cfg_path)
-        hmc.setup(config['tx'], config['rx'], rf_config)
-
-    else:
-        print('Skipping RF configuration as loopback is enabled')
+    sleep_s = int(rf_config['LO']['sleep'])
+    print(f'Waiting {sleep_s} seconds before starting RF ...')
+    sleep(sleep_s)
+    hmc.setup(config['tx'], config['rx'], rf_config)
 
     print("Pass")

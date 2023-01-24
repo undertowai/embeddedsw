@@ -1,21 +1,23 @@
 {
     "LO": {
-        "sleep": 0
+        "sleep": 10
     },
     "TX*": {
             "ifgain_1.3db_step":6,
             "rvga_gain_1.3db_step":7,
             "regs": {
+                "ROW4": "0x0"
             }
     },
     "TX": [
         {}, {}, {}, {}, {}, {}, {}, {}
     ],
     "RX*": {
-        "RX_att_I_1db_step":3,
-        "RX_att_Q_1db_step":1,
-        "RX_att_comm_6db_step":0,
+        "RX_att_I_1db_step":5,
+        "RX_att_Q_1db_step":5,
+        "RX_att_comm_6db_step":3,
         "regs": {
+            "ROW1": "0x11"
         }
     },
     "RX": [

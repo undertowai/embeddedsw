@@ -118,8 +118,15 @@ class DacPlayer(AxiGpio):
         self.bram1.load(data=bram1_data)
 
     def load_dac_player_from_file(self, bram0_path, bram1_path):
-        data0 = np.fromfile(bram0_path, dtype=np.uint8)
-        data1 = np.fromfile(bram1_path, dtype=np.uint8)
+
+        _, bram0_ext = os.path.splitext(bram0_path)
+        _, bram1_ext = os.path.splitext(bram1_path)
+
+        assert bram0_ext == bram1_ext
+        assert bram0_ext == '.npy', "Must be .npy format !"
+
+        data0 = np.load(bram0_path)
+        data1 = np.load(bram1_path)
         
         self.load_dac_player(data0, data1)
 
@@ -177,6 +184,16 @@ class DacPlayer(AxiGpio):
                 buffers.append(buffer)
 
         return buffers
+    
+    def export(self, bram0_path, bram1_path):
+        assert self.hw.BYTES_PER_SAMPLE == 2
+        dtype = np.int16
+
+        bram0_data = self.bram0.read(dtype=dtype)
+        bram1_data = self.bram1.read(dtype=dtype)
+        
+        np.save(bram0_path, bram0_data)
+        np.save(bram1_path, bram1_data)
 
     def decompose(self, bram_idx):
         buffers = self.decompose_buf(bram_idx)
@@ -192,6 +209,7 @@ if __name__ == "__main__":
     argparser.add_argument('--dec', help='Decompose specified bram into linear samples', type=int)
 
     argparser.add_argument('--zero', help='Zero BRAM content', action='store_true')
+    argparser.add_argument('--export', help='Export BRAM content', type=str)
 
     argparser.add_argument('--bram0', help='specify file with bram0 content', type=str)
     argparser.add_argument('--bram1', help='specify file with bram1 content', type=str)
@@ -210,14 +228,19 @@ if __name__ == "__main__":
 
     player = DacPlayer()
 
-    if args.dec is not None:
+    if args.export is not None:
+        print(f'Exporting BRAM to path {args.export}')
+        bram0_path = f'{args.export}{os.sep}bram0'
+        bram1_path = f'{args.export}{os.sep}bram1'
+        player.export(bram0_path, bram1_path)
+
+    elif args.dec is not None:
         print('Decomposing: {}'.format('bram0' if args.dec == 0 else 'bram1'))
         player.decompose(args.dec)
-    elif args.bram0 is not None or args.bram1 is not None:
-        if args.bram0 is None or args.bram1 is None:
+    elif args.bram0 is not None and args.bram1 is not None:
 
-            print('Loading raw content : bram0={} bram1={}'.format(args.bram0, args.bram1))
-            player.load_dac_player_from_file(args.bram0, args.bram1)
+        print('Loading raw content : bram0={} bram1={}'.format(args.bram0, args.bram1))
+        player.load_dac_player_from_file(args.bram0, args.bram1)
 
     elif args.ifile is not None or args.qfile is not None:
         if args.ifile is None or args.qfile is None:

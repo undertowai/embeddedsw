@@ -1,11 +1,11 @@
 {
-    "rx": [0, 1, 2, 3, 4, 5, 6, 7],
+    "rx": [0, 1, 2, 3],
     "tx": [4],
     "dwell_samples": 65536,
-    "dwell_num": 4,
+    "dwell_num": 32,
     "cap_ddr_offset": 0,
     "adc_dac_hw_loppback": true,
     "adc_dac_sw_loppback": false,
-    "do_dwell_avg": false,
+    "do_dwell_avg": true,
     "num_iterations": 100
 }
