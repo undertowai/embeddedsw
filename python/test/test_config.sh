@@ -71,10 +71,16 @@ test_setup() {
             $py ../dac/player.py --export $export_path
             $py ../dac/player.py --zero
 
+            #Enable ADC/DAC sync
+            $py ../axi/gpio.py --adc_dac_sync 255
+
             #Init RFDC (Calibration)
             echo "******************* Configuring RFDC *******************"
             $py ../rfdc/rfdc_clk.py --rfdc
             [[ $? != 0 ]] && exit 1
+
+            #Disable ADC/DAC sync
+            $py ../axi/gpio.py --adc_dac_sync 0
 
             #Load exported BRAM back
             echo "******************* Loading BRAM content *******************"

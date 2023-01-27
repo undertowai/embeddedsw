@@ -1,4 +1,4 @@
-import sys
+import sys, argparse
 import ctypes as ct
 
 sys.path.append("../misc")
@@ -40,8 +40,14 @@ class AxiGpio:
 
 if __name__ == "__main__":
 
+    argparser=argparse.ArgumentParser()
+    argparser.add_argument('--adc_dac_sync', help='Toggle adc/dac sync', type=int)
+    args  = argparser.parse_args()
+
     axiGpio = AxiGpio("axi_gpio")
 
-    gpio = axiGpio.getGpio("dma_sync_gpio_0")
-    gpio.set(val=0)
+    if args.adc_dac_sync is not None:
+        gpio = axiGpio.getGpio("adc_dac_sync_gpio_0")
+        gpio.set(val=args.adc_dac_sync)
+
     print("Pass")
