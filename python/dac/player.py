@@ -18,6 +18,10 @@ from rfdc import Rfdc
 import json
 
 class DacPlayer(AxiGpio):
+
+    class Parameters:
+        pass
+
     def __init__(self):
         AxiGpio.__init__(self, "axi_gpio")
         bram_f = BramFactory()
@@ -40,70 +44,89 @@ class DacPlayer(AxiGpio):
         assert self.bram0.getSize() == self.bram1.getSize()
         return self.bram0.getSize()
 
-    def make_zero_bram(self):
-        sampleSize = self.hw.BYTES_PER_SAMPLE
-        buffersCount = self.hw.BUFFERS_IN_BRAM
-        numBytes = int(self.getBramSize() / buffersCount)
-        numSamples = int(numBytes / sampleSize)
+    def getParameters(self):
+        par = self.Parameters()
+
+        par.sampleSize = self.hw.BYTES_PER_SAMPLE
+        par.buffersCount = self.hw.BUFFERS_IN_BRAM
+        par.numBytes = int(self.getBramSize() / par.buffersCount)
+        par.numSamples = int(par.numBytes / par.sampleSize)
+        par.samplesPerFLit = self.hw.SAMPLES_PER_FLIT
 
         assert self.hw.BYTES_PER_SAMPLE == 2
-        dtype = np.int16
+        par.dtype = np.int16
 
-        buffer = np.zeros(buffersCount * numSamples, dtype=dtype)
+        return par
+
+
+    def make_zero_bram(self):
+        p = self.getParameters()
+
+        buffer = np.zeros(p.buffersCount * p.numSamples, dtype=p.dtype)
         return buffer
 
-    def make_sweep_tone_bram(self, samplingFreq, freq, dBFS, freqStep, phase_degrees, phase_step):
-        sampleSize = self.hw.BYTES_PER_SAMPLE
+    def make_sweep_tone_bram(self, samplingFreq, freq, dBFS, freqStep, phase_degrees, phase_step, numSamples):
+        p = self.getParameters()
         fullCycles = True
         phaseDegrees = phase_degrees
-        buffersCount = self.hw.BUFFERS_IN_BRAM
-        numBytes = int(self.getBramSize() / buffersCount)
-        numSamples = int(numBytes / sampleSize)
-        samplesPerFLit = self.hw.SAMPLES_PER_FLIT
+        numSamples = numSamples if p.numSamples > numSamples and numSamples != 0 else p.numSamples
 
-        assert self.hw.BYTES_PER_SAMPLE == 2
-        dtype = np.int16
+        buffer = np.empty(p.buffersCount * numSamples, dtype=p.dtype)
 
-        buffer = np.empty(buffersCount * numSamples, dtype=dtype)
-
-        for i in range(buffersCount):
+        if freqStep == 0 and phase_step == 0:
 
             tone = Wave().getSine(
-                numBytes,
+                p.numBytes,
                 freq,
                 dBFS,
                 samplingFreq,
-                sampleSize,
+                p.sampleSize,
                 phaseDegrees,
                 fullCycles,
             )
 
-            freq = freq + freqStep
-            phaseDegrees += phase_step
+            for i in range(p.buffersCount):
+                WideBuf().make(buffer, tone, i, p.buffersCount, p.samplesPerFLit)
 
-            WideBuf().make(buffer, tone, i, buffersCount, samplesPerFLit)
+        else :
+            for i in range(p.buffersCount):
+
+                tone = Wave().getSine(
+                    p.numBytes,
+                    freq,
+                    dBFS,
+                    samplingFreq,
+                    p.sampleSize,
+                    phaseDegrees,
+                    fullCycles,
+                )
+
+                freq = freq + freqStep
+                phaseDegrees += phase_step
+
+                WideBuf().make(buffer, tone, i, p.buffersCount, p.samplesPerFLit)
 
         return buffer, freq, phaseDegrees
 
     def make_saw_bram(self):
-        sampleSize = self.hw.BYTES_PER_SAMPLE
-        buffersCount = self.hw.BUFFERS_IN_BRAM
-        numBytes = int(self.getBramSize() / buffersCount)
-        numSamples = int(numBytes / sampleSize)
-        samplesPerFLit = self.hw.SAMPLES_PER_FLIT
+        p = self.getParameters()
 
-        assert self.hw.BYTES_PER_SAMPLE == 2
-        dtype = np.int16
+        buffer = np.empty(p.buffersCount * p.numSamples, dtype=p.dtype)
 
-        buffer = np.empty(buffersCount * numSamples, dtype=dtype)
+        tone = Wave().setSaw( p.numBytes, p.sampleSize )
 
-        tone = Wave().setSaw( numBytes, sampleSize )
+        for i in range(p.buffersCount):
 
-        for i in range(buffersCount):
-
-            WideBuf().make(buffer, tone, i, buffersCount, samplesPerFLit)
+            WideBuf().make(buffer, tone, i, p.buffersCount, p.samplesPerFLit)
 
         return buffer
+
+    def make_noise_bram(self, numSamples, scale):
+        p = self.getParameters()
+        numSamples = numSamples if p.numSamples > numSamples else p.numSamples
+
+        data = np.random.randint(low = -scale, high = scale, size = p.buffersCount * numSamples, dtype=p.dtype)
+        return data
 
     def load_dac_player(self, bram0_data, bram1_data):
         bram0_size = self.bram0.load(data=bram0_data)
@@ -116,6 +139,8 @@ class DacPlayer(AxiGpio):
             * self.hw.SAMPLES_PER_FLIT
             / self.hw.BYTES_PER_SAMPLE
         )
+
+        assert int(bram0_size) % int(div) == 0, f'Bram size must be multiply of {div}'
         playerTicksPerBuffer = int(bram0_size / div) - 1
 
         self.gpio_bram_count.set(val=playerTicksPerBuffer)
@@ -134,20 +159,16 @@ class DacPlayer(AxiGpio):
 
         data0 = np.load(bram0_path)
         data1 = np.load(bram1_path)
-        
+
         self.load_dac_player(data0, data1)
 
     def make_bram_content_from_file(self, Ipath, Qpath):
-        sampleSize = self.hw.BYTES_PER_SAMPLE
-        buffersCount = self.hw.BUFFERS_IN_BRAM
-        numBytes = int(self.getBramSize() / buffersCount)
-        numSamples = int(numBytes / sampleSize)
-        samplesPerFLit = self.hw.SAMPLES_PER_FLIT
+        p = self.getParameters()
 
         assert self.hw.BYTES_PER_SAMPLE == 2
         dtype = np.int16
 
-        buffer = np.empty(buffersCount * numSamples, dtype=dtype)
+        buffer = np.empty(p.buffersCount * p.numSamples, dtype=dtype)
 
         _, Iext = os.path.splitext(Ipath)
         _, Qext = os.path.splitext(Qpath)
@@ -162,9 +183,9 @@ class DacPlayer(AxiGpio):
             I = np.fromfile(Ipath, dtype=np.int16)
             Q = np.fromfile(Qpath, dtype=np.int16)
 
-        for i in range(0, buffersCount, 2):
-            WideBuf().make(buffer, I, i, buffersCount, samplesPerFLit)
-            WideBuf().make(buffer, Q, i + 1, buffersCount, samplesPerFLit)
+        for i in range(0, p.buffersCount, 2):
+            WideBuf().make(buffer, I, i, p.buffersCount, p.samplesPerFLit)
+            WideBuf().make(buffer, Q, i + 1, p.buffersCount, p.samplesPerFLit)
 
         return buffer
 
@@ -217,36 +238,28 @@ class DacPlayer(AxiGpio):
         return buffers
 
     def decompose_buf(self, bram_idx, dac_idx=None):
-        sampleSize = self.hw.BYTES_PER_SAMPLE
-        buffersCount = self.hw.BUFFERS_IN_BRAM
-        numBytes = int(self.getBramSize() / buffersCount)
-        numSamples = int(numBytes / sampleSize)
-        samplesPerFLit = self.hw.SAMPLES_PER_FLIT
-
-        assert self.hw.BYTES_PER_SAMPLE == 2
-        dtype = np.int16
+        p = self.getParameters()
 
         bram = self.bram0 if bram_idx == 0 else self.bram1
-        bram_data = bram.read(dtype=dtype)
-        
+        bram_data = bram.read(dtype=p.dtype)
+
         buffers = []
         if dac_idx is not None:
-            buffer = WideBuf().decompose(bram_data, numSamples, dac_idx, buffersCount, samplesPerFLit)
+            buffer = WideBuf().decompose(bram_data, p.numSamples, dac_idx, p.buffersCount, p.samplesPerFLit)
             buffers.append(buffer)
         else:
-            for i in range(0, buffersCount, 1):
-                buffer = WideBuf().decompose(bram_data, numSamples, i, buffersCount, samplesPerFLit)
+            for i in range(0, p.buffersCount, 1):
+                buffer = WideBuf().decompose(bram_data, p.numSamples, i, p.buffersCount, p.samplesPerFLit)
                 buffers.append(buffer)
 
         return buffers
-    
-    def export(self, bram0_path, bram1_path):
-        assert self.hw.BYTES_PER_SAMPLE == 2
-        dtype = np.int16
 
-        bram0_data = self.bram0.read(dtype=dtype)
-        bram1_data = self.bram1.read(dtype=dtype)
-        
+    def export(self, bram0_path, bram1_path):
+        p = self.getParameters()
+
+        bram0_data = self.bram0.read(dtype=p.dtype)
+        bram1_data = self.bram1.read(dtype=p.dtype)
+
         np.save(bram0_path, bram0_data)
         np.save(bram1_path, bram1_data)
 
@@ -262,6 +275,8 @@ if __name__ == "__main__":
     argparser=argparse.ArgumentParser()
 
     argparser.add_argument('--dec', help='Decompose specified bram into linear samples', type=int)
+
+    argparser.add_argument('--size', help='Specify size of BRAM content', type=int)
 
     argparser.add_argument('--zero', help='Zero BRAM content', action='store_true')
     argparser.add_argument('--export', help='Export BRAM content', type=str)
@@ -280,10 +295,16 @@ if __name__ == "__main__":
     argparser.add_argument('--pstep', help='Specify phase_step', type=int)
 
     argparser.add_argument('--saw', help='Generate Incrementing sequence between min and max values (int16)', action='store_true')
+    argparser.add_argument('--noise', help='generate noise', action='store_true')
+    argparser.add_argument('--scale', help='Set scale for noise', type=int)
 
     args  = argparser.parse_args()
 
     player = DacPlayer()
+
+    size = int(0)
+    if args.size is not None:
+        size = args.size
 
     if args.export is not None:
         print(f'Exporting BRAM to path {args.export}')
@@ -317,16 +338,16 @@ if __name__ == "__main__":
         dBFS = int(-9)
         phase_step = 0
         if args.step is not None:
-            step = int(args.step)  
+            step = int(args.step)
         if args.db is not None:
             dBFS = int(args.db)
         if args.pstep is not None:
             phase_step = float(args.pstep)
 
         print('Flattening BRAM using tone freq={} step={} dBFS={}, phase_step={}'.format(freq, step, dBFS, phase_step))
-        bram0, freq, phaseDegrees = player.make_sweep_tone_bram(player.samplingFreq, freq, dBFS, step, 0, phase_step)
+        bram0, freq, phaseDegrees = player.make_sweep_tone_bram(player.samplingFreq, freq, dBFS, step, 0, phase_step, size)
         if step != 0 or phase_step != 0:
-            bram1, _, _ = player.make_sweep_tone_bram(player.samplingFreq, freq, dBFS, step, phaseDegrees, phase_step)
+            bram1, _, _ = player.make_sweep_tone_bram(player.samplingFreq, freq, dBFS, step, phaseDegrees, phase_step, size)
         else: bram1 = bram0
 
         player.load_dac_player(bram0, bram1)
@@ -339,6 +360,11 @@ if __name__ == "__main__":
     elif args.zero is True:
         print('Zero BRAM')
         bram_data = player.make_zero_bram()
+        player.load_dac_player(bram_data, bram_data)
+    elif args.noise is True:
+        scale = 0.1 if args.scale is None else args.scale
+        print(f'Loading noise: swing={-scale}:{scale}, size={size}')
+        bram_data = player.make_noise_bram(size, scale)
         player.load_dac_player(bram_data, bram_data)
 
     print("Pass")
