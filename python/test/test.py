@@ -1,9 +1,7 @@
-import os
 import sys
 from time import sleep
 import traceback
 import logging
-import json
 
 sys.path.append("../hmc")
 sys.path.append("../axi")
@@ -11,7 +9,6 @@ sys.path.append("../rfdc")
 sys.path.append("../xddr")
 sys.path.append("../dac")
 sys.path.append("../misc")
-sys.path.append("../hw")
 
 from hmc import HMC63xx
 from axidma import AxiDma
@@ -20,63 +17,12 @@ from rfdc_clk import RfdcClk
 from gpio import AxiGpio
 from axis_switch import AxisSwitch
 
-from hw import Hw
 from inet import Inet
+from test_config import TestConfig 
+from integrator import Integrator, IntegratorHwIf
 
-class TestSuiteMisc:
-    def __init__(self) -> None:
-        pass
-
-    def load_json(self, path):
-        with open(path, 'r') as f:
-            j = json.load(f)
-            f.close()
-        return j
-
-    def map_rx_to_dma_id(self, rx):
-        rx_to_dma_map_path = '../hw/rx_to_dma_map.json'
-        j = self.load_json(rx_to_dma_map_path)
-        rx_dma_map = {"ddr0": [], "ddr1": []}
-        for rxn in rx:
-            m = j[f'rx{rxn}']
-            rx_dma_map[m['ddr']].append( (rxn, m['dma']) )
-        
-        return rx_dma_map
-    
-    def load_config(self, path):
-        j = self.load_json(path)
-
-        self.rx = list(j['rx'])
-        self.tx = list(j['tx'])
-
-        self.dwell_samples = int(j['dwell_samples'])
-        self.dwell_num = int(j['dwell_num'])
-        capture_num_samples = int(self.dwell_samples * self.dwell_num)
-        self.capture_size = int(capture_num_samples * self.hw.BYTES_PER_SAMPLE)
-        self.cap_ddr_offset = int(j['cap_ddr_offset'])
-
-        self.adc_dac_hw_loppback = bool(j['adc_dac_hw_loppback'])
-        self.adc_dac_sw_loppback = bool(j['adc_dac_sw_loppback'])
-
-        num_iterations = 1
-        if 'num_iterations' in j:
-            num_iterations = j['num_iterations']
-        self.num_iterations = num_iterations
-
-        do_dwell_avg = False
-        if 'do_dwell_avg' in j:
-            do_dwell_avg = j['do_dwell_avg']
-        self.do_dwell_avg = do_dwell_avg
-
-        #TODO: Find another way to get path
-        self.rf_config = self.load_json('../hmc/configs/rf_power.json')
-        
-        self.hw_offset_map = self.load_json('../hw/hw_offset.json')
-
-        self.set_loopback(self.adc_dac_sw_loppback)
-
-class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk, Inet):
-    DEBUG=False
+class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
+    DEBUG=True
 
     def getargs(self, **kw):
         for k, v in kw.items():
@@ -97,12 +43,11 @@ class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk, Inet):
 
         return inner
 
-    def __init__(self):
-        TestSuiteMisc.__init__(self)
+    def __init__(self, config):
+        TestConfig.__init__(self, config)
         AxiGpio.__init__(self, 'axi_gpio')
         RfdcClk.__init__(self)
         Inet.__init__(self)
-        self.hw = Hw()
 
         self.hmc = HMC63xx("spi_gpio")
         self.dma = AxiDma("axidma")
@@ -113,13 +58,17 @@ class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk, Inet):
         self.axis_switch1 = AxisSwitch("axis_switch_1")
 
         self.gpio_flush = self.getGpio("adc_dac_flush_gpio_0")
-
         self.gpio_sync = self.getGpio("adc_dac_sync_gpio_0")
+        self.gpio_dwell_avg_ctrl = self.getGpio("axi_gpio_axis_dwell_ctrl")
 
-        self.set_loopback(False)
+        integrator_hw_if = IntegratorHwIf(None, self.gpio_dwell_avg_ctrl)
+        self.integrator = Integrator(integrator_hw_if, self.integrator_mode, self.dwell_samples, self.dwell_num, self.dwell_window)
+        self.integrator.setup()
+
+        self.set_loopback(self.adc_dac_sw_loppback)
 
         self.samplingFreq = self.rfdc.getSamplingFrequency()
-        
+
         if self.DEBUG:
             print(f'Test Init Done; Sampling frequency {self.samplingFreq}')
 
@@ -147,18 +96,9 @@ class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk, Inet):
         devName = self.dma.devIdToIpName(id)
         self.dma.startTransfer(devName=devName, addr=addr, len=size)
 
-    #TODO: Do this properly (Assuning mmap need 4096 aligned addr and size)
-    def __dma_fix_size(self, size):
-        cpu_page = int(4096)
-        hw_del = self.hw.HW_AXIS_DELAY_SAMPLES * self.hw.BYTES_PER_SAMPLE
-        size += hw_del
-        size = int(((size - 1) / cpu_page) + 1) * cpu_page
-
-        return size
-
-    def start_dma(self, rx_dma_map, _, size):
+    def start_dma(self, rx_dma_map):
         area = {}
-        size = self.__dma_fix_size(size)
+        size = self.getCaptureSizePerDma()
         for _ddr in rx_dma_map.keys():
             ddr = getattr(self, _ddr)
             rx_dma_id = rx_dma_map[_ddr]
@@ -180,38 +120,22 @@ class TestSuite(TestSuiteMisc, AxiGpio, RfdcClk, Inet):
                 self.__start_dma(dma_id[0], addrI, size)
                 self.__start_dma(dma_id[1], addrQ, size)
 
-                addr += size * 2
+                addr = addrQ + size
                 area[rxn] = {"I": (addrI, size), "Q": (addrQ, size)}
         return area
 
-    #HW delay, etc.. is to be applied here
+    def wait_capture_done(self):
+        capture_size_bytes = self.getStreamSizeBytesPerDma()
+        sleep_time = self.getCaptureTimeForBytes(capture_size_bytes)
+        sleep(sleep_time)
+
     def xddr_read(self, addr, size, dtype, offset_samples = 0):
-        #FIXME !!! Add proper offset per Rx n TX !!!
-        capture_samples = self.dwell_num * self.dwell_samples
-        offset_samples = offset_samples + self.hw.HW_AXIS_DELAY_SAMPLES
+        if self.DEBUG:
+            print(f'xddr_read: addr={hex(addr)}, size={hex(size)}, offset={offset_samples}')
+        capture_samples = self.getDdrCaptureSizeSamples()
+        offset_samples += self.getDdrOffsetSamples()
+
+        if self.DEBUG:
+            print(f'xddr_read: capture_samples={hex(capture_samples)}, offset_samples={hex(offset_samples)}')
+
         return Xddr.read(addr, size, dtype)[offset_samples:capture_samples+offset_samples]
-
-    def xddr_clear_area(self, area):
-        for ai in area:
-            for iq in area[ai]:
-                addr, size = area[ai][iq]
-                #Use ddr0 as source for C library
-                self.ddr0.clear(addr, size)
-
-    def calc_capture_time(self, captureSize):
-        numCaptures = 0x1
-        batchSize = captureSize * numCaptures
-        numSamples = batchSize / (self.hw.BYTES_PER_SAMPLE)
-        t = numSamples / self.samplingFreq
-        return t
-
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("{}: Usage".format(sys.argv[0]))
-        exit()
-
-    ticsFilePath = sys.argv[1]
-
-    test = TestSuite(ticsFilePath)
-
-    test.run_test()

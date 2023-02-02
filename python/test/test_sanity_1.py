@@ -17,30 +17,49 @@ from player import DacPlayer
 
 class Test_Sanity_1(TestSuite):
 
-    def __init__(self):
-        TestSuite.__init__(self)
+    def __init__(self, config_path):
+        TestSuite.__init__(self, config_path)
         self.data_proc = DataProc('misc')
         self.player = DacPlayer()
         self.rx_to_bram_map = {0:0, 1:0, 2:0, 3:0, 4:1, 5:1, 6:1, 7:1}
         self.rx_to_bram_channel_map = {0:[0, 1], 1:[2, 3], 2:[4, 5], 3:[6, 7], 4:[0, 1], 5:[2, 3], 6:[4, 5], 7:[6, 7]}
 
-    def proc_cap_data(self, area, do_average=False, dtype=np.int16):
+    def compare_data(self, exp, got):
+        for i, s in enumerate(exp):
+            if s != got[i]:
+                print(f'Sample missmatch i={i}')
+                print[got[i-32:i+32]]
+                print[exp[i-32:i+32]]
+                assert False
+
+    def getBramData(self, rxn, wDwellWindow):
+        bram_id = self.rx_to_bram_map[rxn]
+        dac_channel = self.rx_to_bram_channel_map[rxn]
+
+        bramI = self.player.decompose_buf(bram_id, dac_channel[0])[0]
+        bramQ = self.player.decompose_buf(bram_id, dac_channel[1])[0]
+
+        bramI = np.tile(bramI, wDwellWindow)
+        bramQ = np.tile(bramQ, wDwellWindow)
+        return (bramI, bramQ)
+
+    def proc_cap_data_raw(self, area, dtype=np.int16):
         for rxn in self.rx:
             a = area[rxn]
 
             aI, sI = a["I"]
             aQ, sQ = a["Q"]
 
-            wDwellSize = 3
-            wDwellOffsetMax = self.dwell_num - wDwellSize
+            wDwellWindow = self.getDwellWindowPeriods()
+            wDwellOffsetMax = self.dwell_num - wDwellWindow
             wDwellOffsetMin = 0
             wDwellOffset = random.randint(wDwellOffsetMin, wDwellOffsetMax)
-            print(f'Iteration: rxn={rxn}, window offset={wDwellOffset}')
+            print(f'[RAW] Iteration: rxn={rxn}, window offset={wDwellOffset}')
 
             hwOffsetSamples = 40
 
             wOffset = self.dwell_samples * wDwellOffset
-            wSize = self.dwell_samples * wDwellSize
+            wSize = self.dwell_samples * wDwellWindow
 
             I = self.xddr_read(aI, sI, dtype, hwOffsetSamples)
             Q = self.xddr_read(aQ, sQ, dtype, hwOffsetSamples)
@@ -48,53 +67,49 @@ class Test_Sanity_1(TestSuite):
             Iw = I[wOffset:wOffset+wSize]
             Qw = Q[wOffset:wOffset+wSize]
 
-            bram_id = self.rx_to_bram_map[rxn]
-            dac_channel = self.rx_to_bram_channel_map[rxn]
-            bramI = self.player.decompose_buf(bram_id, dac_channel[0])[0]
-            bramQ = self.player.decompose_buf(bram_id, dac_channel[1])[0]
+            bramI, bramQ = self.getBramData(rxn, wDwellWindow)
 
-            bramTileI = np.tile(bramI, wDwellSize)
-            bramTileQ = np.tile(bramQ, wDwellSize)
+            assert np.array_equal(Iw, bramI)
+            assert np.array_equal(Qw, bramQ)
 
-            assert np.array_equal(Iw, bramTileI)
-            assert np.array_equal(Qw, bramTileQ)
-            
-            if do_average:
-                
-                assert (self.dwell_num % 2) == 0, "self.dwell_num should be multiply of 2"
+    def proc_cap_data_integrated(self, area, dtype=np.int16):
+        for rxn in self.rx:
+            a = area[rxn]
 
-                I = np.asarray(I, dtype=np.int32)
-                Q = np.asarray(Q, dtype=np.int32)
-                
-                wAvg = 2
-                shape = (int(self.dwell_num / wAvg), int(self.dwell_samples * wAvg))
-                I = np.reshape(I, shape)
-                Q = np.reshape(Q, shape)
+            aI, sI = a["I"]
+            aQ, sQ = a["Q"]
 
-                I = np.mean(I, axis=0, dtype=np.int32)
-                Q = np.mean(Q, axis=0, dtype=np.int32)
-                
-                bramTileI = np.tile(bramI, wAvg)
-                bramTileQ = np.tile(bramQ, wAvg)
-                
-                assert np.array_equal(I, bramTileI)
-                assert np.array_equal(Q, bramTileQ)
+            wDwellWindow = self.getDwellWindowPeriods()
+            print(f'[INTEGRATED] Iteration: rxn={rxn}')
 
+            hwOffsetSamples = 40 if self.isIntegratorSwMode() else 32
+
+            I = self.xddr_read(aI, sI, dtype, hwOffsetSamples)
+            Q = self.xddr_read(aQ, sQ, dtype, hwOffsetSamples)
+
+            bramI, bramQ = self.getBramData(rxn, wDwellWindow)
+
+            I = self.integrator.do_integration(I)
+            Q = self.integrator.do_integration(Q)
+
+            #NOTE: bramX[:X.size] --> WA for HW integrator
+            assert np.array_equal(I, bramI[:I.size])
+            assert np.array_equal(Q, bramQ[:Q.size])
 
     @TestSuite.Test
     def run_test(self):
-        print('Running Sanity #1: Check Data coherence using SW loopback')
-
         rx_dma_map = self.map_rx_to_dma_id(self.rx)
 
         self.adc_dac_sync(False)
-        area = self.start_dma(rx_dma_map, self.cap_ddr_offset, self.capture_size)
-        #self.xddr_clear_area(area)
+        area = self.start_dma(rx_dma_map)
         self.adc_dac_sync(True)
 
-        sleep(self.calc_capture_time(self.capture_size))
+        self.wait_capture_done()
 
-        self.proc_cap_data(area, do_average=self.do_average)
+        if test.isIntegrationEnabled():
+            self.proc_cap_data_integrated(area)
+        else:
+            self.proc_cap_data_raw(area)
 
     @TestSuite.Test
     def warm_up(self):
@@ -102,9 +117,9 @@ class Test_Sanity_1(TestSuite):
 
         rx_dma_map = self.map_rx_to_dma_id(self.rx)
 
-        self.start_dma(rx_dma_map, self.cap_ddr_offset, self.capture_size)
+        self.start_dma(rx_dma_map)
         self.adc_dac_sync(True)
-        sleep(self.calc_capture_time(self.capture_size))
+        self.wait_capture_done()
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -113,14 +128,9 @@ if __name__ == "__main__":
 
     config_path = sys.argv[1]
 
-    test = Test_Sanity_1()
-
-    test.load_config(config_path)
+    test = Test_Sanity_1(config_path)
 
     test.warm_up()
-    for i in range(10):
+    for i in range(test.num_iterations):
         print(f'Iteration {i}')
-        test.run_test(do_average=False)
-
-    print('Checking Average :')
-    test.run_test(do_average=True)
+        test.run_test()

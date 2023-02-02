@@ -23,21 +23,9 @@ class Test_Streaming(TestSuite):
 
             I = self.xddr_read(addrI, sizeI, dtype, hwOffsetSamples)
             Q = self.xddr_read(addrQ, sizeQ, dtype, hwOffsetSamples)
-            
-            if self.do_dwell_avg:
-                print('Do Dwell Averaging ...')
-                assert (self.dwell_num % 2) == 0, "self.dwell_num should be multiply of 2"
 
-                I = np.asarray(I, dtype=np.int32)
-                Q = np.asarray(Q, dtype=np.int32)
-
-                wAvg = 2
-                shape = (int(self.dwell_num / wAvg), int(self.dwell_samples * wAvg))
-                I = np.reshape(I, shape)
-                Q = np.reshape(Q, shape)
-
-                I = np.mean(I, axis=0, dtype=np.int32)
-                Q = np.mean(Q, axis=0, dtype=np.int32)
+            I = self.do_integration(I)
+            Q = self.do_integration(Q)
 
             iq_data.append((I, Q))
 
@@ -51,7 +39,6 @@ class Test_Streaming(TestSuite):
 
         sn = self.sn
         iter_count = 0
-        cap_ddr_offset = 0x0
         txn = self.tx[0]
 
         rx_dma_map = self.map_rx_to_dma_id(self.rx)
@@ -61,10 +48,10 @@ class Test_Streaming(TestSuite):
             print("*** Running Iteration : sn={}, rx={}, tx={}".format(sn, self.rx, [txn]))
 
             self.adc_dac_sync(False)
-            area = self.start_dma(rx_dma_map, cap_ddr_offset, self.capture_size)
+            area = self.start_dma(rx_dma_map)
             self.adc_dac_sync(True)
 
-            sleep(self.calc_capture_time(self.capture_size))
+            self.wait_capture_done()
             self.proc_cap_data(area, sn, txn, 0, samplingFreq)
 
             sn += 1
@@ -83,6 +70,7 @@ if __name__ == "__main__":
 
     try:
         test.load_config(config_path)
+        test.setup_dwell_proc()
 
         test.run_test(
             sn=sn
