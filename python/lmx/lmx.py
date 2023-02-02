@@ -109,6 +109,7 @@ class Lmx2820(MLock, AxiGpio):
     def ctrl(self, sync=False, mute=False):
         sync = 0x2 if sync else 0x0
         mute = 0x1 if mute else 0x0
+        print(f'lmx2820: sync={sync}, mute={mute} ')
         self.ctrl_gpio.set(val=(sync | mute))
 
     @MLock.Lock
@@ -160,22 +161,25 @@ if __name__ == "__main__":
 
     argparser=argparse.ArgumentParser()
     argparser.add_argument('--lmx2820', help='specify TICS file path', type=str)
+    argparser.add_argument('--mute', help='Set Mute Pin', action='store_true')
     args  = argparser.parse_args()
-
-    assert args.lmx2820 is not None
 
     lmx = Lmx2820("axi_quad_spi_0")
 
-    print('Configuring LMX2820 ...')
-    lmx.power_reset(False, 0x0)
-    lmx.power_reset(True, 0x0)
-    lmx.power_reset(True, 0x1)
-    sleep(1)
+    if args.lmx2820 is not None:
 
-    lmx.config(ticsFilePath=args.lmx2820)
+        print('Configuring LMX2820 ...')
+        lmx.power_reset(False, 0x0)
+        lmx.power_reset(True, 0x0)
+        lmx.power_reset(True, 0x1)
+        sleep(1)
 
-    assert lmx.readLockedReg() == True
-    
-    lmx.ctrl(sync=False, mute=False)
+        lmx.config(ticsFilePath=args.lmx2820)
+
+        assert lmx.readLockedReg() == True
+
+        lmx.ctrl(sync=False, mute=False)
+
+    lmx.ctrl(sync=False, mute=args.mute)
 
     print('Pass')

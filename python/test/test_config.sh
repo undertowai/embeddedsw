@@ -40,8 +40,8 @@ test_setup() {
             # Enable RF RX/TX
 
             #Init LO lmx2820
-            echo "******************* Configuring LO lmx2820 *******************"
-            $py ../lmx/lmx.py $lmx2820_config
+            echo "******************* Configuring LO lmx2820 (pre step, Mute = On) *******************"
+            $py ../lmx/lmx.py $lmx2820_config --mute
 
             #Init HMC (Pre-init stage, to let rfdc calibrate)
             echo "******************* Configuring RF RX/TX (pre step) *******************"
@@ -57,6 +57,10 @@ test_setup() {
             echo "******************* Configuring RF RX/TX (post step) *******************"
             $py ../hmc/hmc.py --cfg $test_config --rf_cfg $rf_pwr_config
             [[ $? != 0 ]] && exit 1
+
+            echo "******************* Configuring LO lmx2820 (post step, Mute = Off) *******************"
+            $py ../lmx/lmx.py
+
             ;;
         "hw_loopback")
             # Setup HW loopback scenario:
