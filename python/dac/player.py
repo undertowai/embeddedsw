@@ -15,6 +15,7 @@ from hw import Hw
 from swave import Wave
 from widebuf import WideBuf
 from rfdc import Rfdc
+import json
 
 class DacPlayer(AxiGpio):
     def __init__(self):
@@ -28,6 +29,12 @@ class DacPlayer(AxiGpio):
         self.rfdc = Rfdc("rfdc2")
 
         self.samplingFreq = self.rfdc.getSamplingFrequency()
+
+    def load_json(self, path):
+        with open(path, 'r') as f:
+            j = json.load(f)
+            f.close()
+        return j
 
     def getBramSize(self):
         assert self.bram0.getSize() == self.bram1.getSize()
@@ -161,6 +168,54 @@ class DacPlayer(AxiGpio):
 
         return buffer
 
+    def __make_bram_content_from_files(self, IQarray):
+        sampleSize = self.hw.BYTES_PER_SAMPLE
+        buffersCount = self.hw.BUFFERS_IN_BRAM
+        numBytes = int(self.getBramSize() / buffersCount)
+        numSamples = int(numBytes / sampleSize)
+        samplesPerFLit = self.hw.SAMPLES_PER_FLIT
+
+        assert self.hw.BYTES_PER_SAMPLE == 2
+        dtype = np.int16
+
+        buffer = np.empty(buffersCount * numSamples, dtype=dtype)
+
+        assert int(len(IQarray)/2) == int(buffersCount)
+
+        for i, Ipath, Qpath in enumerate(IQarray):
+
+            _, Iext = os.path.splitext(Ipath)
+            _, Qext = os.path.splitext(Qpath)
+
+            assert Iext == Qext
+
+            if Iext == '.npy':
+                I = np.load(Ipath)
+                Q = np.load(Qpath)
+                assert I.dtype == np.int16
+            else:
+                I = np.fromfile(Ipath, dtype=np.int16)
+                Q = np.fromfile(Qpath, dtype=np.int16)
+
+            WideBuf().make(buffer, I, i, buffersCount, samplesPerFLit)
+            WideBuf().make(buffer, Q, i + 1, buffersCount, samplesPerFLit)
+
+        return buffer
+
+    def make_bram_content_from_files(self, IQjsonPath):
+        tx_2_bram_map = self.load_json('../hw/tx_to_bram_map.json')
+        IQjson = self.load_json(IQjsonPath)
+
+
+        buffers = {}
+        for bram in tx_2_bram_map:
+            IQarray = []
+            for tx in tx_2_bram_map[bram]:
+                IQarray.append( ( IQjson[tx]['I'], IQjson[tx]['Q'] ) )
+            buffers[bram] = self.__make_bram_content_from_files(IQarray)
+
+        return buffers
+
     def decompose_buf(self, bram_idx, dac_idx=None):
         sampleSize = self.hw.BYTES_PER_SAMPLE
         buffersCount = self.hw.BUFFERS_IN_BRAM
@@ -217,6 +272,8 @@ if __name__ == "__main__":
     argparser.add_argument('--ifile', help='specify I data to be loaded in BRAM', type=str)
     argparser.add_argument('--qfile', help='specify Q data to be loaded in BRAM', type=str)
 
+    argparser.add_argument('--iqjson', help='specify I/Q json file to load from', type=str)
+
     argparser.add_argument('--tone', help='Specify tone frequency to be loaded in BRAM', type=int)
     argparser.add_argument('--step', help='Specify tone step frequency', type=int)
     argparser.add_argument('--db', help='Specify tone amplitude', type=int)
@@ -245,10 +302,15 @@ if __name__ == "__main__":
     elif args.ifile is not None or args.qfile is not None:
         if args.ifile is None or args.qfile is None:
             raise Exception('Both I & Q data has to be specified')
-        
+
         print('Flattening BRAM from files : {} {}'.format(args.ifile, args.qfile))
         bram_data = player.make_bram_content_from_file(args.ifile, args.qfile)
         player.load_dac_player(bram_data, bram_data)
+    elif args.iqjson is not None:
+        print('Flattening BRAM from json : {}'.format(args.iqjson))
+
+        buffers = player.make_bram_content_from_files(args.iqjson)
+        player.load_dac_player(buffers['bram0'], buffers['bram1'])
     elif args.tone is not None:
         freq = int(args.tone)
         step = int(0)
