@@ -24,19 +24,6 @@ class Test_Sanity_1(TestSuite):
         self.rx_to_bram_map = {0:0, 1:0, 2:0, 3:0, 4:1, 5:1, 6:1, 7:1}
         self.rx_to_bram_channel_map = {0:[0, 1], 1:[2, 3], 2:[4, 5], 3:[6, 7], 4:[0, 1], 5:[2, 3], 6:[4, 5], 7:[6, 7]}
 
-    def check_cap_data(self, got, exp, assert_on_failure=True):
-        for i, s in enumerate(got):
-            s_exp = exp[i%exp.size]
-            if s != s_exp:
-                print(f'Missmatch at {i}')
-                print(got[i:i+32])
-                print(exp[i:i+10])
-                assert not assert_on_failure
-
-            p = '- \\ | /'.split()[int(i/self.dwell_samples) % 4]
-            print(f'\r{p}', end='')
-        print()
-
     def proc_cap_data(self, area, do_average=False, dtype=np.int16):
         for rxn in self.rx:
             a = area[rxn]
@@ -111,9 +98,6 @@ class Test_Sanity_1(TestSuite):
 
     @TestSuite.Test
     def warm_up(self):
-        """
-        This function is needed to fill FIFO's so, offset are applied correctly
-        """
         print('Warming up...')
 
         rx_dma_map = self.map_rx_to_dma_id(self.rx)
