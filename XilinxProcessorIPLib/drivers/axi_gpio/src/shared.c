@@ -20,7 +20,7 @@ static int Gpio_Dev_Init(XGpio_t *Gpio, const char *devName)
 }
 
 
-int AXI_Gpio_Set(const char *DevName, u32 val)
+int AXI_Gpio_Set(const char *DevName, u32 val, u32 val2)
 {
     XGpio_t Gpio = {0};
 
@@ -29,6 +29,7 @@ int AXI_Gpio_Set(const char *DevName, u32 val)
 	}
 
     Xil_Out32(Gpio.io, 0x0, val);
+	Xil_Out32(Gpio.io, 0x8, val2);
 	metal_device_close(Gpio.device);
 	metal_finish();
     return XST_SUCCESS;

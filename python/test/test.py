@@ -18,11 +18,10 @@ from gpio import AxiGpio
 from axis_switch import AxisSwitch
 
 from inet import Inet
-from test_config import TestConfig 
+from test_config import TestConfig
 from integrator import Integrator, IntegratorHwIf
 
 class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
-    DEBUG=True
 
     def getargs(self, **kw):
         for k, v in kw.items():
@@ -57,19 +56,16 @@ class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
         self.axis_switch0 = AxisSwitch("axis_switch_0")
         self.axis_switch1 = AxisSwitch("axis_switch_1")
 
-        self.gpio_flush = self.getGpio("adc_dac_flush_gpio_0")
         self.gpio_sync = self.getGpio("adc_dac_sync_gpio_0")
-        self.gpio_dwell_avg_ctrl = self.getGpio("axi_gpio_axis_dwell_ctrl")
 
-        integrator_hw_if = IntegratorHwIf(None, self.gpio_dwell_avg_ctrl)
-        self.integrator = Integrator(integrator_hw_if, self.integrator_mode, self.dwell_samples, self.dwell_num, self.dwell_window)
-        self.integrator.setup()
+        self.integrator = Integrator(self.integrator_mode, self.dwell_samples, self.dwell_num, self.dwell_window, self.debug)
 
+        self.apply_hw_delay_per_tx(0)
         self.set_loopback(self.adc_dac_sw_loppback)
 
         self.samplingFreq = self.rfdc.getSamplingFrequency()
 
-        if self.DEBUG:
+        if self.debug:
             print(f'Test Init Done; Sampling frequency {self.samplingFreq}')
 
     def set_loopback(self, loopback):
@@ -92,8 +88,14 @@ class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
         else:
             self.gpio_sync.set(val=0x0)
 
+    def apply_hw_delay_per_tx(self, txn):
+        hw_del = self.getStreamHwOffset(txn)
+        self.integrator.setup(hw_del)
+
     def __start_dma(self, id, addr, size):
         devName = self.dma.devIdToIpName(id)
+        if self.debug:
+            print(f'__start_dma: {devName}, addr={hex(addr)}, size={hex(size)}')
         self.dma.startTransfer(devName=devName, addr=addr, len=size)
 
     def start_dma(self, rx_dma_map):
@@ -106,15 +108,10 @@ class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
             base_address = ddr.base_address()
             addr = base_address
 
-            if self.DEBUG:
-                print(f'start_dma: DDR={ddr} base address={hex(base_address)}')
-
             for rxn, dma_id in rx_dma_id:
                 #2 DMA channels for I and Q
                 assert len(dma_id) == 2
 
-                if self.DEBUG:
-                    print(f'dma id={dma_id}')
                 addrI = addr
                 addrQ = addr + size
                 self.__start_dma(dma_id[0], addrI, size)
@@ -130,12 +127,12 @@ class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
         sleep(sleep_time)
 
     def xddr_read(self, addr, size, dtype, offset_samples = 0):
-        if self.DEBUG:
-            print(f'xddr_read: addr={hex(addr)}, size={hex(size)}, offset={offset_samples}')
+        if self.debug:
+            print(f'xddr_read: addr={hex(addr)}, size={hex(size)}, offset samples={offset_samples}')
         capture_samples = self.getDdrCaptureSizeSamples()
         offset_samples += self.getDdrOffsetSamples()
 
-        if self.DEBUG:
+        if self.debug:
             print(f'xddr_read: capture_samples={hex(capture_samples)}, offset_samples={hex(offset_samples)}')
 
         return Xddr.read(addr, size, dtype)[offset_samples:capture_samples+offset_samples]

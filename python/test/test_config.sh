@@ -25,19 +25,20 @@ test_setup() {
 
     echo "******************* MODE = $mode *******************"
 
-    #Init CLK 104
-    echo "******************* Configuring CLK 104 *******************"
-    $py ../rfdc/rfdc_clk.py --clk_104 $lmk_config
-    [[ $? != 0 ]] && exit 1
-
     case $mode in
         "RF")
             # Setup RF scenario:
+            # Init CLK 104
             # Init LO
             # Init RF RX/TX
             # Shut down RX outputs
             # Init RFDC
             # Enable RF RX/TX
+
+            #Init CLK 104
+            echo "******************* Configuring CLK 104 *******************"
+            $py ../rfdc/rfdc_clk.py --clk_104 $lmk_config
+            [[ $? != 0 ]] && exit 1
 
             #Init LO lmx2820
             echo "******************* Configuring LO lmx2820 (pre step, Mute = On) *******************"
@@ -64,22 +65,28 @@ test_setup() {
             ;;
         "hw_loopback")
             # Setup HW loopback scenario:
+            # Init CLK 104
             # Export BRAM content
             # Zero BRAM, so DAC outputs near zero
             # Init RFDC
             # Load BRAM
 
+            #Init CLK 104
+            echo "******************* Configuring CLK 104 *******************"
+            $py ../rfdc/rfdc_clk.py --clk_104 $lmk_config
+            [[ $? != 0 ]] && exit 1
+
             # Data will be stored as ./bram0.npy, ./bram1.npy
-            echo "******************* Exporting and erasing BRAM *******************"
-            export_path="."
-            $py ../dac/player.py --export $export_path
-            $py ../dac/player.py --zero
+            #echo "******************* Exporting and erasing BRAM *******************"
+            #export_path="."
+            #$py ../dac/player.py --export $export_path
+            #$py ../dac/player.py --zero
 
             #Enable ADC/DAC sync
             $py ../axi/gpio.py --adc_dac_sync 255
 
             #Init RFDC (Calibration)
-            echo "******************* Configuring RFDC *******************"
+            #echo "******************* Configuring RFDC *******************"
             $py ../rfdc/rfdc_clk.py --rfdc
             [[ $? != 0 ]] && exit 1
 
@@ -87,10 +94,10 @@ test_setup() {
             $py ../axi/gpio.py --adc_dac_sync 0
 
             #Load exported BRAM back
-            echo "******************* Loading BRAM content *******************"
-            $py ../dac/player.py --bram0 "$export_path/bram0.npy" --bram1 "$export_path/bram1.npy"
+            #echo "******************* Loading BRAM content *******************"
+            #$py ../dac/player.py --bram0 "$export_path/bram0.npy" --bram1 "$export_path/bram1.npy"
 
-            rm "./bram0.npy" "$export_path/bram1.npy"
+            #rm "./bram0.npy" "$export_path/bram1.npy"
             ;;
         "sw_loopback")
             ;;

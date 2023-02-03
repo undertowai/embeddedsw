@@ -21,7 +21,9 @@ class Gpio(MLock):
     def set(self):
         fun = self.lib.AXI_Gpio_Set
 
-        status = fun(ct.c_char_p(self.devName.encode("UTF-8")), int(self.val))
+        val2 = self.val2 if hasattr(self, 'val2') else 0x0
+
+        status = fun(ct.c_char_p(self.devName.encode("UTF-8")), int(self.val), int(val2))
         assert status == 0
 
     @MLock.Lock

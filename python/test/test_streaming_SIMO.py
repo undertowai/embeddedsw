@@ -6,8 +6,8 @@ import numpy as np
 from inet import Inet
 
 class Test_Streaming(TestSuite):
-    def __init__(self, port):
-        TestSuite.__init__(self)
+    def __init__(self, config_path):
+        TestSuite.__init__(self, config_path)
 
     def proc_cap_data(self, area, sn, txn, freq, fs, dtype=np.int16):
         iq_data = []
@@ -16,16 +16,13 @@ class Test_Streaming(TestSuite):
             addrI, sizeI = a["I"]
             addrQ, sizeQ = a["Q"]
 
-            if self.DEBUG:
-                print(f'I: {hex(addrI)}:{hex(sizeI)}, Q: {hex(addrQ)}:{hex(sizeQ)}')
-
-            hwOffsetSamples = self.hw_offset_map[f'TX{txn}'][rxn]
+            hwOffsetSamples = self.getStreamHwOffset(txn)[rxn] if self.isIntegratorSwMode() else 0
 
             I = self.xddr_read(addrI, sizeI, dtype, hwOffsetSamples)
             Q = self.xddr_read(addrQ, sizeQ, dtype, hwOffsetSamples)
 
-            I = self.do_integration(I)
-            Q = self.do_integration(Q)
+            I = self.integrator.do_integration(I)
+            Q = self.integrator.do_integration(Q)
 
             iq_data.append((I, Q))
 
@@ -48,6 +45,7 @@ class Test_Streaming(TestSuite):
             print("*** Running Iteration : sn={}, rx={}, tx={}".format(sn, self.rx, [txn]))
 
             self.adc_dac_sync(False)
+            self.apply_hw_delay_per_tx(txn)
             area = self.start_dma(rx_dma_map)
             self.adc_dac_sync(True)
 
@@ -66,12 +64,9 @@ if __name__ == "__main__":
     sn=int(sys.argv[1])
     config_path = sys.argv[2]
 
-    test = Test_Streaming(Inet.PORT)
+    test = Test_Streaming(config_path)
 
     try:
-        test.load_config(config_path)
-        test.setup_dwell_proc()
-
         test.run_test(
             sn=sn
         )

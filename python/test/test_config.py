@@ -16,21 +16,29 @@ class TestConfig(Hw):
     dwell_samples: int = 0
     dwell_num: int = 0
     dwell_window: int = 2
-    
+
     integrator_mode: str = "sw" #'hw', 'sw', 'bypass'
 
     offset_map: dict = {}
-    
+
     rx: list = []
     tx: list = []
     rf_power: dict = {}
+
+    debug: bool = False
+
+    def init_attrs(self, obj, config_json_path):
+        j = self.load_json(config_json_path)
+        for parameter in j:
+            if hasattr(obj, parameter):
+                setattr(obj, parameter, j[parameter])
 
     def __init__(self, config_json_path):
         self.init_attrs(self, config_json_path)
 
         #TODO: Find another way to get path
         self.rf_power = self.load_json('../hmc/configs/rf_power.json')
-        self.offset_map = self.load_json('../hw/hw_offset.json')
+        self.hw_offset_map = self.load_json('../hw/hw_offset.json')
 
     def load_json(self, path):
         with open(path, 'r') as f:
@@ -45,14 +53,12 @@ class TestConfig(Hw):
         for rxn in rx:
             m = j[f'rx{rxn}']
             rx_dma_map[m['ddr']].append( (rxn, m['dma']) )
-        
+
         return rx_dma_map
 
-    def init_attrs(self, obj, config_json_path):
-        j = self.load_json(config_json_path)
-        for parameter in j:
-            if hasattr(obj, parameter):
-                setattr(obj, parameter, j[parameter])
+    def getStreamHwOffset(self, txn):
+        tx = f'TX{txn}'
+        return self.hw_offset_map[tx]
 
     def getStreamHwDelay(self, size):
         cpu_page = int(self.CPU_PAGE_SIZE)
@@ -63,7 +69,7 @@ class TestConfig(Hw):
         return size
 
     def isIntegratorSwMode(self):
-        return self.integrator_mode == 'sw'
+        return self.integrator_mode != 'hw'
 
     def isIntegrationEnabled(self):
         return self.integrator_mode != 'bypass'

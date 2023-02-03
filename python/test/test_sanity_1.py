@@ -54,9 +54,9 @@ class Test_Sanity_1(TestSuite):
             wDwellOffsetMax = self.dwell_num - wDwellWindow
             wDwellOffsetMin = 0
             wDwellOffset = random.randint(wDwellOffsetMin, wDwellOffsetMax)
-            print(f'[RAW] Iteration: rxn={rxn}, window offset={wDwellOffset}')
+            print(f'[RAW] Iteration: rxn={rxn}, window offset={wDwellOffset}, window size={wDwellWindow}')
 
-            hwOffsetSamples = 40
+            hwOffsetSamples = 8
 
             wOffset = self.dwell_samples * wDwellOffset
             wSize = self.dwell_samples * wDwellWindow
@@ -69,6 +69,8 @@ class Test_Sanity_1(TestSuite):
 
             bramI, bramQ = self.getBramData(rxn, wDwellWindow)
 
+            #print(Iw[:128])
+            #print(bramI[:128])
             assert np.array_equal(Iw, bramI)
             assert np.array_equal(Qw, bramQ)
 
@@ -82,7 +84,7 @@ class Test_Sanity_1(TestSuite):
             wDwellWindow = self.getDwellWindowPeriods()
             print(f'[INTEGRATED] Iteration: rxn={rxn}')
 
-            hwOffsetSamples = 40 if self.isIntegratorSwMode() else 32
+            hwOffsetSamples = 8 if self.isIntegratorSwMode() else 0
 
             I = self.xddr_read(aI, sI, dtype, hwOffsetSamples)
             Q = self.xddr_read(aQ, sQ, dtype, hwOffsetSamples)
@@ -92,15 +94,17 @@ class Test_Sanity_1(TestSuite):
             I = self.integrator.do_integration(I)
             Q = self.integrator.do_integration(Q)
 
-            #NOTE: bramX[:X.size] --> WA for HW integrator
-            assert np.array_equal(I, bramI[:I.size])
-            assert np.array_equal(Q, bramQ[:Q.size])
+            #print(I[:128])
+            #print(bramI[:128])
+            assert np.array_equal(I, bramI)
+            assert np.array_equal(Q, bramQ)
 
     @TestSuite.Test
     def run_test(self):
         rx_dma_map = self.map_rx_to_dma_id(self.rx)
 
         self.adc_dac_sync(False)
+        self.apply_hw_delay_per_tx(self.tx[0])
         area = self.start_dma(rx_dma_map)
         self.adc_dac_sync(True)
 

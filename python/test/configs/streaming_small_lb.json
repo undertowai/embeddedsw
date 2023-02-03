@@ -3,8 +3,10 @@
     "tx": [4],
     "dwell_samples": 65536,
     "dwell_num": 4,
-    "cap_ddr_offset": 0,
+    "dwell_window": 1,
     "adc_dac_hw_loppback": true,
     "adc_dac_sw_loppback": true,
-    "num_iterations": 300
+    "integrator_mode": "bypass",
+    "num_iterations": 300,
+    "debug": false
 }
