@@ -126,14 +126,12 @@ static int _RFDC_Init (XRFdc *RFdcInstPtr)
 	return XST_SUCCESS;
 }
 
-int RFDC_Init_Clk104(void)
+int RFDC_Init_Clk104(int gpioID)
 {
 	int Status;
 	int lmkConfigIndex;
-	int gpioID = 343;
 
-
-	printf("Configuring LMK...\r\n");
+	printf("RFDC_Init_Clk104: gpioID=%d\r\n", gpioID);
 	/* The parameter is a gpioID, see Linux boot logging */
 	XRFClk_Init(gpioID);
 
@@ -159,16 +157,15 @@ int RFDC_Init_Clk104(void)
 	return XST_SUCCESS;
 }
 
-int RFDC_Init_Clk104_External(const unsigned int *LMK_config, u32 LMK_ConfigSize,
+int RFDC_Init_Clk104_External(int gpioID, const unsigned int *LMK_config, u32 LMK_ConfigSize,
 					const unsigned int *LMX_RF1_config, u32 LMX_RF1_ConfigSize,
 					const unsigned int *LMX_RF2_config, u32 LMX_RF2_ConfigSize)
 {
 	int Status = XST_SUCCESS;
-	int gpioID = 343;
 	int lmkConfigIndex = 3;
 
-
-	printf("Configuring LMK/LMX From external configs... %p, %p, %p\r\n", LMK_config, LMX_RF1_config, LMX_RF2_config);
+	printf("RFDC_Init_Clk104_External: gpioID=%d; LMK= %p, LMX_RF1= %p, LMX_RF2= %p\r\n",
+			gpioID, LMK_config, LMX_RF1_config, LMX_RF2_config);
 	/* The parameter is a gpioID, see Linux boot logging */
 	XRFClk_Init(gpioID);
 
@@ -405,13 +402,11 @@ int RFdcMTS(u32 ADC_mask, u32 DAC_mask, u32 ADC_ref, u32 DAC_ref)
 * @note		None
 *
 ****************************************************************************/
-int resetAllClk104(void)
+int resetAllClk104(int gpioID)
 {
 	int ret = EXIT_FAILURE;
-	int gpioID = 343;
 
-
-	printf("resetting LMK/LMX...\r\n");
+	printf("resetting LMK/LMX; GpioId=%d\r\n", gpioID);
 	/* The parameter is a gpioID, see Linux boot logging */
 	XRFClk_Init(gpioID);
 //	printf("Reset LMK\n\r");

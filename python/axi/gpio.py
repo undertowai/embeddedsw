@@ -1,5 +1,6 @@
 import sys, argparse
 import ctypes as ct
+import os
 
 sys.path.append("../misc")
 
@@ -37,16 +38,28 @@ class AxiGpio:
     def getGpio(self, ipName):
         return Gpio(self.lib_gpio, ipName)
 
+    def getGpioId(self, ipName):
+        path = Dts().ipToDtsPathAbsolute(ipName) + os.sep + 'gpio' + os.sep
+
+        listdir = os.listdir(path)
+        gpio = listdir[0].replace('gpio', '').replace('chip', '')
+        gpio_id = int(gpio)
+        return gpio_id
 
 if __name__ == "__main__":
 
     argparser=argparse.ArgumentParser()
     argparser.add_argument('--adc_dac_sync', help='Toggle adc/dac sync', type=int)
+    argparser.add_argument('--get_gpio_id', help='Get gpio id for the given ip name', type=str)
+
     args  = argparser.parse_args()
 
     axiGpio = AxiGpio("axi_gpio")
 
-    if args.adc_dac_sync is not None:
+    if args.get_gpio_id is not None:
+        axiGpio.getGpioId(args.get_gpio_id)
+
+    elif args.adc_dac_sync is not None:
         gpio = axiGpio.getGpio("adc_dac_sync_gpio_0")
         gpio.set(val=args.adc_dac_sync)
 

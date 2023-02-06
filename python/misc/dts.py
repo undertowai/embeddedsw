@@ -28,6 +28,9 @@ class Dts:
         path = platform + "/" + dts[1] + "." + dts[0]
         return path
 
+    def ipToDtsPathAbsolute(self, ipName):
+        return self.DTS_PATH + "/" + self.ipToDtsPath(ipName)
+
     def readPropertyU32(self, ipName, propName):
         path = self.DTS_PATH + "/" + self.ipToDtsPath(ipName) + "/of_node/" + propName
         data = np.fromfile(path, dtype=np.uint32)

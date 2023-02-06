@@ -4,9 +4,11 @@ import numpy as np
 import json
 
 sys.path.append("../misc")
+sys.path.append("../axi")
 
 from make import Make
 from mlock import MLock
+from gpio import AxiGpio
 
 def load_json(path):
     with open(path, 'r') as f:
@@ -14,15 +16,18 @@ def load_json(path):
         f.close()
     return j
 
-class Rfdc(MLock):
+class Rfdc(MLock, AxiGpio):
     def __init__(self, libName):
+        AxiGpio.__init__(self, 'axi_gpio')
         libPath = Make().makeLibs(libName)
         self.lib = ct.CDLL(libPath)
+        self.spi_mux_gpio_id = self.getGpioId('axi_gpio_spi_mux')
 
     def init_clk104_External(self, lmk_data, lmx_rf1_data, lmx_rf2_data):
         fun = self.lib.RFDC_Init_Clk104_External
 
         status = fun(
+            int(self.spi_mux_gpio_id),
             ct.c_void_p(lmk_data.ctypes.data) if lmk_data is not None else None,
             int(lmk_data.size) if lmk_data is not None else 0,
 
@@ -37,13 +42,13 @@ class Rfdc(MLock):
     def reset_clk104(self):
         fun = self.lib.resetAllClk104
 
-        status = fun()
+        status = fun(int(self.spi_mux_gpio_id))
         assert status == 0
 
     def init_clk104(self):
         fun = self.lib.RFDC_Init_Clk104
 
-        status = fun()
+        status = fun(int(self.spi_mux_gpio_id))
         assert status == 0
 
     @MLock.Lock
@@ -61,11 +66,11 @@ class Rfdc(MLock):
         assert freq > 0
 
         return int(freq * 1_000_000)
-    
+
     @MLock.Lock
     def setRFdcMTS(self):
         fun = self.lib.RFdcMTS
-        
+
         status = fun(int(self.adc), int(self.dac), int(self.adc_ref), int(self.dac_ref))
         assert status == 0
 
@@ -76,7 +81,7 @@ class Rfdc(MLock):
 
         status = fun(int(self.base_addr), int(self.reg_addr), ct.byref(val))
         assert status == 0
-        
+
         return val
 
     @MLock.Lock

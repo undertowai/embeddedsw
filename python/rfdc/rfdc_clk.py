@@ -1,11 +1,9 @@
 
 import sys, argparse
-from time import sleep
 import json
 
 sys.path.append("../lmx")
 
-from lmx import Lmx2820
 from rfdc import Rfdc
 from TICS import read as TICSread
 
@@ -50,7 +48,7 @@ if __name__ == "__main__":
     argparser.add_argument('--lmk', help='specify LMK configuration file', type=str)
     argparser.add_argument('--lmx_rf1', help='specify LMX RF1 configuration file', type=str)
     argparser.add_argument('--lmx_rf2', help='specify LMX RF2 configuration file', type=str)
-    
+
     argparser.add_argument('--rfdc', help='Init RFDC', action='store_true')
     argparser.add_argument('--clk_104', help='Init CLK 104', action='store_true')
 
