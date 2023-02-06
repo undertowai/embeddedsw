@@ -64,7 +64,7 @@ if __name__ == "__main__":
         print('Dumping rfdc IP:')
         regs = rfdc_clk.rfdc.readRegAll()
         for name, addr, val in regs:
-            print(f'{hex(addr)} = {hex(val)}: {name}')        
+            print(f'{hex(addr)} = {hex(val)}: {name}')
 
     elif args.dump_adc is not None:
         print(f'Dumping RFDC ADC tile{args.dump_adc}: ')

@@ -17,13 +17,16 @@ class TestConfig(Hw):
     dwell_num: int = 0
     dwell_window: int = 2
 
-    integrator_mode: str = "sw" #'hw', 'sw', 'bypass'
+    integrator_mode: str = "bypass" #'hw', 'sw', 'bypass'
 
     offset_map: dict = {}
 
     rx: list = []
     tx: list = []
     rf_power: dict = {}
+
+    hw_offset_map_path: str = '../hw/hw_offset.json'
+    rf_power_cfg_path: str = '../hmc/configs/rf_power.json'
 
     debug: bool = False
 
@@ -37,8 +40,11 @@ class TestConfig(Hw):
         self.init_attrs(self, config_json_path)
 
         #TODO: Find another way to get path
-        self.rf_power = self.load_json('../hmc/configs/rf_power.json')
-        self.hw_offset_map = self.load_json('../hw/hw_offset.json')
+        self.rf_power = self.load_json(self.rf_power_cfg_path)
+        self.hw_offset_map = self.load_json(self.hw_offset_map_path)
+
+        if self.integrator_mode == 'hw':
+            assert self.dwell_window == self.HW_INTEGRATOR_WINDOW_SIZE, f'For integrator HW mode dwell_window size must be {self.HW_INTEGRATOR_WINDOW_SIZE}'
 
     def load_json(self, path):
         with open(path, 'r') as f:

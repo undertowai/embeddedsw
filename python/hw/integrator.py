@@ -18,18 +18,10 @@ class IntegratorHwIf(AxiGpio):
 
     def set_offset_samples(self, hw_offset_map):
         if len(hw_offset_map):
-            val0  = (int(hw_offset_map[0]) << 0) | (int(hw_offset_map[0]) << 8) | (int(hw_offset_map[1]) << 16) | \
-                    (int(hw_offset_map[1]) << 24)
-
-            val1  = (int(hw_offset_map[2]) << 0) | (int(hw_offset_map[2]) << 8) | (int(hw_offset_map[3]) << 16) | \
-                    (int(hw_offset_map[3]) << 24)
-
-            val2  = (int(hw_offset_map[4]) << 0) | (int(hw_offset_map[4]) << 8) | (int(hw_offset_map[5]) << 16) | \
-                    (int(hw_offset_map[5]) << 24)
-
-            val3  = (int(hw_offset_map[6]) << 0) | (int(hw_offset_map[6]) << 8) | (int(hw_offset_map[7]) << 16) | \
-                    (int(hw_offset_map[7]) << 24)
-
+            val0  = (int(hw_offset_map[0]) << 0) | (int(hw_offset_map[1]) << 16)
+            val1  = (int(hw_offset_map[2]) << 0) | (int(hw_offset_map[3]) << 16)
+            val2  = (int(hw_offset_map[4]) << 0) | (int(hw_offset_map[5]) << 16)
+            val3  = (int(hw_offset_map[6]) << 0) | (int(hw_offset_map[7]) << 16)
         else:
             val0 = 0
             val1 = 0
@@ -84,7 +76,7 @@ class Integrator(IntegratorHwIf):
         return data
 
     def do_integration(self, data):
-        if self.mode == 'hw':
+        if self.mode != 'sw':
             return data
         else:
             return self.__do_sw_integration(data)
