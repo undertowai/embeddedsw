@@ -17,14 +17,14 @@ class RfdcClk:
     def __init__(self):
         self.rfdc = Rfdc("rfdc2")
 
-    def setup_rfdc_external(self, lmk_path, lmx_rf1_path, lmx_rf2_path):
+    def init_clk104_External(self, lmk_path, lmx_rf1_path, lmx_rf2_path):
         lmk_data = TICSread(lmk_path) if lmk_path is not None else None
         lmx_rf1_data = TICSread(lmx_rf1_path) if lmx_rf1_path is not None else None
         lmx_rf2_data = TICSread(lmx_rf2_path) if lmx_rf2_path is not None else None
 
         self.rfdc.init_clk104_External(lmk_data, lmx_rf1_data, lmx_rf2_data)
 
-    def setup_clk104(self, lmk_path=None, lmx_rf1_path=None, lmx_rf2_path=None):
+    def init_clk104(self, lmk_path=None, lmx_rf1_path=None, lmx_rf2_path=None):
 
         print('Configuring CLK104 ...')
 
@@ -32,13 +32,20 @@ class RfdcClk:
         if lmk_path is None and lmx_rf1_path is None and lmx_rf2_path is None:
             self.rfdc.init_clk104()
         else:
-            self.setup_rfdc_external(lmk_path, lmx_rf1_path, lmx_rf2_path)
+            self.init_clk104_External(lmk_path, lmx_rf1_path, lmx_rf2_path)
 
-    def setup_rfdc(self, mts_adc = 0xf, mts_dac = 0xf, adc_ref=0, dac_ref=0):
-        print('Configuring RFDC ...')
+    def setup_rfdc(self, dac_ref=0):
+        print('Configuring RFDC :')
+        print('Restarting RFDC..')
         self.rfdc.restart()
-        self.rfdc.setRFdcMTS(adc=mts_adc, dac=mts_dac, adc_ref=adc_ref, dac_ref=dac_ref)
+        self.setup_mts()
+        print('Configuring RFDC DIther..')
+        tiles = [[0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3]]
+        self.rfdc.setRFdcDither(tiles=tiles, mode=1)
 
+    def setup_mts(self, mts_adc = 0xf, mts_dac = 0xf, adc_ref=0, dac_ref=0):
+        print('Configuring RFDC MTS..')
+        self.rfdc.setRFdcMTS(adc=mts_adc, dac=mts_dac, adc_ref=adc_ref, dac_ref=dac_ref)
 
 
 if __name__ == "__main__":
@@ -50,6 +57,7 @@ if __name__ == "__main__":
     argparser.add_argument('--lmx_rf2', help='specify LMX RF2 configuration file', type=str)
 
     argparser.add_argument('--rfdc', help='Init RFDC', action='store_true')
+    argparser.add_argument('--rfdc_mts', help='Init RFDC MTS', action='store_true')
     argparser.add_argument('--clk_104', help='Init CLK 104', action='store_true')
 
     argparser.add_argument('--dump_adc', help='Dump reg file from <N> TIle according to the rfdc_tile_reg_map.json', type=int)
@@ -85,9 +93,12 @@ if __name__ == "__main__":
     else:
 
         if args.clk_104 == True:
-            rfdc_clk.setup_clk104(args.lmk, args.lmx_rf1, args.lmx_rf2)
+            rfdc_clk.init_clk104(args.lmk, args.lmx_rf1, args.lmx_rf2)
 
         if args.rfdc == True:
             rfdc_clk.setup_rfdc()
+
+        if args.rfdc_mts == True:
+            rfdc_clk.setup_mts()
 
     print("Pass")

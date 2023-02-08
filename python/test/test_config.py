@@ -43,6 +43,8 @@ class TestConfig(Hw):
         self.rf_power = self.load_json(self.rf_power_cfg_path)
         self.hw_offset_map = self.load_json(self.hw_offset_map_path)
 
+        assert self.integrator_mode in ['sw', 'hw', 'bypass']
+
         if self.integrator_mode == 'hw':
             assert self.dwell_window == self.HW_INTEGRATOR_WINDOW_SIZE, f'For integrator HW mode dwell_window size must be {self.HW_INTEGRATOR_WINDOW_SIZE}'
 
@@ -66,10 +68,8 @@ class TestConfig(Hw):
         tx = f'TX{txn}'
         return self.hw_offset_map[tx]
 
-    def getStreamHwDelay(self, size):
+    def __alignToCpuPage(self, size):
         cpu_page = int(self.CPU_PAGE_SIZE)
-        hw_del = self.HW_AXIS_DELAY_SAMPLES * self.BYTES_PER_SAMPLE
-        size += hw_del
         size = int(((size - 1) / cpu_page) + 1) * cpu_page
 
         return size
@@ -86,21 +86,20 @@ class TestConfig(Hw):
     def getStreamSizeSamples(self):
         return int(self.dwell_samples * self.dwell_num)
 
-    def getStreamSizeBytes(self):
+    def __getStreamSizeBytes(self):
         capture_num_samples = self.getStreamSizeSamples()
         return int(capture_num_samples * self.BYTES_PER_SAMPLE)
 
     def getStreamSizeBytesPerDma(self):
-        capture_size_bytes = self.getStreamSizeBytes()
-        capture_size_bytes = self.getStreamHwDelay(capture_size_bytes)
-        return capture_size_bytes
+        capture_size_bytes = self.__getStreamSizeBytes()
+        return self.__alignToCpuPage(capture_size_bytes)
 
     def getDwellCaptureWindowSizeSamples(self):
         return int(self.dwell_samples * self.dwell_window)
 
     def getDwellCaptureWindowSizebytes(self):
         capture_size_bytes = int(self.getDwellCaptureWindowSizeSamples() * self.BYTES_PER_SAMPLE)
-        return capture_size_bytes
+        return self.__alignToCpuPage(capture_size_bytes)
 
     def getCaptureSizePerDma(self):
         if self.integrator_mode == 'hw':
@@ -114,9 +113,6 @@ class TestConfig(Hw):
         numSamples = batchSize / (self.BYTES_PER_SAMPLE)
         t = numSamples / self.samplingFreq
         return t
-
-    def getDdrOffsetSamples(self):
-        return self.HW_AXIS_DELAY_SAMPLES if self.integrator_mode != 'hw' else int(0)
 
     def getDdrCaptureSizeSamples(self):
         if self.integrator_mode == 'hw':

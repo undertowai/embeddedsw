@@ -1,6 +1,6 @@
 {
     "LO": {
-        "sleep": 10
+        "sleep": 1
     },
     "TX*": {
             "ifgain_1.3db_step":6,

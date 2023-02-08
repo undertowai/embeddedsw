@@ -75,6 +75,18 @@ class Rfdc(MLock, AxiGpio):
         assert status == 0
 
     @MLock.Lock
+    def __setRFdDither(self):
+        fun = self.lib.RFDC_SetDither
+
+        status = fun(int(self.tile_id), int(self.adc_id), int(self.mode))
+        assert status == 0
+
+    def setRFdcDither(self, tiles, mode):
+        for tile_id, tile in enumerate(tiles):
+            for adc_id in tile:
+                self.__setRFdDither(tile_id=tile_id, adc_id=adc_id, mode=mode)
+
+    @MLock.Lock
     def __readReg(self):
         fun = self.lib.RFDC_ReadReg
         val = ct.c_int()

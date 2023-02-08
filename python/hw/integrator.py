@@ -17,16 +17,12 @@ class IntegratorHwIf(AxiGpio):
         self.offset_hw_ctrl_1 = self.getGpio("axis_dwell_proc_0_axi_gpio_offset_ctrl1")
 
     def set_offset_samples(self, hw_offset_map):
-        if len(hw_offset_map):
-            val0  = (int(hw_offset_map[0]) << 0) | (int(hw_offset_map[1]) << 16)
-            val1  = (int(hw_offset_map[2]) << 0) | (int(hw_offset_map[3]) << 16)
-            val2  = (int(hw_offset_map[4]) << 0) | (int(hw_offset_map[5]) << 16)
-            val3  = (int(hw_offset_map[6]) << 0) | (int(hw_offset_map[7]) << 16)
-        else:
-            val0 = 0
-            val1 = 0
-            val2 = 0
-            val3 = 0
+        assert len(hw_offset_map) == 8
+
+        val0  = (int(hw_offset_map[0]) << 0) | (int(hw_offset_map[1]) << 16)
+        val1  = (int(hw_offset_map[2]) << 0) | (int(hw_offset_map[3]) << 16)
+        val2  = (int(hw_offset_map[4]) << 0) | (int(hw_offset_map[5]) << 16)
+        val3  = (int(hw_offset_map[6]) << 0) | (int(hw_offset_map[7]) << 16)
 
         if self.debug:
             print(f'HW offset map ={hw_offset_map}')
@@ -57,11 +53,11 @@ class Integrator(IntegratorHwIf):
 
             assert num_periods == self.num_periods, "num_periods parameter must be equal to 2^N if integrator mode is HW"
 
-            self.set_offset_samples(hw_offset_map)
             self.set_period_log2_samples(periods_log2)
         else:
             self.set_period_log2_samples(0)
-            self.set_offset_samples([])
+
+        self.set_offset_samples(hw_offset_map)
 
     def __do_sw_integration(self, data):
 

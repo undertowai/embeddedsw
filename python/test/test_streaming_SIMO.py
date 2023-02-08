@@ -16,10 +16,8 @@ class Test_Streaming(TestSuite):
             addrI, sizeI = a["I"]
             addrQ, sizeQ = a["Q"]
 
-            hwOffsetSamples = self.getStreamHwOffset(txn)[rxn] if self.isIntegratorSwMode() else 0
-
-            I = self.xddr_read(addrI, sizeI, dtype, hwOffsetSamples)
-            Q = self.xddr_read(addrQ, sizeQ, dtype, hwOffsetSamples)
+            I = self.xddr_read(addrI, sizeI, dtype)
+            Q = self.xddr_read(addrQ, sizeQ, dtype)
 
             I = self.integrator.do_integration(I)
             Q = self.integrator.do_integration(Q)
@@ -45,6 +43,8 @@ class Test_Streaming(TestSuite):
             print("*** Running Iteration : sn={}, rx={}, tx={}".format(sn, self.rx, [txn]))
 
             self.adc_dac_sync(False)
+            self.start_dma(rx_dma_map)
+
             self.apply_hw_delay_per_tx(txn)
             area = self.start_dma(rx_dma_map)
             self.adc_dac_sync(True)

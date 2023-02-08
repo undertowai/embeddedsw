@@ -2,11 +2,12 @@
     "rx": [0, 1, 2, 3],
     "tx": [7],
     "dwell_samples": 65536,
-    "dwell_num": 2,
+    "dwell_num": 32768,
     "dwell_window": 1,
     "adc_dac_hw_loppback": false,
     "adc_dac_sw_loppback": false,
     "integrator_mode": "hw",
     "num_iterations": 10,
+    "hw_offset_map_path": "../hw/hw_offset.json",
     "debug": false
 }

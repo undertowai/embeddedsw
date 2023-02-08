@@ -60,7 +60,6 @@ class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
 
         self.integrator = Integrator(self.integrator_mode, self.dwell_samples, self.dwell_num, self.dwell_window, self.debug)
 
-        self.apply_hw_delay_per_tx(0)
         self.set_loopback(self.adc_dac_sw_loppback)
 
         self.samplingFreq = self.rfdc.getSamplingFrequency()
@@ -126,13 +125,10 @@ class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
         sleep_time = self.getCaptureTimeForBytes(capture_size_bytes)
         sleep(sleep_time)
 
-    def xddr_read(self, addr, size, dtype, offset_samples = 0):
-        if self.debug:
-            print(f'xddr_read: addr={hex(addr)}, size={hex(size)}, offset samples={offset_samples}')
+    def xddr_read(self, addr, size, dtype):
         capture_samples = self.getDdrCaptureSizeSamples()
-        offset_samples += self.getDdrOffsetSamples()
 
         if self.debug:
-            print(f'xddr_read: capture_samples={hex(capture_samples)}, offset_samples={hex(offset_samples)}')
+            print(f'xddr_read: addr={hex(addr)}, size={hex(size)}, capture_samples={hex(capture_samples)}')
 
-        return Xddr.read(addr, size, dtype)[offset_samples:capture_samples+offset_samples]
+        return Xddr.read(addr, size, dtype)[:capture_samples]

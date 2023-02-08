@@ -388,6 +388,24 @@ int RFdcMTS(u32 ADC_mask, u32 DAC_mask, u32 ADC_ref, u32 DAC_ref)
     return XRFDC_MTS_OK;
 }
 
+int RFDC_SetDither (u32 tile_id, u32 adc_id, u32 mode)
+{
+	int status;
+	XRFdc RFdcInst = {0};      /* RFdc driver instance */
+	XRFdc *RFdcInstPtr = &RFdcInst;
+
+	status = _RFDC_Init(RFdcInstPtr);
+
+    if (status != XRFDC_SUCCESS) {
+        printf("RFdc Init Failure\n\r");
+		return XRFDC_FAILURE;
+    }
+
+	status = XRFdc_SetDither(RFdcInstPtr, tile_id, adc_id, mode);
+	metal_finish();
+	return status;
+}
+
 /****************************************************************************/
 /**
 *
