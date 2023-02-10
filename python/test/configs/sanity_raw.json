@@ -8,5 +8,6 @@
     "adc_dac_sw_loppback": true,
     "integrator_mode": "bypass",
     "num_iterations": 2,
-    "debug": true
+    "hw_offset_map_path": "../hw/hw_offset_sanity.json",
+    "debug": false
 }

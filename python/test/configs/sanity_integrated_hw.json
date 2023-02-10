@@ -7,6 +7,7 @@
     "adc_dac_hw_loppback": false,
     "adc_dac_sw_loppback": true,
     "integrator_mode": "hw",
-    "num_iterations": 2,
+    "num_iterations": 5,
+    "hw_offset_map_path": "../hw/hw_offset_sanity.json",
     "debug": false
 }

@@ -32,7 +32,7 @@ class Wave:
             newFreq = 1 / (((1 / samplingFreq) * numSamples) / numCycles)
 
         stepSize = 360.0 / (numSamples / numCycles)
-        phaseRads = (math.pi / 360.0) * phaseDegrees
+        phaseRads = ((2*math.pi) / 360.0) * phaseDegrees
 
         print("Adjusted Frequency:          {} Hz".format(newFreq))
         print("Calculated Amplitude: {}".format(amplitude))
@@ -45,15 +45,15 @@ class Wave:
             buffer[i] = int(val)
 
         return buffer
-    
+
     def setSaw(self, NumBytes, sampleSize):
         numSamples = int(NumBytes / sampleSize)
         buffer = np.empty(numSamples, dtype=np.int16)
         for i in range(numSamples):
             buffer[i] = int(i)
-        
+
         return buffer
-        
+
 
     def strNegative(self, s):
         s = "minus_" + str(-s) if (s < 0) else str(s)

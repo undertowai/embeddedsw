@@ -9,6 +9,7 @@ $py ../dac/player.py --tone 6000000 --pstep 90
 run_test () {
     test_setup $1
     $py test_sanity_1.py $1
+    [[ $? != 0 ]] && exit 1
 }
 
 echo "****************** checking RAW data ******************"

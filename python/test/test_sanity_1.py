@@ -56,13 +56,11 @@ class Test_Sanity_1(TestSuite):
             wDwellOffset = random.randint(wDwellOffsetMin, wDwellOffsetMax)
             print(f'[RAW] Iteration: rxn={rxn}, window offset={wDwellOffset}, window size={wDwellWindow}')
 
-            hwOffsetSamples = 8
-
             wOffset = self.dwell_samples * wDwellOffset
             wSize = self.dwell_samples * wDwellWindow
 
-            I = self.xddr_read(aI, sI, dtype, hwOffsetSamples)
-            Q = self.xddr_read(aQ, sQ, dtype, hwOffsetSamples)
+            I = self.xddr_read(aI, sI, dtype)
+            Q = self.xddr_read(aQ, sQ, dtype)
 
             Iw = I[wOffset:wOffset+wSize]
             Qw = Q[wOffset:wOffset+wSize]
@@ -84,10 +82,8 @@ class Test_Sanity_1(TestSuite):
             wDwellWindow = self.getDwellWindowPeriods()
             print(f'[INTEGRATED] Iteration: rxn={rxn}')
 
-            hwOffsetSamples = 8 if self.isIntegratorSwMode() else 0
-
-            I = self.xddr_read(aI, sI, dtype, hwOffsetSamples)
-            Q = self.xddr_read(aQ, sQ, dtype, hwOffsetSamples)
+            I = self.xddr_read(aI, sI, dtype)
+            Q = self.xddr_read(aQ, sQ, dtype)
 
             bramI, bramQ = self.getBramData(rxn, wDwellWindow)
 
@@ -104,6 +100,8 @@ class Test_Sanity_1(TestSuite):
         rx_dma_map = self.map_rx_to_dma_id(self.rx)
 
         self.adc_dac_sync(False)
+        self.start_dma(rx_dma_map)
+
         self.apply_hw_delay_per_tx(self.tx[0])
         area = self.start_dma(rx_dma_map)
         self.adc_dac_sync(True)
@@ -115,16 +113,6 @@ class Test_Sanity_1(TestSuite):
         else:
             self.proc_cap_data_raw(area)
 
-    @TestSuite.Test
-    def warm_up(self):
-        print('Warming up...')
-
-        rx_dma_map = self.map_rx_to_dma_id(self.rx)
-
-        self.start_dma(rx_dma_map)
-        self.adc_dac_sync(True)
-        self.wait_capture_done()
-
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print(f"Usage: {sys.argv[0]} <config.json path>")
@@ -134,7 +122,6 @@ if __name__ == "__main__":
 
     test = Test_Sanity_1(config_path)
 
-    test.warm_up()
     for i in range(test.num_iterations):
         print(f'Iteration {i}')
         test.run_test()
