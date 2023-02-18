@@ -3,12 +3,9 @@ import ctypes as ct
 import numpy as np
 import json
 
-sys.path.append("../misc")
-sys.path.append("../axi")
-
-from make import Make
-from mlock import MLock
-from gpio import AxiGpio
+from zcu216.misc.make import Make
+from zcu216.misc.mlock import MLock
+from zcu216.axi.gpio  import AxiGpio
 
 def load_json(path):
     with open(path, 'r') as f:

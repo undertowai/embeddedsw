@@ -2,12 +2,9 @@ import sys, argparse
 import ctypes as ct
 import os
 
-sys.path.append("../misc")
-
-from dts import Dts
-from make import Make
-from mlock import MLock
-
+from zcu216.misc.dts import Dts
+from zcu216.misc.make import Make
+from zcu216.misc.mlock import MLock
 
 class Gpio(MLock):
     def __init__(self, lib, ipName):

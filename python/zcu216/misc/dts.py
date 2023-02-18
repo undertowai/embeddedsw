@@ -1,6 +1,7 @@
+from pathlib import Path
 import subprocess
 import numpy as np
-
+import glob
 
 class Dts:
     IP_SYMBOLS_PATH = "/proc/device-tree/__symbols__"
@@ -10,7 +11,11 @@ class Dts:
         pass
 
     def __readIp(self, ip):
-        with open(self.IP_SYMBOLS_PATH + "/" + ip) as f:
+        # Use glob to find the IP with variation between the prefix and IP name
+        # adding hierarchy inside the block design will change the prefix before the ip 
+        ip_path = glob.glob(self.IP_SYMBOLS_PATH+ "/" + "*" + ip)
+        print("__readIP: Found %s as %s" % (ip, ip_path))
+        with open(ip_path[0]) as f:
             out = f.read().replace("\x00", "").split("/")
             f.close()
         return out
