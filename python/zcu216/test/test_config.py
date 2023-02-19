@@ -2,9 +2,7 @@ import sys
 
 import json
 
-sys.path.append("../hw")
-
-from hw import Hw
+from zcu216.hw.hw import Hw
 
 class TestConfig(Hw):
     num_iterations: int = 1

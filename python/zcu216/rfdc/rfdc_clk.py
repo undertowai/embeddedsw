@@ -2,10 +2,8 @@
 import sys, argparse
 import json
 
-sys.path.append("../lmx")
-
-from rfdc import Rfdc
-from TICS import read as TICSread
+from .rfdc import Rfdc
+from zcu216.lmx.TICS import read as TICSread
 
 def load_json(path):
     with open(path, 'r') as f:
