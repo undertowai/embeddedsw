@@ -2,10 +2,13 @@ import os
 
 
 class Make:
-    DRIVERS_PATH = "../../XilinxProcessorIPLib/drivers"
     METALAPI_LIB_PATH = "lmetal/src"
 
     def __init__(self):
+        # Needs XILINX_IP_PATH to be a directory path to XilinxProcessorIPLib
+        self.XilinxIPRoot = os.environ["XILINX_IP_PATH"]
+        self.DRIVERS_PATH = self.XilinxIPRoot + "/drivers"
+        assert(self.XilinxIPRoot != None)
         pass
 
     def __MakeMetal(self):

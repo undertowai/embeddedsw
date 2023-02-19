@@ -1,9 +1,7 @@
 import sys
 import os
 
-sys.path.append("../misc")
-
-from dts import Dts
+from zcu216.misc.dts import Dts
 
 class AxisSwitch:
     def __init__(self, ipName):

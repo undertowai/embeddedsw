@@ -5,13 +5,10 @@ import numpy as np
 
 from TICS import read as TICSread
 
-sys.path.append("../misc")
-sys.path.append("../axi")
-
-from dts import Dts
-from make import Make
-from gpio import AxiGpio
-from mlock import MLock
+from zcu216.misc.dts import Dts
+from zcu216.misc.make import Make
+from zcu216.axi.gpio import AxiGpio
+from zcu216.misc.mlock import MLock
 
 
 class Lmx2820(MLock, AxiGpio):

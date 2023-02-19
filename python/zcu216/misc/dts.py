@@ -14,6 +14,7 @@ class Dts:
         # Use glob to find the IP with variation between the prefix and IP name
         # adding hierarchy inside the block design will change the prefix before the ip 
         ip_path = glob.glob(self.IP_SYMBOLS_PATH+ "/" + "*" + ip)
+        assert(len(ip_path) == 1)
         print("__readIP: Found %s as %s" % (ip, ip_path))
         with open(ip_path[0]) as f:
             out = f.read().replace("\x00", "").split("/")
