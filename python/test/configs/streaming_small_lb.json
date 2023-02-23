@@ -7,6 +7,7 @@
     "adc_dac_hw_loppback": true,
     "adc_dac_sw_loppback": true,
     "integrator_mode": "bypass",
+    "integrator_type": "ofdm",
     "num_iterations": 300,
     "debug": false
 }

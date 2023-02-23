@@ -42,6 +42,7 @@ class Integrator(IntegratorHwIf):
         self.num_samples = num_samples
         self.num_periods = num_periods
         self.window = window
+        self.integrator_type = 'ofdm'
 
         if self.debug:
             print(f'Integrator settings : mode={mode}, num_samples={num_samples}, num_periods={num_periods} window={window}')
@@ -71,8 +72,25 @@ class Integrator(IntegratorHwIf):
         data = np.mean(data, axis=0, dtype=np.int32)
         return data
 
+    def __do_sw_integration_ofdm(self, data):
+
+        num_samples_in_ofdm = 512
+        num_ofdm_periods = 64
+        num_periods = data.size // (num_samples_in_ofdm * num_ofdm_periods)
+
+        data = np.asarray(data, dtype=np.int32)
+
+        shape = (num_periods, num_ofdm_periods, num_samples_in_ofdm)
+        data = np.reshape(data, shape)
+        data = np.mean(data, axis=1, dtype=np.int32)
+
+        return data.flatten()
+
     def do_integration(self, data):
         if self.mode != 'sw':
             return data
         else:
-            return self.__do_sw_integration(data)
+            if self.integrator_type == 'dwell':
+                return self.__do_sw_integration(data)
+            elif self.Integrator_type == 'ofdm':
+                return self.__do_sw_integration_ofdm(data)

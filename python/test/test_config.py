@@ -18,6 +18,7 @@ class TestConfig(Hw):
     dwell_window: int = 2
 
     integrator_mode: str = "bypass" #'hw', 'sw', 'bypass'
+    integrator_type: str = "ofdm" # 'ofdm', 'dwell'
 
     offset_map: dict = {}
 
@@ -46,6 +47,7 @@ class TestConfig(Hw):
         assert self.integrator_mode in ['sw', 'hw', 'bypass']
 
         if self.integrator_mode == 'hw':
+            assert self.integrator_type in ['dwell'], f"OFDM integrator type not yet implemented in hw"
             assert self.dwell_window == self.HW_INTEGRATOR_WINDOW_SIZE, f'For integrator HW mode dwell_window size must be {self.HW_INTEGRATOR_WINDOW_SIZE}'
 
     def load_json(self, path):
