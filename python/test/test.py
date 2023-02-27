@@ -58,7 +58,7 @@ class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
 
         self.gpio_sync = self.getGpio("adc_dac_sync_gpio_0")
 
-        self.integrator = Integrator(self.integrator_mode, self.dwell_samples, self.dwell_num, self.dwell_window, self.debug)
+        self.integrator = Integrator(self)
 
         self.set_loopback(self.adc_dac_sw_loppback)
 
@@ -98,6 +98,7 @@ class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
         self.dma.startTransfer(devName=devName, addr=addr, len=size)
 
     def start_dma(self, rx_dma_map):
+        dmaBatch = []
         area = {}
         size = self.getCaptureSizePerDma()
         for _ddr in rx_dma_map.keys():
@@ -113,11 +114,23 @@ class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
 
                 addrI = addr
                 addrQ = addr + size
-                self.__start_dma(dma_id[0], addrI, size)
-                self.__start_dma(dma_id[1], addrQ, size)
+                if not self.dma_mode_batched:
+                    self.__start_dma(dma_id[0], addrI, size)
+                    self.__start_dma(dma_id[1], addrQ, size)
+                else:
+                    if self.debug:
+                        print(f'dmaBatch: {self.dma.devIdToIpName(dma_id[0])}, addr={hex(addrI)}, size={hex(size)}')
+                        print(f'dmaBatch: {self.dma.devIdToIpName(dma_id[1])}, addr={hex(addrI)}, size={hex(size)}')
+
+                    dmaBatch.append( ( self.dma.devIdToIpName(dma_id[0]), addrI, size ) )
+                    dmaBatch.append( ( self.dma.devIdToIpName(dma_id[1]), addrQ, size ) )
 
                 addr = addrQ + size
                 area[rxn] = {"I": (addrI, size), "Q": (addrQ, size)}
+
+        if self.dma_mode_batched:
+            self.dma.startTransferBatched(dmaBatch=dmaBatch)
+
         return area
 
     def wait_capture_done(self):

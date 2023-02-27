@@ -63,11 +63,14 @@ if __name__ == "__main__":
     argparser.add_argument('--dump_adc', help='Dump reg file from <N> TIle according to the rfdc_tile_reg_map.json', type=int)
     argparser.add_argument('--dump_dac', help='Dump reg file from <N> TIle according to the rfdc_tile_reg_map.json', type=int)
     argparser.add_argument('--dump_ip', help='Dump rfdc reg file according to rfdc_reg_map.json', action='store_true')
+    argparser.add_argument('--get_fs', help='Get Sampling Frequency', action='store_true')
 
     args  = argparser.parse_args()
 
     rfdc_clk = RfdcClk()
 
+    if args.get_fs is not False:
+        print(f'Sampling Frequency : {rfdc_clk.rfdc.getSamplingFrequency()} Hz')
     if args.dump_ip is not False:
         print('Dumping rfdc IP:')
         regs = rfdc_clk.rfdc.readRegAll()

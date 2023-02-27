@@ -13,13 +13,14 @@ class TestConfig(Hw):
     adc_dac_hw_loppback: bool = False
     adc_dac_sw_loppback: bool = False
 
-    dwell_samples: int = 0
-    dwell_num: int = 0
-    dwell_window: int = 2
+    samples_in_unit: int = 0
+    integrator_depth: int = 0
+    dwell_in_stream: int = 2
 
     integrator_mode: str = "bypass" #'hw', 'sw', 'bypass'
     integrator_type: str = "ofdm" # 'ofdm', 'dwell'
 
+    units_in_dwell: int  = 1
     offset_map: dict = {}
 
     rx: list = []
@@ -30,6 +31,7 @@ class TestConfig(Hw):
     rf_power_cfg_path: str = '../hmc/configs/rf_power.json'
 
     debug: bool = False
+    dma_mode_batched: bool = True
 
     def init_attrs(self, obj, config_json_path):
         j = self.load_json(config_json_path)
@@ -43,12 +45,6 @@ class TestConfig(Hw):
         #TODO: Find another way to get path
         self.rf_power = self.load_json(self.rf_power_cfg_path)
         self.hw_offset_map = self.load_json(self.hw_offset_map_path)
-
-        assert self.integrator_mode in ['sw', 'hw', 'bypass']
-
-        if self.integrator_mode == 'hw':
-            assert self.integrator_type in ['dwell'], f"OFDM integrator type not yet implemented in hw"
-            assert self.dwell_window == self.HW_INTEGRATOR_WINDOW_SIZE, f'For integrator HW mode dwell_window size must be {self.HW_INTEGRATOR_WINDOW_SIZE}'
 
     def load_json(self, path):
         with open(path, 'r') as f:
@@ -83,10 +79,10 @@ class TestConfig(Hw):
         return self.integrator_mode != 'bypass'
 
     def getDwellWindowPeriods(self):
-        return self.dwell_window
+        return self.dwell_in_stream
 
     def getStreamSizeSamples(self):
-        return int(self.dwell_samples * self.dwell_num)
+        return int(self.samples_in_unit * self.integrator_depth * self.units_in_dwell)
 
     def __getStreamSizeBytes(self):
         capture_num_samples = self.getStreamSizeSamples()
@@ -97,17 +93,36 @@ class TestConfig(Hw):
         return self.__alignToCpuPage(capture_size_bytes)
 
     def getDwellCaptureWindowSizeSamples(self):
-        return int(self.dwell_samples * self.dwell_window)
+        return int(self.samples_in_unit * self.dwell_in_stream)
+
+    def getOfdmCaptureWindowSizeSamples(self):
+        return int(self.samples_in_unit * self.units_in_dwell * self.dwell_in_stream)
 
     def getDwellCaptureWindowSizebytes(self):
         capture_size_bytes = int(self.getDwellCaptureWindowSizeSamples() * self.BYTES_PER_SAMPLE)
         return self.__alignToCpuPage(capture_size_bytes)
 
+    def getOfdmCaptureWindowSizebytes(self):
+        capture_size_bytes = int(self.getOfdmCaptureWindowSizeSamples() * self.BYTES_PER_SAMPLE)
+        return self.__alignToCpuPage(capture_size_bytes)
+
     def getCaptureSizePerDma(self):
         if self.integrator_mode == 'hw':
-            return self.getDwellCaptureWindowSizebytes()
+            if self.integrator_type == 'ofdm':
+                return self.getOfdmCaptureWindowSizebytes()
+            else:
+                return self.getDwellCaptureWindowSizebytes()
         else:
             return self.getStreamSizeBytesPerDma()
+
+    def getDdrCaptureSizeSamples(self):
+        if self.integrator_mode == 'hw':
+            if self.integrator_type == 'ofdm':
+                return self.getOfdmCaptureWindowSizeSamples()
+            else:
+                return self.getDwellCaptureWindowSizeSamples()
+        else:
+            return self.getStreamSizeSamples()
 
     def getCaptureTimeForBytes(self, captureSize):
         numCaptures = 0x1
@@ -115,9 +130,3 @@ class TestConfig(Hw):
         numSamples = batchSize / (self.BYTES_PER_SAMPLE)
         t = numSamples / self.samplingFreq
         return t
-
-    def getDdrCaptureSizeSamples(self):
-        if self.integrator_mode == 'hw':
-            return self.getDwellCaptureWindowSizeSamples()
-        else:
-            return self.getStreamSizeSamples()

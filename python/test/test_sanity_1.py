@@ -51,13 +51,13 @@ class Test_Sanity_1(TestSuite):
             aQ, sQ = a["Q"]
 
             wDwellWindow = self.getDwellWindowPeriods()
-            wDwellOffsetMax = self.dwell_num - wDwellWindow
+            wDwellOffsetMax = self.integrator_depth - wDwellWindow
             wDwellOffsetMin = 0
             wDwellOffset = random.randint(wDwellOffsetMin, wDwellOffsetMax)
             print(f'[RAW] Iteration: rxn={rxn}, window offset={wDwellOffset}, window size={wDwellWindow}')
 
-            wOffset = self.dwell_samples * wDwellOffset
-            wSize = self.dwell_samples * wDwellWindow
+            wOffset = self.samples_in_unit * wDwellOffset
+            wSize = self.samples_in_unit * wDwellWindow
 
             I = self.xddr_read(aI, sI, dtype)
             Q = self.xddr_read(aQ, sQ, dtype)

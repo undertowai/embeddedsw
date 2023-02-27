@@ -1,8 +1,8 @@
 {
     "rx": [0, 1, 2, 3, 4, 5, 6, 7],
     "tx": [0],
-    "dwell_samples": 65536,
-    "dwell_num": 128,
+    "samples_in_unit": 65536,
+    "integrator_depth": 128,
     "cap_ddr_offset": 0,
     "adc_dac_hw_loppback": false,
     "adc_dac_sw_loppback": false

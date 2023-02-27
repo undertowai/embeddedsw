@@ -117,6 +117,38 @@ int XDMA_StartTransfer(const char *DevName, u32 addr_hi, u32 addr_lo, u64 len)
     return Status;
 }
 
+
+int XDMA_StartTransferBatched(const char **DevName, u64 *addr, u64 *len, u32 num_inst)
+{
+	int Status = XST_FAILURE;
+    XAxiDma Dma = {0};
+
+    _metal_init();
+
+	while(num_inst) {
+
+		if (XST_SUCCESS != Xdma_Init(&Dma, *DevName)) {
+			break;
+		}
+
+		Status = XAxiDma_SimpleTransfer(&Dma, *addr, *len, XAXIDMA_DEVICE_TO_DMA);
+		if (XST_SUCCESS != Status) {
+			printf("XDMA_StartTransferBatched Failed : %d\r\n", Status);
+			break;
+		}
+
+		//printf("XDMA_StartTransferBatched: Started transfer : %s: %p %p\r\n", *DevName, (void *)*addr, (void *)*len);
+
+		metal_device_close(Dma.device);
+		DevName++;
+		addr++;
+		len++;
+		num_inst--;
+	}
+	metal_finish();
+    return Status;
+}
+
 int XDMA_Reset(const char *DevName)
 {
     XAxiDma Dma = {0};

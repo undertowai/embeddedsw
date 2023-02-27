@@ -113,7 +113,7 @@ class DacPlayer(AxiGpio):
 
         buffer = np.empty(p.buffersCount * p.numSamples, dtype=p.dtype)
 
-        tone = Wave().setSaw( p.numBytes, p.sampleSize )
+        tone = Wave().setTriangle( p.numSamples, 512 )
 
         for i in range(p.buffersCount):
 

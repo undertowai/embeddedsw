@@ -1,12 +1,12 @@
 {
     "rx": [4, 5, 6, 7],
     "tx": [4],
-    "dwell_samples": 65536,
-    "dwell_num": 256,
-    "dwell_window": 1,
+    "samples_in_unit": 65536,
+    "integrator_depth": 256,
+    "dwell_in_stream": 2,
     "adc_dac_hw_loppback": false,
     "adc_dac_sw_loppback": false,
-    "integrator_mode": "bypass",
-    "num_iterations": 300,
+    "integrator_mode": "sw",
+    "num_iterations": 10,
     "debug": false
 }

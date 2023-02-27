@@ -8,44 +8,44 @@
 #include <metal_api.h>
 #include <xstatus.h>
 
-static void dsell_sub_sum(s32 *dst, s16 *dwell, u32 dwell_samples)
+static void dsell_sub_sum(s32 *dst, s16 *dwell, u32 samples_in_unit)
 {
     u32 i = 0;
-    for (; i < dwell_samples; i++) {
+    for (; i < samples_in_unit; i++) {
         dst[i] += dwell[i];
         if ((i > 65512 - 10) && (i < 65512 + 10))
         printf("i=%d: dst=%d, d=%d\r\n", i, dst[i], dwell[i]);
     }
 }
 
-static void dsell_sub_avg(s32 *dst, u32 dwell_samples, u32 dwell_num)
+static void dsell_sub_avg(s32 *dst, u32 samples_in_unit, u32 integrator_depth)
 {
     u32 i = 0;
-    for (; i < dwell_samples; i++) {
+    for (; i < samples_in_unit; i++) {
 
         if ((i > 65512 - 10) && (i < 65512 + 10))
             printf("Before avg : i=%d: dst=%d\r\n", i, dst[i]);
 
 
-        dst[i] = dst[i] / (s32)dwell_num;
+        dst[i] = dst[i] / (s32)integrator_depth;
 
         if ((i > 65512  - 10) && (i < 65512 + 10))
             printf("i=%d: dst=%d\r\n", i, dst[i]);
     }
 }
 
-int dwell_avg (s32 *dst, u32 ddr_addr_hi, u32 ddr_addr_lo, u32 dwell_offset, u32 dwell_samples, u32 dwell_num)
+int dwell_avg (s32 *dst, u32 ddr_addr_hi, u32 ddr_addr_lo, u32 dwell_offset, u32 samples_in_unit, u32 integrator_depth)
 {
     u64 ddr_addr = (u64)ddr_addr_lo | ((u64)ddr_addr_hi << 32);
     const u32 bytes_per_sample = 2;
-    u64 ddr_bytes = (dwell_num * dwell_samples + dwell_offset) * bytes_per_sample;
+    u64 ddr_bytes = (integrator_depth * samples_in_unit + dwell_offset) * bytes_per_sample;
     u32 i;
     s16 *dwell_ptr;
 
     ddr_bytes = (((ddr_bytes - 1) / _SC_PAGE_SIZE) + 1) * _SC_PAGE_SIZE;
 
-    printf("dwell_avg: ddr_addr=%p, ddr_bytes=%d, dwell_offset=%d, dwell_samples=%d, dwell_num=%d\r\n",
-        (void *)ddr_addr, ddr_bytes, dwell_offset, dwell_samples, dwell_num);
+    printf("dwell_avg: ddr_addr=%p, ddr_bytes=%d, dwell_offset=%d, samples_in_unit=%d, integrator_depth=%d\r\n",
+        (void *)ddr_addr, ddr_bytes, dwell_offset, samples_in_unit, integrator_depth);
 
     int fd = open("/dev/mem", O_SYNC);
     unsigned char *ddr_mem = mmap(NULL, ddr_bytes, PROT_READ, MAP_SHARED, fd, ddr_addr);
@@ -55,15 +55,15 @@ int dwell_avg (s32 *dst, u32 ddr_addr_hi, u32 ddr_addr_lo, u32 dwell_offset, u32
         return -1;
     }
 
-    memset(dst, 0, dwell_samples * sizeof(s32));
+    memset(dst, 0, samples_in_unit * sizeof(s32));
 
     dwell_ptr = (s16 *)ddr_mem;
     dwell_ptr += dwell_offset;
-    for (i = 0; i < dwell_num; i++) {
-        dsell_sub_sum(dst, dwell_ptr, dwell_samples);
-        dwell_ptr += dwell_samples;
+    for (i = 0; i < integrator_depth; i++) {
+        dsell_sub_sum(dst, dwell_ptr, samples_in_unit);
+        dwell_ptr += samples_in_unit;
     }
-    dsell_sub_avg(dst, dwell_samples, dwell_num);
+    dsell_sub_avg(dst, samples_in_unit, integrator_depth);
     close(fd);
     return 0;
 }

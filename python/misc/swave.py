@@ -46,14 +46,24 @@ class Wave:
 
         return buffer
 
-    def setSaw(self, NumBytes, sampleSize):
-        numSamples = int(NumBytes / sampleSize)
+    def setSaw(self, numSampels):
         buffer = np.empty(numSamples, dtype=np.int16)
         for i in range(numSamples):
             buffer[i] = int(i)
 
         return buffer
 
+    def setTriangle(self, numSamples, period):
+
+        buffer = np.empty(numSamples, dtype=np.int16)
+
+        for i in range(1, numSamples//period, 2):
+            for j in range(period):
+                buffer[(i-1)*period + j] = j - period//2 + 40
+            for j in range(period):
+                buffer[i*period + j] = period//2 - j
+
+        return buffer
 
     def strNegative(self, s):
         s = "minus_" + str(-s) if (s < 0) else str(s)
