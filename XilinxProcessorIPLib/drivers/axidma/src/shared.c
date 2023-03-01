@@ -118,7 +118,7 @@ int XDMA_StartTransfer(const char *DevName, u32 addr_hi, u32 addr_lo, u64 len)
 }
 
 
-int XDMA_StartTransferBatched(const char **DevName, u64 *addr, u64 *len, u32 num_inst)
+int XDMA_StartTransferBatched(const char **DevName, u64 *addr, u64 *len, u32 num_inst, uint32_t debug)
 {
 	int Status = XST_FAILURE;
     XAxiDma Dma = {0};
@@ -137,7 +137,8 @@ int XDMA_StartTransferBatched(const char **DevName, u64 *addr, u64 *len, u32 num
 			break;
 		}
 
-		//printf("XDMA_StartTransferBatched: Started transfer : %s: %p %p\r\n", *DevName, (void *)*addr, (void *)*len);
+		if (debug)
+			printf("XDMA_StartTransferBatched: Started transfer : %s: %p %p\r\n", *DevName, (void *)*addr, (void *)*len);
 
 		metal_device_close(Dma.device);
 		DevName++;

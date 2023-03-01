@@ -31,6 +31,8 @@ class Gpio(MLock):
     def get(self):
         raise Exception("Not yet implemented")
 
+    def getDtsName(self):
+        return self.devName
 
 class AxiGpio:
     def __init__(self, libName):

@@ -9,6 +9,7 @@ sys.path.append("../rfdc")
 sys.path.append("../xddr")
 sys.path.append("../dac")
 sys.path.append("../misc")
+sys.path.append("../main")
 
 from hmc import HMC63xx
 from axidma import AxiDma
@@ -16,6 +17,7 @@ from xddr import Xddr
 from rfdc_clk import RfdcClk
 from gpio import AxiGpio
 from axis_switch import AxisSwitch
+from main import MainLoop
 
 from inet import Inet
 from test_config import TestConfig
@@ -58,6 +60,8 @@ class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
 
         self.gpio_sync = self.getGpio("adc_dac_sync_gpio_0")
 
+        self.c_loop = MainLoop('zmqpub')
+
         self.integrator = Integrator(self)
 
         self.set_loopback(self.adc_dac_sw_loppback)
@@ -97,7 +101,8 @@ class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
             print(f'__start_dma: {devName}, addr={hex(addr)}, size={hex(size)}')
         self.dma.startTransfer(devName=devName, addr=addr, len=size)
 
-    def start_dma(self, rx_dma_map):
+
+    def prep_dma_batched(self, rx_dma_map):
         dmaBatch = []
         area = {}
         size = self.getCaptureSizePerDma()
@@ -114,29 +119,30 @@ class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
 
                 addrI = addr
                 addrQ = addr + size
-                if not self.dma_mode_batched:
-                    self.__start_dma(dma_id[0], addrI, size)
-                    self.__start_dma(dma_id[1], addrQ, size)
-                else:
-                    if self.debug:
-                        print(f'dmaBatch: {self.dma.devIdToIpName(dma_id[0])}, addr={hex(addrI)}, size={hex(size)}')
-                        print(f'dmaBatch: {self.dma.devIdToIpName(dma_id[1])}, addr={hex(addrI)}, size={hex(size)}')
+                if self.debug:
+                    print(f'dmaBatch: {self.dma.devIdToIpName(dma_id[0])}, addr={hex(addrI)}, size={hex(size)}')
+                    print(f'dmaBatch: {self.dma.devIdToIpName(dma_id[1])}, addr={hex(addrI)}, size={hex(size)}')
 
-                    dmaBatch.append( ( self.dma.devIdToIpName(dma_id[0]), addrI, size ) )
-                    dmaBatch.append( ( self.dma.devIdToIpName(dma_id[1]), addrQ, size ) )
+                dmaBatch.append( ( self.dma.devIdToIpName(dma_id[0]), addrI, size ) )
+                dmaBatch.append( ( self.dma.devIdToIpName(dma_id[1]), addrQ, size ) )
 
                 addr = addrQ + size
                 area[rxn] = {"I": (addrI, size), "Q": (addrQ, size)}
+        return dmaBatch, area
 
-        if self.dma_mode_batched:
-            self.dma.startTransferBatched(dmaBatch=dmaBatch)
+    def start_dma(self, rx_dma_map):
+        dmaBatch, area = self.prep_dma_batched(rx_dma_map)
+        self.dma.startTransferBatched(dmaBatch=dmaBatch)
 
         return area
 
-    def wait_capture_done(self):
+    def calc_wait_time_ms(self):
         capture_size_bytes = self.getStreamSizeBytesPerDma()
         sleep_time = self.getCaptureTimeForBytes(capture_size_bytes)
-        sleep(sleep_time)
+        return int(sleep_time*1000)
+
+    def wait_capture_done(self):
+        sleep(self.calc_wait_time_ms()/1000)
 
     def xddr_read(self, addr, size, dtype):
         capture_samples = self.getDdrCaptureSizeSamples()

@@ -55,6 +55,28 @@ class Test_Streaming(TestSuite):
             sn += 1
             iter_count += 1
 
+    @TestSuite.Test
+    def run_test_c(self):
+        samplingFreq = self.rfdc.getSamplingFrequency()
+
+        assert len(self.tx) == 1
+        txn = self.tx[0]
+
+        rx_dma_map = self.map_rx_to_dma_id(self.rx)
+        dmaBacth, area = self.prep_dma_batched(rx_dma_map)
+
+        self.apply_hw_delay_per_tx(txn)
+
+        self.c_loop.init(port=self.PORT, topic=self.TOPIC_FILTER,
+                         sync_gpio_name=self.gpio_sync.getDtsName(),
+                         fs=samplingFreq,
+                         debug=self.debug)
+
+        self.c_loop.loop(dmaBatch=dmaBacth, wait_time=self.calc_wait_time_ms(),
+                         txn=txn, rx=self.rx)
+
+        self.c_loop.destroy()
+
 if __name__ == "__main__":
 
     if len(sys.argv) != 3:
@@ -67,9 +89,11 @@ if __name__ == "__main__":
     test = Test_Streaming(config_path)
 
     try:
-        test.run_test(
-            sn=sn
-        )
+        if not test.main_loop_in_c:
+            test.run_test(sn=sn)
+        else:
+            test.run_test_c()
+
     except KeyboardInterrupt:
         test.shutdown_hmc()
         sys.exit(-1)

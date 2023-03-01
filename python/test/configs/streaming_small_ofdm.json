@@ -5,11 +5,12 @@
     "dwell_in_stream": 2,
     "units_in_dwell": 128,
     "adc_dac_hw_loppback": false,
-    "adc_dac_sw_loppback": false,
+    "adc_dac_sw_loppback": true,
     "integrator_mode": "hw",
     "integrator_type": "ofdm",
     "integrator_depth": 256,
     "num_iterations": 300,
     "hw_offset_map_path": "../hw/hw_offset_null.json",
-    "debug": false
+    "main_loop_in_c": true,
+    "debug": true
 }

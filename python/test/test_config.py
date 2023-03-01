@@ -30,8 +30,8 @@ class TestConfig(Hw):
     hw_offset_map_path: str = '../hw/hw_offset.json'
     rf_power_cfg_path: str = '../hmc/configs/rf_power.json'
 
+    main_loop_in_c: bool = True
     debug: bool = False
-    dma_mode_batched: bool = True
 
     def init_attrs(self, obj, config_json_path):
         j = self.load_json(config_json_path)

@@ -4,13 +4,14 @@ import time
 import zmq
 
 class Inet:
-    TOPIC_FILTER = 10001
-    PORT = 5556
+    TOPIC_FILTER = "10001"
+    PORT = "5556"
 
     def __init__(self):
-        context = zmq.Context()
-        self.publisher = context.socket(zmq.PUB)
-        self.publisher.bind("tcp://0.0.0.0:%s" % self.PORT)
+        if not self.main_loop_in_c:
+            context = zmq.Context()
+            self.publisher = context.socket(zmq.PUB)
+            self.publisher.bind("tcp://0.0.0.0:%s" % self.PORT)
 
     def publish(self, seq_idx, tx_idx, sampling_freq, frequency, rx_array, rx_iq_data):
         self.publisher.send_multipart(
