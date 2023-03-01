@@ -8,9 +8,9 @@
     "adc_dac_sw_loppback": true,
     "integrator_mode": "hw",
     "integrator_type": "ofdm",
-    "integrator_depth": 256,
+    "integrator_depth": 8,
     "num_iterations": 300,
-    "hw_offset_map_path": "../hw/hw_offset_null.json",
+    "hw_offset_map_path": "../hw/hw_offset.json",
     "main_loop_in_c": true,
     "debug": true
 }

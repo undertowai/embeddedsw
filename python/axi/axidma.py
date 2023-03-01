@@ -57,7 +57,8 @@ class AxiDma(MLock):
             name_arr,
             addr_arr,
             size_arr,
-            len(name_arr)
+            len(name_arr),
+            int(0)
         )
 
         assert status == 0

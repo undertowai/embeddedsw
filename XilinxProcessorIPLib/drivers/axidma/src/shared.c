@@ -150,13 +150,66 @@ int XDMA_StartTransferBatched(const char **DevName, u64 *addr, u64 *len, u32 num
     return Status;
 }
 
+int XDMA_StartTransferBatched_NoMetal(void *dma_inst_pool, uint64_t *addr, uint64_t *len, uint32_t num_inst, uint32_t debug)
+{
+	int Status = XST_FAILURE;
+    XAxiDma *Dma = (XAxiDma *)dma_inst_pool;
+
+	for (int i = 0; i < num_inst; i++) {
+
+		XAxiDma_Reset(&Dma[i]);
+		Status = XAxiDma_SimpleTransfer(&Dma[i], *addr, *len, XAXIDMA_DEVICE_TO_DMA);
+		if (XST_SUCCESS != Status) {
+			printf("XDMA_StartTransferBatched_NoMetal Failed : %d\r\n", Status);
+			break;
+		}
+
+		if (debug)
+			printf("XDMA_StartTransferBatched_NoMetal: Started transfer : %d %p %p\r\n", i, (void *)*addr, (void *)*len);
+
+		addr++;
+		len++;
+	}
+    return Status;
+}
+
+int XDMA_InitBatched(void **dma_inst_pool, const char **inst_names, uint32_t num_inst)
+{
+	int Status = XST_FAILURE;
+    XAxiDma *Dma = malloc(sizeof(XAxiDma) * num_inst);
+
+	if (!Dma) {
+		return Status;
+	}
+	*dma_inst_pool = Dma;
+
+	for (int i = 0; i < num_inst; i++) {
+
+		Status = Xdma_Init(&Dma[i], inst_names[i]);
+		if (XST_SUCCESS != Status) {
+			break;
+		}
+	}
+    return Status;
+}
+
+int XDMA_FinishBatched(void *dma_inst_pool, uint32_t num_inst)
+{
+	XAxiDma *Dma = (XAxiDma *)dma_inst_pool;
+	for (int i = 0; i < num_inst; i++) {
+		metal_device_close(Dma[i].device);
+	}
+	free(dma_inst_pool);
+    return XST_SUCCESS;
+}
+
 int XDMA_Reset(const char *DevName)
 {
     XAxiDma Dma = {0};
     _metal_init();
 
     if (XST_SUCCESS != Xdma_Init(&Dma, DevName)) {
-        return -XST_FAILURE;
+        return XST_FAILURE;
     }
 
     XAxiDma_Reset(&Dma);
