@@ -17,11 +17,11 @@ from xddr import Xddr
 from rfdc_clk import RfdcClk
 from gpio import AxiGpio
 from axis_switch import AxisSwitch
-from main import MainLoop
+from main import MainLoopExt, MainLoopPython
 
 from inet import Inet
 from test_config import TestConfig
-from integrator import Integrator, IntegratorHwIf
+from integrator import Integrator
 
 class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
 
@@ -60,7 +60,8 @@ class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
 
         self.gpio_sync = self.getGpio("adc_dac_sync_gpio_0")
 
-        self.c_loop = MainLoop('zmqpub')
+        self.ext_main_executor = MainLoopPython(self) \
+                                if self.ext_main_exec_lib == "" else MainLoopExt(self, self.ext_main_exec_lib)
 
         self.integrator = Integrator(self)
 
@@ -91,7 +92,7 @@ class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
         else:
             self.gpio_sync.set(val=0x0)
 
-    def apply_hw_delay_per_tx(self, txn):
+    def setup_integrator(self, txn):
         hw_del = self.getStreamHwOffset(txn)
         self.integrator.setup(hw_del)
 
@@ -102,13 +103,13 @@ class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
         self.dma.startTransfer(devName=devName, addr=addr, len=size)
 
 
-    def prep_dma_batched(self, rx_dma_map):
+    def prep_dma_batched(self, ddr_rx_dma_map):
         dmaBatch = []
         area = {}
         size = self.getCaptureSizePerDma()
-        for _ddr in rx_dma_map.keys():
-            ddr = getattr(self, _ddr)
-            rx_dma_id = rx_dma_map[_ddr]
+        for ddr_id in ddr_rx_dma_map:
+            ddr = getattr(self, f'ddr{ddr_id}')
+            rx_dma_id = ddr_rx_dma_map[ddr_id]
 
             base_address = ddr.base_address()
             addr = base_address
@@ -120,11 +121,11 @@ class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
                 addrI = addr
                 addrQ = addr + size
                 if self.debug:
-                    print(f'dmaBatch: {self.dma.devIdToIpName(dma_id[0])}, addr={hex(addrI)}, size={hex(size)}')
-                    print(f'dmaBatch: {self.dma.devIdToIpName(dma_id[1])}, addr={hex(addrI)}, size={hex(size)}')
+                    print(f'dmaBatch: {int(ddr_id), self.dma.devIdToIpName(dma_id[0])}, addr={hex(addrI)}, size={hex(size)}')
+                    print(f'dmaBatch: {int(ddr_id), self.dma.devIdToIpName(dma_id[1])}, addr={hex(addrI)}, size={hex(size)}')
 
-                dmaBatch.append( ( self.dma.devIdToIpName(dma_id[0]), addrI, size ) )
-                dmaBatch.append( ( self.dma.devIdToIpName(dma_id[1]), addrQ, size ) )
+                dmaBatch.append( ( int(ddr_id), self.dma.devIdToIpName(dma_id[0]), addrI, size ) )
+                dmaBatch.append( ( int(ddr_id), self.dma.devIdToIpName(dma_id[1]), addrQ, size ) )
 
                 addr = addrQ + size
                 area[rxn] = {"I": (addrI, size), "Q": (addrQ, size)}

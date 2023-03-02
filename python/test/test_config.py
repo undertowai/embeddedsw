@@ -29,8 +29,9 @@ class TestConfig(Hw):
 
     hw_offset_map_path: str = '../hw/hw_offset.json'
     rf_power_cfg_path: str = '../hmc/configs/rf_power.json'
+    rx_to_dma_map_path: str = '../hw/rx_to_dma_map.json'
 
-    main_loop_in_c: bool = True
+    ext_main_exec_lib: str = None
     debug: bool = False
 
     def init_attrs(self, obj, config_json_path):
@@ -42,7 +43,6 @@ class TestConfig(Hw):
     def __init__(self, config_json_path):
         self.init_attrs(self, config_json_path)
 
-        #TODO: Find another way to get path
         self.rf_power = self.load_json(self.rf_power_cfg_path)
         self.hw_offset_map = self.load_json(self.hw_offset_map_path)
 
@@ -53,11 +53,12 @@ class TestConfig(Hw):
         return j
 
     def map_rx_to_dma_id(self, rx):
-        rx_to_dma_map_path = '../hw/rx_to_dma_map.json'
-        j = self.load_json(rx_to_dma_map_path)
-        rx_dma_map = {"ddr0": [], "ddr1": []}
+
+        j = self.load_json(self.rx_to_dma_map_path)
+        rx_dma_map = {}
         for rxn in rx:
             m = j[f'rx{rxn}']
+            if m['ddr'] not in rx_dma_map: rx_dma_map[m['ddr']] = []
             rx_dma_map[m['ddr']].append( (rxn, m['dma']) )
 
         return rx_dma_map

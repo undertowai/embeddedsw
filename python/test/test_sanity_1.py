@@ -102,7 +102,7 @@ class Test_Sanity_1(TestSuite):
         self.adc_dac_sync(False)
         self.start_dma(rx_dma_map)
 
-        self.apply_hw_delay_per_tx(self.tx[0])
+        self.setup_integrator(self.tx[0])
         area = self.start_dma(rx_dma_map)
         self.adc_dac_sync(True)
 

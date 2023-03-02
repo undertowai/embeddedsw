@@ -4,8 +4,6 @@
 test="test_streaming_SIMO.py"
 export py=python
 
-. config.sh
-
 if [ $# -lt 1 ]; then
     echo "Usage $0 <config.json> [clk_config.json]"
     echo "Example: sudo ./run_streaming_SIMO.sh configs/streaming_large.json ../rfdc/configs/300MHz_RefClk_58G.json"

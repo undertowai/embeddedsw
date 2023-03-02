@@ -15,8 +15,6 @@ int ZmqInit(std::string port, std::string _topic)
     std::string addr("tcp://*:");
     addr += port;
 
-    std::cout << addr << std::endl;
-
     sock->bind(addr);
     const std::string last_endpoint = sock->get(zmq::sockopt::last_endpoint);
     std::cout << "Connecting to " << last_endpoint << std::endl;
@@ -40,9 +38,11 @@ int ZmqPublish(uint32_t sn,
     uint64_t sent_time = 0;
     uint32_t num_streams = rxn.size() * 2;
     std::vector<zmq::const_buffer> send_msgs;
+    const int VERSION = 2;
 
     {
         send_msgs.push_back(zmq::buffer(topic));
+        send_msgs.push_back(zmq::buffer(std::to_string(VERSION)));
         send_msgs.push_back(zmq::buffer(std::to_string(sn)));
         send_msgs.push_back(zmq::buffer(std::to_string(txn)));
         send_msgs.push_back(zmq::buffer(rxn));

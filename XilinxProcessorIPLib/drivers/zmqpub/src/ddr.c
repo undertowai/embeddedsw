@@ -5,21 +5,23 @@
 #include <unistd.h>
 #include <stdint.h>
 
-int ddr_read(void **ptr, uint64_t addr, uint32_t size)
+int ddr_map_start(void)
 {
-    int fd = open("/dev/mem", O_SYNC | O_RDWR);
-
-
-    *ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, addr);
-
-    if (*ptr == MAP_FAILED) {
-        printf("Can't map memory \r\n");
-        return -1;
-    }
-    return fd;
+    return open("/dev/mem", O_SYNC | O_RDWR);
 }
 
-void ddr_read_finish(int fd)
+void *ddr_map(int fd, uint64_t addr, uint32_t size)
+{
+    void *ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, addr);
+
+    if (ptr == MAP_FAILED) {
+        printf("Can't map memory \r\n");
+        return NULL;
+    }
+    return ptr;
+}
+
+void ddr_map_finish(int fd)
 {
     close(fd);
 }

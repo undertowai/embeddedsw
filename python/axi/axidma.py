@@ -46,7 +46,7 @@ class AxiDma(MLock):
         addr_arr = []
         size_arr = []
 
-        for n, a, s in self.dmaBatch:
+        for d, n, a, s in self.dmaBatch:
             name_arr.append(n.encode("UTF-8")), addr_arr.append(a), size_arr.append(s)
 
         name_arr = self.__to_c_array(ct.c_char_p, name_arr)

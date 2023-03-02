@@ -12,7 +12,8 @@ int MainLoopInit_cpp (const char *port,
 
 int MainLoopDestroy_cpp (void);
 
-int MainLoop_cpp (const char **dmaNameArray,
+int MainLoop_cpp (uint32_t *ddr_id_array,
+                const char **dmaNameArray,
                 uint64_t *dmaAddrArray,
                 uint64_t *dmaLenArray,
                 uint32_t dmaNumInst,

@@ -1,13 +1,15 @@
 #include <stdint.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "main.h"
 
 void siginthandler(int param)
 {
-    MainLoopDestroy();
-    exit(1);
+
+    printf("SIGINT caught, exiting ...\r\n");
+    exit(0);
 }
 
 int MainLoopInit (const char *port,
@@ -25,7 +27,8 @@ int MainLoopDestroy (void)
     return MainLoopDestroy_cpp();
 }
 
-int MainLoop (const char **dmaNameArray,
+int MainLoop (  uint32_t *ddr_id_array,
+                const char **dmaNameArray,
                 uint64_t *dmaAddrArray,
                 uint64_t *dmaLenArray,
                 uint32_t dmaNumInst,
@@ -34,5 +37,5 @@ int MainLoop (const char **dmaNameArray,
                 uint32_t *rxn,
                 uint32_t rxn_len)
 {
-    return MainLoop_cpp(dmaNameArray, dmaAddrArray, dmaLenArray, dmaNumInst, waitTimeMs, txn, rxn, rxn_len);
+    return MainLoop_cpp(ddr_id_array, dmaNameArray, dmaAddrArray, dmaLenArray, dmaNumInst, waitTimeMs, txn, rxn, rxn_len);
 }
