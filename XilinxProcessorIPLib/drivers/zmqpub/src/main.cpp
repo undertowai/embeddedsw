@@ -19,8 +19,9 @@ extern "C" {
     int XDMA_FinishBatched(void *dma_inst_pool, uint32_t num_inst);
     int XDMA_StartTransferBatched_NoMetal(void *dma_inst_pool, uint64_t *addr, uint64_t *len, uint32_t num_inst, uint32_t debug);
 
-    int AXI_Gpio_Set_NoMetal(const char *DevName, uint32_t val, uint32_t val2);
-    int AXI_Gpio_Set(const char *gpioName, uint32_t val, uint32_t val2);
+    int AXI_Gpio_Init_NoMetal(void **ptr, const char *DevName);
+    int AXI_Gpio_Finish_NoMetal(void *ptr);
+    int AXI_Gpio_Set_NoMetal(void *ptr, uint32_t val, uint32_t val2);
 
     int ddr_map_start(void);
     void *ddr_map(int fd, uint64_t addr, uint32_t size);
@@ -30,22 +31,25 @@ extern "C" {
     void metal_finish (void);
 };
 
-std::string sync_gpio_name;
 bool debug;
 uint32_t fs;
 void *dma_inst_pool;
+void *gpio_sync_ptr;
 uint32_t dma_inst_num;
 
 int MainLoopInit_cpp (const char *port,
                     const char *topic,
-                    const char *_sync_gpio_name,
+                    const char *sync_gpio_name,
                     uint32_t _fs,
                     uint32_t _debug)
 {
-    sync_gpio_name = _sync_gpio_name;
     fs = _fs;
     debug = _debug ? true : false;
     ZmqInit(port, topic);
+    _metal_init();
+    if (AXI_Gpio_Init_NoMetal(&gpio_sync_ptr, sync_gpio_name)) {
+        return -1;
+    }
 
     if (debug) {
         std::cout << "Port : " << port << std::endl;
@@ -59,6 +63,7 @@ int MainLoopDestroy_cpp (void)
 {
     ZmqDestroy();
     XDMA_FinishBatched(dma_inst_pool, dma_inst_num);
+    AXI_Gpio_Finish_NoMetal(gpio_sync_ptr);
     metal_finish();
     return 0;
 }
@@ -92,6 +97,16 @@ getDdrBounds(DDR_map_t &ddrMap, uint32_t ddr) {
     return { lowAddr, hiAddr - lowAddr };
 }
 
+template <typename T>
+void tstamp(T &t_start, std::string id)
+{
+    auto t_end = std::chrono::high_resolution_clock::now();
+    double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
+
+    std::cout << "Time taken for " << id << " :" << elapsed_time_ms << std::endl;
+    t_start = t_end;
+}
+
 int MainLoop_cpp (uint32_t *ddrIdArray,
                 const char **dmaNameArray,
                 uint64_t *dmaAddrArray,
@@ -113,7 +128,6 @@ int MainLoop_cpp (uint32_t *ddrIdArray,
 
     rxn_v.assign(rxn, rxn+rxn_len);
 
-    _metal_init();
     if (XDMA_InitBatched(&dma_inst_pool, dmaNameArray, dmaNumInst)) {
         return -1;
     }
@@ -131,17 +145,19 @@ int MainLoop_cpp (uint32_t *ddrIdArray,
 
         auto t_start = std::chrono::high_resolution_clock::now();
 
-        if (AXI_Gpio_Set_NoMetal(sync_gpio_name.c_str(), 0x0, 0x0)) {
+        if (AXI_Gpio_Set_NoMetal(gpio_sync_ptr, 0x0, 0x0)) {
             return -1;
         }
-        if (XDMA_StartTransferBatched_NoMetal(dma_inst_pool, dmaAddrArray, dmaLenArray, dmaNumInst, uint32_t(debug))) {
-            return -1;
-        }
+
         if (XDMA_StartTransferBatched_NoMetal(dma_inst_pool, dmaAddrArray, dmaLenArray, dmaNumInst, uint32_t(debug))) {
             return -1;
         }
 
-        if (AXI_Gpio_Set_NoMetal(sync_gpio_name.c_str(), 0xff, 0x0)) {
+        if (XDMA_StartTransferBatched_NoMetal(dma_inst_pool, dmaAddrArray, dmaLenArray, dmaNumInst, uint32_t(debug))) {
+            return -1;
+        }
+
+        if (AXI_Gpio_Set_NoMetal(gpio_sync_ptr, 0xff, 0x0)) {
             return -1;
         }
 
@@ -176,10 +192,7 @@ int MainLoop_cpp (uint32_t *ddrIdArray,
 
         ddr_map_finish(fd);
 
-        auto t_end = std::chrono::high_resolution_clock::now();
-        double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
-
-        std::cout << "Time taken for iteration :" << elapsed_time_ms << std::endl;
+        tstamp(t_start, "ddr_map");
         sn++;
     }
 

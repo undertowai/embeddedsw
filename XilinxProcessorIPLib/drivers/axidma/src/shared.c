@@ -181,6 +181,8 @@ int XDMA_InitBatched(void **dma_inst_pool, const char **inst_names, uint32_t num
 	if (!Dma) {
 		return Status;
 	}
+
+	memset(Dma, 0, sizeof(*Dma) * num_inst);
 	*dma_inst_pool = Dma;
 
 	for (int i = 0; i < num_inst; i++) {

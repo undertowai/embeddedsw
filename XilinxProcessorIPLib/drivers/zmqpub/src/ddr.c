@@ -12,7 +12,7 @@ int ddr_map_start(void)
 
 void *ddr_map(int fd, uint64_t addr, uint32_t size)
 {
-    void *ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, addr);
+    void *ptr = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, addr);
 
     if (ptr == MAP_FAILED) {
         printf("Can't map memory \r\n");

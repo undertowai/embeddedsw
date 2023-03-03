@@ -21,28 +21,9 @@ from main import MainLoopExt, MainLoopPython
 
 from inet import Inet
 from test_config import TestConfig
-from integrator import Integrator
+from integrator import IntegratorSW
 
 class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
-
-    def getargs(self, **kw):
-        for k, v in kw.items():
-            setattr(self, k, v)
-
-    def Test(func):
-        def inner(self, **kw):
-            try:
-                self.getargs(**kw)
-                func(self)
-            except Exception as e:
-                logging.error(traceback.format_exc())
-                print("=== FAILED ===")
-                self.shutdown_hmc()
-                raise Exception()
-            else:
-                print("=== PASS ===")
-
-        return inner
 
     def __init__(self, config):
         TestConfig.__init__(self, config)
@@ -63,45 +44,21 @@ class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
         self.ext_main_executor = MainLoopPython(self) \
                                 if self.ext_main_exec_lib == "" else MainLoopExt(self, self.ext_main_exec_lib)
 
-        self.integrator = Integrator(self)
+        self.integrator = IntegratorSW(self)
 
-        self.set_loopback(self.adc_dac_sw_loppback)
+        self.__set_loopback(self.adc_dac_sw_loppback)
 
         self.samplingFreq = self.rfdc.getSamplingFrequency()
 
-        if self.debug:
-            print(f'Test Init Done; Sampling frequency {self.samplingFreq}')
-
-    def set_loopback(self, loopback):
+    def __set_loopback(self, loopback):
         s = [0, 2, 4, 6, 8, 10, 12, 14] if loopback else [1, 3, 5, 7, 9, 11, 13, 15]
         m = [0, 1, 2, 3, 4, 5, 6, 7]
 
         self.axis_switch0.route(s, m)
         self.axis_switch1.route(s, m)
 
-    def setup_hmc(self, tx, rx):
-        self.hmc.GpioInit()
-        self.hmc.setup(tx, rx, self.rf_config)
-
-    def shutdown_hmc(self):
-        self.hmc.Reset()
-
     def adc_dac_sync(self, sync):
-        if sync:
-            self.gpio_sync.set(val=0xff)
-        else:
-            self.gpio_sync.set(val=0x0)
-
-    def setup_integrator(self, txn):
-        hw_del = self.getStreamHwOffset(txn)
-        self.integrator.setup(hw_del)
-
-    def __start_dma(self, id, addr, size):
-        devName = self.dma.devIdToIpName(id)
-        if self.debug:
-            print(f'__start_dma: {devName}, addr={hex(addr)}, size={hex(size)}')
-        self.dma.startTransfer(devName=devName, addr=addr, len=size)
-
+        self.gpio_sync.set(val=0xff if sync else 0x0)
 
     def prep_dma_batched(self, ddr_rx_dma_map):
         dmaBatch = []
@@ -141,9 +98,6 @@ class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
         capture_size_bytes = self.getStreamSizeBytesPerDma()
         sleep_time = self.getCaptureTimeForBytes(capture_size_bytes)
         return int(sleep_time*1000)
-
-    def wait_capture_done(self):
-        sleep(self.calc_wait_time_ms()/1000)
 
     def xddr_read(self, addr, size, dtype):
         capture_samples = self.getDdrCaptureSizeSamples()

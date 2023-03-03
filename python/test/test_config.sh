@@ -12,6 +12,14 @@ get_config() {
 
 configure_fpga() {
     make -C ../../xsa/ all
+    [[ $? != 0 ]] && exit 1
+}
+
+configure_hw_ip() {
+    test_config=$1
+
+    $py ../hw/integrator.py --cfg $test_config
+    [[ $? != 0 ]] && exit 1
 }
 
 test_setup() {
@@ -20,6 +28,8 @@ test_setup() {
 
     test_config=$1
     clk_config=$2
+
+    configure_hw_ip $test_config
 
     lmk_config=$(get_config $clk_config lmk "\"\"")
     lmx2820_config=$(get_config $clk_config lmx2820 "\"\"")

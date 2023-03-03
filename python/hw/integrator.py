@@ -1,10 +1,12 @@
 
-import sys
+import sys, argparse
 import numpy as np
 import math
 
 sys.path.append("../axi")
+sys.path.append("../test")
 
+from test_config import TestConfig
 from gpio import AxiGpio
 
 class IntegratorHwIf(AxiGpio):
@@ -35,10 +37,8 @@ class IntegratorHwIf(AxiGpio):
         val = (int(log2_samples) & 0xffff) | ((int(units_in_dwell) & 0xffff) << 16)
         self.period_hw_ctrl.set(val=val)
 
-class Integrator(IntegratorHwIf):
-
+class Integrator:
     def __init__(self, config):
-        IntegratorHwIf.__init__(self, config.debug)
         self.integrator_mode = config.integrator_mode
         self.integrator_type = config.integrator_type
 
@@ -62,11 +62,18 @@ class Integrator(IntegratorHwIf):
             assert self.units_in_dwell <= 1024*64
 
 
-        if self.debug:
+        if config.debug:
             print(f'Integrator settings : integrator_mode={self.integrator_mode}, \
                     samples_in_unit={self.samples_in_unit}, \
                     integrator_depth={self.integrator_depth}, \
                     dwell_in_stream={self.dwell_in_stream}')
+
+
+class IntegratorHW(Integrator, IntegratorHwIf):
+
+    def __init__(self, config):
+        Integrator.__init__(self, config)
+        IntegratorHwIf.__init__(self, config.debug)
 
     def setup(self, hw_offset_map = []):
         if self.integrator_mode == 'hw':
@@ -80,6 +87,11 @@ class Integrator(IntegratorHwIf):
             self.set_num_pulses_log2_samples(0, 0)
 
         self.set_offset_samples(hw_offset_map)
+
+class IntegratorSW(Integrator):
+
+    def __init__(self, config):
+        Integrator.__init__(self, config)
 
     def __do_sw_integration(self, data):
 
@@ -113,3 +125,22 @@ class Integrator(IntegratorHwIf):
                 return self.__do_sw_integration(data)
             elif self.integrator_type == 'ofdm':
                 return self.__do_sw_integration_ofdm(data)
+
+if __name__ == '__main__':
+    argparser=argparse.ArgumentParser()
+
+    argparser.add_argument('--cfg', help='specify test configuration file', type=str)
+    args  = argparser.parse_args()
+
+    assert args.cfg is not None
+
+    print('Setting up integrator')
+
+    test_config = TestConfig(args.cfg)
+    integrator = IntegratorHW(test_config)
+
+    assert len(test_config.tx) == 1
+    hw_del = test_config.getStreamHwOffset(test_config.tx[0])
+    integrator.setup(hw_del)
+    print('Done')
+

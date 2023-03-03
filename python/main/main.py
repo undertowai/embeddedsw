@@ -70,19 +70,18 @@ class MainLoopExt(MLock):
 
         assert status == 0
 
+    def __loop_destroy(self):
+        fun = self.lib.MainLoop
+
+        status = fun()
+        assert status == 0
+
     @MLock.Lock
     def loop(self):
 
         self.__loop_init(self.fs)
         self.__loop_exec(self.rx, self.txn, self.wait_time)
         self.__loop_destroy()
-
-    @MLock.Lock
-    def __loop_destroy(self):
-        fun = self.lib.MainLoop
-
-        status = fun()
-        assert status == 0
 
 class MainLoopPython:
     VERSION = 0x1

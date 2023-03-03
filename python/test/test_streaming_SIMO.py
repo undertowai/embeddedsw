@@ -9,17 +9,12 @@ class Test_Streaming(TestSuite):
     def __init__(self, config_path):
         TestSuite.__init__(self, config_path)
 
-    @TestSuite.Test
-    def run_test(self):
+    def run_test(self, sn):
         samplingFreq = self.rfdc.getSamplingFrequency()
-
-        assert len(self.tx) == 1
         txn = self.tx[0]
 
-        self.setup_integrator(txn)
-
         self.ext_main_executor.loop(fs=samplingFreq, wait_time=self.calc_wait_time_ms(),
-                         txn=txn, rx=self.rx, sn=self.sn, num_iterations=self.num_iterations)
+                         txn=txn, rx=self.rx, sn=sn, num_iterations=self.num_iterations)
 
 if __name__ == "__main__":
 
@@ -31,10 +26,5 @@ if __name__ == "__main__":
     config_path = sys.argv[2]
 
     test = Test_Streaming(config_path)
+    test.run_test(sn=sn)
 
-    try:
-        test.run_test(sn=sn)
-
-    except KeyboardInterrupt:
-        test.shutdown_hmc()
-        sys.exit(-1)
