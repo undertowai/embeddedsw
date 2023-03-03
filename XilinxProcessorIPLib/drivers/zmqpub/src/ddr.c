@@ -21,6 +21,11 @@ void *ddr_map(int fd, uint64_t addr, uint32_t size)
     return ptr;
 }
 
+int ddr_unmap(void *ptr, uint64_t len)
+{
+    return munmap(ptr, len);
+}
+
 void ddr_map_finish(int fd)
 {
     close(fd);
