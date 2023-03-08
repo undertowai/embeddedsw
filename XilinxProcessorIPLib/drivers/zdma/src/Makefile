@@ -11,7 +11,7 @@ ECC_FLAGS = $(EXTRA_COMPILER_FLAGS)
 
 RELEASEDIR=../../../lib/
 INCLUDEDIR=../../../include/
-INCLUDES=-I./. -I$(INCLUDEDIR)
+INCLUDES= -I$(INCLUDEDIR)
 
 SRCFILES:=$(wildcard *.c)
 
@@ -26,7 +26,7 @@ include $(wildcard $(DEPFILES))
 include $(wildcard ../../../../dep.mk)
 
 $(RELEASEDIR)%.o: %.c
-	${COMPILER} $(CC_FLAGS) $(ECC_FLAGS) $(INCLUDES) $(DEPENDENCY_FLAGS) $< -o $@
+	${COMPILER} $(CC_FLAGS)  $(INCLUDES) $(DEPENDENCY_FLAGS) $< -o $@
 
 .PHONY: include
 include: $(addprefix $(INCLUDEDIR),$(wildcard *.h))
