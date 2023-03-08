@@ -83,7 +83,7 @@ class TestConfig(Hw):
         return self.dwell_in_stream
 
     def getStreamSizeSamples(self):
-        return int(self.samples_in_unit * self.integrator_depth * self.units_in_dwell)
+        return int(self.integrator_depth * self.samples_in_unit * self.units_in_dwell * self.dwell_in_stream)
 
     def __getStreamSizeBytes(self):
         capture_num_samples = self.getStreamSizeSamples()
@@ -127,7 +127,7 @@ class TestConfig(Hw):
 
     def getCaptureTimeForBytes(self, captureSize):
         numCaptures = 0x1
-        batchSize = captureSize * numCaptures
+        batchSize = captureSize * numCaptures * self.TIME_CORRECTION_COEFF
         numSamples = batchSize / (self.BYTES_PER_SAMPLE)
         t = numSamples / self.samplingFreq
         return t

@@ -57,8 +57,8 @@ class Integrator:
                     f'For integrator HW mode dwell_in_stream size must be {config.HW_INTEGRATOR_WINDOW_SIZE}'
 
         if self.integrator_type == 'ofdm':
-            assert self.samples_in_unit == 512, "OFDM pulse samples is hard coded to be 512 in HW integrator_mode"
-            assert self.integrator_depth > 4, "num periods must be higher than 4"
+            assert self.samples_in_unit == 512, "OFDM+CP pulse samples is hard coded to be 512 in HW integrator_mode"
+            assert self.integrator_depth > 4, "integrator_depth must be higher than 4"
             assert self.units_in_dwell <= 1024*64
 
 
@@ -82,7 +82,7 @@ class IntegratorHW(Integrator, IntegratorHwIf):
 
             assert integrator_depth == self.integrator_depth, "integrator_depth parameter must be equal to 2^N if integrator_mode is HW"
 
-            self.set_num_pulses_log2_samples(periods_log2, self.units_in_dwell)
+            self.set_num_pulses_log2_samples(periods_log2, self.units_in_dwell * self.dwell_in_stream)
         else:
             self.set_num_pulses_log2_samples(0, 0)
 
@@ -105,17 +105,27 @@ class IntegratorSW(Integrator):
         data = np.mean(data, axis=0, dtype=np.int32)
         return data
 
-    def __do_sw_integration_ofdm(self, data):
+    def __do_sw_integration_ofdm(self, data, samples, units, dwels, depth):
+        shape = (units * dwels, depth, samples)
+        data = np.reshape(data, shape)
+        data = np.mean(data, axis=1, dtype=np.int32)
+
+        return data.flatten()
+
+    def __do_sw_integration_ofdm_wrapper(self, data):
 
         samples_in_stream = self.dwell_in_stream * self.samples_in_unit * self.units_in_dwell * self.integrator_depth
 
         data = np.asarray(data[:samples_in_stream], dtype=np.int32)
 
-        shape = (self.integrator_depth, self.units_in_dwell * self.dwell_in_stream, self.samples_in_unit)
-        data = np.reshape(data, shape)
-        data = np.mean(data, axis=1, dtype=np.int32)
+        return self.__do_sw_integration_ofdm(data, self.samples_in_unit, self.units_in_dwell, self.dwell_in_stream, self.integrator_depth)
 
-        return data.flatten()
+
+    def test_sw_integrator_ofdm(self):
+        data = np.array([0, 1, 2, 3, 0, -1, -2, -3, 0, 1, 2, 3, 4, 5, 6, 7, 4, 5, 6, 7, -4, -5, -6, -7])
+
+        data = self.__do_sw_integration_ofdm(data, 6, 2, 1, 2)
+        print(data)
 
     def do_integration(self, data):
         if self.integrator_mode != 'sw':
@@ -124,12 +134,13 @@ class IntegratorSW(Integrator):
             if self.integrator_type == 'dwell':
                 return self.__do_sw_integration(data)
             elif self.integrator_type == 'ofdm':
-                return self.__do_sw_integration_ofdm(data)
+                return self.__do_sw_integration_ofdm_wrapper(data)
 
 if __name__ == '__main__':
     argparser=argparse.ArgumentParser()
 
     argparser.add_argument('--cfg', help='specify test configuration file', type=str)
+    argparser.add_argument('--test_ofdm', help='Do SW integrator test (OFDM)', action='store_true')
     args  = argparser.parse_args()
 
     assert args.cfg is not None
@@ -137,10 +148,15 @@ if __name__ == '__main__':
     print('Setting up integrator')
 
     test_config = TestConfig(args.cfg)
-    integrator = IntegratorHW(test_config)
 
-    assert len(test_config.tx) == 1
-    hw_del = test_config.getStreamHwOffset(test_config.tx[0])
-    integrator.setup(hw_del)
+    if args.test_ofdm is not None:
+        integrator = IntegratorSW(test_config)
+        integrator.test_sw_integrator_ofdm()
+    else:
+        integrator = IntegratorHW(test_config)
+
+        assert len(test_config.tx) == 1
+        hw_del = test_config.getStreamHwOffset(test_config.tx[0])
+        integrator.setup(hw_del)
     print('Done')
 

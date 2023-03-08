@@ -1,5 +1,5 @@
 {
-    "rx": [0, 1, 2, 3],
+    "rx": [4, 5, 6, 7],
     "tx": [7],
     "samples_in_unit": 512,
     "dwell_in_stream": 2,
@@ -8,8 +8,8 @@
     "adc_dac_sw_loppback": false,
     "integrator_mode": "hw",
     "integrator_type": "ofdm",
-    "integrator_depth": 8,
-    "num_iterations": 300,
+    "integrator_depth": 1024,
+    "num_iterations": 10000,
     "hw_offset_map_path": "../hw/hw_offset.json",
     "ext_main_exec_lib": "zmqpub",
     "debug": false

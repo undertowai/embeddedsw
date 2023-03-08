@@ -133,6 +133,3 @@ class MainLoopPython:
             sn += 1
             iter_count += 1
 
-        self.test_suite.shutdown_hmc()
-
-
