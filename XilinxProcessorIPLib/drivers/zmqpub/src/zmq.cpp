@@ -4,6 +4,8 @@
 #include <thread>
 #include <stdint.h>
 
+#include "ddr_mng.hpp"
+
 static zmq::context_t ctx;
 static zmq::socket_t *sock;
 std::string topic;
@@ -31,8 +33,7 @@ int ZmqPublish(uint32_t sn,
                 uint32_t txn,
                 std::vector<uint32_t> rxn,
                 uint32_t fs,
-                std::vector<void *> &iq_data,
-                std::vector<uint32_t> &iq_data_size)
+                DdrMng::IqData &iq_data_v)
 {
     uint32_t freq = 0;
     uint64_t sent_time = 0;
@@ -50,7 +51,8 @@ int ZmqPublish(uint32_t sn,
         send_msgs.push_back(zmq::buffer(std::to_string(freq)));
         send_msgs.push_back(zmq::buffer(std::to_string(sent_time)));
         for (int i  = 0; i < num_streams; i++) {
-            send_msgs.push_back( zmq::buffer(iq_data[i], iq_data_size[i]) );
+            auto t = iq_data_v[i];
+            send_msgs.push_back( zmq::buffer(std::get<0>(t), std::get<1>(t)) );
         }
     };
 

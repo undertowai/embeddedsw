@@ -12,15 +12,18 @@ SO_CC_SRCS = \
 
 SO_CXX_SRCS = \
 	zmq.cpp \
+	ddr_mng.cpp \
 	main.cpp \
 
 SO_DEP = $(SO_CC_SRCS) \
 		$(SO_CXX_SRCS) \
 		zmq.hpp \
+		ddr_mng.hpp \
 		main.h
 
 SO_OBJS = \
 	ddr.o \
+	ddr_mng.o \
 	zmq.o \
 	main.o \
 	shared.o

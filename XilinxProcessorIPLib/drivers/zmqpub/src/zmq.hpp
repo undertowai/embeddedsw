@@ -7,5 +7,4 @@ int ZmqPublish(uint32_t sn,
                 uint32_t txn,
                 std::vector<uint32_t> rxn,
                 uint32_t fs,
-                std::vector<void *> &iq_data,
-                std::vector<uint32_t> &iq_data_size);
+                DdrMng::IqData &iq_data_v);
