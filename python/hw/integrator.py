@@ -149,7 +149,7 @@ if __name__ == '__main__':
 
     test_config = TestConfig(args.cfg)
 
-    if args.test_ofdm is not None:
+    if args.test_ofdm is True:
         integrator = IntegratorSW(test_config)
         integrator.test_sw_integrator_ofdm()
     else:

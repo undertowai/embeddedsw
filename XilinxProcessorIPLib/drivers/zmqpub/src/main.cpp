@@ -37,6 +37,8 @@ uint32_t fs;
 void *dma_inst_pool;
 void *gpio_sync_ptr;
 uint32_t dma_inst_num;
+int ddr_map_fd;
+std::vector< std::pair<void *, uint64_t> >ddr_map_v;
 
 int MainLoopInit_cpp (const char *port,
                     const char *topic,
@@ -52,6 +54,11 @@ int MainLoopInit_cpp (const char *port,
         return -1;
     }
 
+    ddr_map_v.clear();
+    dma_inst_pool = nullptr;
+    dma_inst_num = 0;
+    ddr_map_fd = -1;
+
     if (debug) {
         std::cout << "Port : " << port << std::endl;
         std::cout << "Topic : " << topic << std::endl;
@@ -65,6 +72,11 @@ int MainLoopDestroy_cpp (void)
     ZmqDestroy();
     XDMA_FinishBatched(dma_inst_pool, dma_inst_num);
     AXI_Gpio_Finish_NoMetal(gpio_sync_ptr);
+
+    for (auto &[addr, len]: ddr_map_v) {
+        ddr_unmap(addr, len);
+    }
+    ddr_map_finish(ddr_map_fd);
     metal_finish();
     return 0;
 }
@@ -123,7 +135,6 @@ int MainLoop_cpp (uint32_t *ddrIdArray,
     std::vector<void *> iq_data_v;
     std::vector<uint32_t> iq_data_size_v;
     std::vector<uint32_t> rxn_v;
-    std::vector< std::pair<void *, uint64_t> >ddr_map_v;
     uint32_t sn = 0;
 
     dma_inst_num = dmaNumInst;
@@ -141,9 +152,34 @@ int MainLoop_cpp (uint32_t *ddrIdArray,
         std::cout << "rx channels num=" << rxn_len << std::endl;
     }
 
+    DDR_map_t ddrMap;
+    mapDdr(ddrMap, ddrIdArray, dmaAddrArray, dmaLenArray, dmaNumInst);
+    ddr_map_fd = ddr_map_start();
+
+    for (const auto &[k, v]: ddrMap) {
+        auto bound = getDdrBounds(ddrMap, k);
+        char *ptr = (char *)ddr_map(ddr_map_fd, std::get<0>(bound), std::get<1>(bound));
+        auto ptr_old = ptr;
+
+        if (ptr == nullptr) {
+            ddr_map_finish(ddr_map_fd);
+            return -1;
+        }
+
+        for (auto t: v) {
+            auto addr = std::get<0>(t);
+            auto len = std::get<1>(t);
+
+            iq_data_v.push_back(ptr);
+            iq_data_size_v.push_back(len);
+            ptr += len;
+        }
+        ddr_map_v.push_back({ptr_old, ptr-ptr_old});
+    }
+
     while (true) {
 
-        std::cout << "Running iteration " << sn  << std::endl;
+        if (debug) std::cout << "Running iteration " << sn  << std::endl;
 
         auto t_start = std::chrono::high_resolution_clock::now();
 
@@ -166,48 +202,14 @@ int MainLoop_cpp (uint32_t *ddrIdArray,
         std::chrono::milliseconds timespan(waitTimeMs);
         std::this_thread::sleep_for(timespan);
 
-        tstamp(t_start, "Start DMA");
-
-        DDR_map_t ddrMap;
-        mapDdr(ddrMap, ddrIdArray, dmaAddrArray, dmaLenArray, dmaNumInst);
-
-
-        auto fd = ddr_map_start();
-
-        for (const auto &[k, v]: ddrMap) {
-            auto bound = getDdrBounds(ddrMap, k);
-            char *ptr = (char *)ddr_map(fd, std::get<0>(bound), std::get<1>(bound));
-            auto ptr_old = ptr;
-
-            if (ptr == nullptr) {
-                ddr_map_finish(fd);
-                return -1;
-            }
-
-            for (auto t: v) {
-                auto addr = std::get<0>(t);
-                auto len = std::get<1>(t);
-
-                iq_data_v.push_back(ptr);
-                iq_data_size_v.push_back(len);
-                ptr += len;
-            }
-            ddr_map_v.push_back({ptr_old, ptr-ptr_old});
-        }
+        if (debug) tstamp(t_start, "Start DMA");
 
         ZmqPublish(sn, txn, rxn_v, fs, iq_data_v, iq_data_size_v);
 
-        for (auto &[addr, len]: ddr_map_v) {
-            ddr_unmap(addr, len);
-        }
-        ddr_map_finish(fd);
-
-        tstamp(t_start, "ddr_map");
+        if (debug) tstamp(t_start, "ZmqPublish");
         sn++;
     }
 
-    std::cout << "MainLoop_cpp : unexpected path #1" << std::endl;
-    XDMA_FinishBatched(dma_inst_pool, dmaNumInst);
-    metal_finish();
+    std::cout << "!!!!!!!! MainLoop_cpp : unexpected path #1" << std::endl;
     return 0;
 }
