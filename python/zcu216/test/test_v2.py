@@ -20,6 +20,7 @@ class TestV2():
 
         self.RfdcClk.init_clk104(lmk_path="zcu216/rfdc/configs/LMK_300MHz_RefClk_Out.txt")
         self.RfdcClk.setup_rfdc()
+        self.RfdcClk.setup_mts()
 
         print("Test init done\n")
         return None
@@ -31,36 +32,42 @@ if __name__ == "__main__":
     socket.setsockopt(zmq.SNDHWM, 2)
     socket.bind("tcp://*:5555")
 
-    test = TestV2();
-
     # Ugly mess - replace with symbol lookup in /proc
     p = V2Player(int('b2000000',16), 512*1024)
     c = V2Capture(int('b1000000', 16), 1024*1024)
     s = V2Sequencer(int("b0100000",16))
 
-    # load a sin wave in each channel with a different phase offset
-    for ch in range(0,16):
-        start = 0 + np.pi * (ch / 16.0)
-        stop  = 5 * (2 * np.pi) + start
-        p.channels[ch] = ((np.sin(np.linspace(start=start,stop=stop,num=16384))) * 32767).astype(np.int16)
+    #
+    # Load static
+    #
+    d = np.load("/home/petalinux/jiwoo.npy")
+    fr = np.squeeze(np.real(d).astype(np.int16), axis=-1)
+    fi = np.squeeze(np.imag(d).astype(np.int16), axis=-1)
+
+    test = TestV2()
+
+    p.channels[0] = fr 
+    p.channels[1] = fi 
 
     # Run a capture
-    for i in range(0,100):
-        s.StartSequencer(captures=1,symbol_samples=16384,integrations=4000,dwells=1,offset=0)
+    for i in range(0,1000):
+    
+        s.StartSequencer(captures=1,
+                         symbol_samples=4096,
+                         integrations=4000,
+                         dwells=0,
+                         offset=4,
+                         loopback=int("0000",16))
        
         # Wait for sequencer to finish
         while (s.SequencerRunning()):
             pass
 
-        # Copy out capture data
-        channel_data = c.channels
-
         # send binary data 16 channels of int32 with implicit shape (16,16384)
         # receive with 
         #      m = socket.recv()
         #      channels = np.frombuffer(m, dtype=np.int32).reshape((16,-1))
-        
-        socket.send(channel_data)
+        socket.send(np.ascontiguousarray(c.channels))
 
         print("Iteration %d" % i)
 

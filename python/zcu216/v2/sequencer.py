@@ -45,9 +45,19 @@ class sequencer():
                        symbol_samples: int,
                        integrations: int,
                        dwells: int,
-                       offset: int
+                       offset: int,
+                       loopback: int = 0
                        ) -> None:
         
+        # Sanity check based on hardware configuration
+        assert (symbol_samples <= 4096)
+        assert (integrations   <= 32768)
+        assert (offset         <= symbol_samples * 4)
+
+        # First disable sequencer
+        self.regs[self.reg_defs['capture count']] = 0
+
+        # Clear state
         self.regs[self.reg_defs['current capture']] = 0
         self.regs[self.reg_defs['current symbol']] = 0
         self.regs[self.reg_defs['current integration']] = 0
@@ -58,6 +68,7 @@ class sequencer():
         self.regs[self.reg_defs['symbol integrations']] = integrations
         self.regs[self.reg_defs['dwell times']] = dwells
         self.regs[self.reg_defs['offset time']] = offset
+        self.regs[self.reg_defs['loopback enable']] = loopback
 
         # and finally start 
         self.regs[self.reg_defs['capture count']] = captures
