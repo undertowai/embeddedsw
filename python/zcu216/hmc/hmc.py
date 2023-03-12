@@ -3,11 +3,9 @@ import ctypes as ct
 import json
 from time import sleep
 
-sys.path.append("../misc")
-
-from dts import Dts
-from make import Make
-from mlock import MLock
+from zcu216.misc.dts import Dts
+from zcu216.misc.make import Make
+from zcu216.misc.mlock import MLock
 
 #TODO: make this common
 def load_json(path):
