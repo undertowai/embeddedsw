@@ -1,0 +1,13 @@
+{
+    "rx": [4, 5, 6, 7],
+    "tx": [4],
+    "dwell_samples": 65536,
+    "dwell_num": 32,
+    "dwell_window": 2,
+    "adc_dac_hw_loppback": false,
+    "adc_dac_sw_loppback": false,
+    "integrator_mode": "sw",
+    "integrator_type": "ofdm",
+    "num_iterations": 10,
+    "debug": false
+}

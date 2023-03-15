@@ -75,7 +75,7 @@ class Integrator(IntegratorHwIf):
 
             assert integrator_depth == self.integrator_depth, "integrator_depth parameter must be equal to 2^N if integrator_mode is HW"
 
-            self.set_num_pulses_log2_samples(periods_log2, self.units_in_dwell)
+            self.set_num_pulses_log2_samples(periods_log2, self.units_in_dwell * self.dwell_in_stream)
         else:
             self.set_num_pulses_log2_samples(0, 0)
 
@@ -99,9 +99,10 @@ class Integrator(IntegratorHwIf):
 
         data = np.asarray(data[:samples_in_stream], dtype=np.int32)
 
-        shape = (self.integrator_depth, self.units_in_dwell * self.dwell_in_stream, self.samples_in_unit)
+        #shape = (self.integrator_depth, self.units_in_dwell * self.dwell_in_stream, self.samples_in_unit)
+        shape = (self.units_in_dwell * self.dwell_in_stream, self.samples_in_unit, self.integrator_depth)
         data = np.reshape(data, shape)
-        data = np.mean(data, axis=1, dtype=np.int32)
+        data = np.mean(data, axis=2, dtype=np.int32)
 
         return data.flatten()
 
