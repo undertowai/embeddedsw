@@ -190,20 +190,13 @@ class DacPlayer(AxiGpio):
         return buffer
 
     def __make_bram_content_from_files(self, IQarray):
-        sampleSize = self.hw.BYTES_PER_SAMPLE
-        buffersCount = self.hw.BUFFERS_IN_BRAM
-        numBytes = int(self.getBramSize() / buffersCount)
-        numSamples = int(numBytes / sampleSize)
-        samplesPerFLit = self.hw.SAMPLES_PER_FLIT
+        p = self.getParameters()
 
-        assert self.hw.BYTES_PER_SAMPLE == 2
-        dtype = np.int16
+        buffer = np.empty(p.buffersCount * p.numSamples, dtype=p.dtype)
 
-        buffer = np.empty(buffersCount * numSamples, dtype=dtype)
+        assert int(len(IQarray)*2) == int(p.buffersCount), f'iq array {int(len(IQarray)*2)} != buffersCount {int(p.buffersCount)}'
 
-        assert int(len(IQarray)/2) == int(buffersCount)
-
-        for i, Ipath, Qpath in enumerate(IQarray):
+        for i, (Ipath, Qpath) in enumerate(IQarray):
 
             _, Iext = os.path.splitext(Ipath)
             _, Qext = os.path.splitext(Qpath)
@@ -213,13 +206,13 @@ class DacPlayer(AxiGpio):
             if Iext == '.npy':
                 I = np.load(Ipath)
                 Q = np.load(Qpath)
-                assert I.dtype == np.int16
+                assert I.dtype == p.dtype
             else:
-                I = np.fromfile(Ipath, dtype=np.int16)
-                Q = np.fromfile(Qpath, dtype=np.int16)
+                I = np.fromfile(Ipath, dtype=p.dtype)
+                Q = np.fromfile(Qpath, dtype=p.dtype)
 
-            WideBuf().make(buffer, I, i, buffersCount, samplesPerFLit)
-            WideBuf().make(buffer, Q, i + 1, buffersCount, samplesPerFLit)
+            WideBuf().make(buffer, I, i, p.buffersCount, p.samplesPerFLit)
+            WideBuf().make(buffer, Q, i + 1, p.buffersCount, p.samplesPerFLit)
 
         return buffer
 

@@ -1,0 +1,10 @@
+{
+    "tx0": { "I": "Ichannel_ofdm3jan2.npy", "Q": "Qchannel_ofdm3jan2.npy" },
+    "tx1": { "I": "Ichannel_ofdm3jan2.npy", "Q": "Qchannel_ofdm3jan2.npy" },
+    "tx2": { "I": "Ichannel_ofdm3jan2.npy", "Q": "Qchannel_ofdm3jan2.npy" },
+    "tx3": { "I": "Ichannel_ofdm3jan2.npy", "Q": "Qchannel_ofdm3jan2.npy" },
+    "tx4": { "I": "Ichannel_ofdm3jan2.npy", "Q": "Qchannel_ofdm3jan2.npy" },
+    "tx5": { "I": "Ichannel_ofdm3jan2.npy", "Q": "Qchannel_ofdm3jan2.npy" },
+    "tx6": { "I": "Ichannel_ofdm3jan2.npy", "Q": "Qchannel_ofdm3jan2.npy" },
+    "tx7": { "I": "Ichannel_ofdm3jan2.npy", "Q": "Qchannel_ofdm3jan2.npy" }
+}
