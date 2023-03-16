@@ -4,6 +4,8 @@
 extern "C" {
 #endif
 
+int MainLoop_SigintRecv (void);
+
 int MainLoopInit_cpp (const char *port,
                     const char *topic,
                     const char *_sync_gpio_name,

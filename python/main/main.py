@@ -71,7 +71,7 @@ class MainLoopExt(MLock):
         assert status == 0
 
     def __loop_destroy(self):
-        fun = self.lib.MainLoop
+        fun = self.lib.MainLoopDestroy
 
         status = fun()
         assert status == 0
@@ -82,6 +82,9 @@ class MainLoopExt(MLock):
         self.__loop_init(self.fs)
         self.__loop_exec(self.rx, self.txn, self.wait_time)
         self.__loop_destroy()
+
+        print(f'**** {__file__}: Exiting')
+        exit(1)
 
 class MainLoopPython:
     VERSION = 0x1

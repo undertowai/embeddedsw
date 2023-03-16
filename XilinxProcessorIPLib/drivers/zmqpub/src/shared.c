@@ -9,7 +9,7 @@ void siginthandler(int param)
 {
 
     printf("SIGINT caught, exiting ...\r\n");
-    exit(0);
+    MainLoop_SigintRecv();
 }
 
 int MainLoopInit (const char *port,

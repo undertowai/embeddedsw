@@ -34,12 +34,18 @@ extern "C" {
 };
 
 bool debug;
+bool sigint_recv;
 uint32_t fs;
 void *dma_inst_pool;
 void *gpio_sync_ptr;
 uint32_t dma_inst_num;
 
 DdrMng ddrMng;
+
+int MainLoop_SigintRecv (void) {
+    sigint_recv = true;
+    return 0;
+}
 
 int MainLoopInit_cpp (const char *port,
                     const char *topic,
@@ -57,6 +63,7 @@ int MainLoopInit_cpp (const char *port,
 
     dma_inst_pool = nullptr;
     dma_inst_num = 0;
+    sigint_recv = false;
 
     if (debug) {
         std::cout << "Port : " << port << std::endl;
@@ -120,7 +127,7 @@ int MainLoop_cpp (uint32_t *ddrIdArray,
 
     ddrMng.ddrMap(iq_data_v, ddrIdArray, dmaAddrArray, dmaLenArray, dmaNumInst);
 
-    while (true) {
+    while (false == sigint_recv) {
 
         if (debug) std::cout << "Running iteration " << sn  << std::endl;
 
@@ -152,7 +159,5 @@ int MainLoop_cpp (uint32_t *ddrIdArray,
         if (debug) tstamp(t_start, "ZmqPublish");
         sn++;
     }
-
-    std::cout << "!!!!!!!! MainLoop_cpp : unexpected path #1" << std::endl;
     return 0;
 }
