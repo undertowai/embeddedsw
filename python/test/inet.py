@@ -12,12 +12,12 @@ class Inet:
         self.publisher = context.socket(zmq.PUB)
         self.publisher.bind("tcp://0.0.0.0:%s" % self.PORT)
 
-    def publish(self, seq_idx, tx_idx, sampling_freq, frequency, rx_array, rx_iq_data):
+    def publish(self, seq_idx, tx_array, sampling_freq, frequency, rx_array, rx_iq_data):
         self.publisher.send_multipart(
             [
                 bytes(str(self.TOPIC_FILTER), "utf-8"),
                 bytes(str(seq_idx), "utf-8"),
-                bytes(str(tx_idx), "utf-8"),
+                pickle.dumps(tx_array),
                 pickle.dumps(rx_array),
                 bytes(str(sampling_freq), "utf-8"),
                 bytes(str(frequency), "utf-8"),

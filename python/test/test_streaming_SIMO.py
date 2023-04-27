@@ -9,7 +9,7 @@ class Test_Streaming(TestSuite):
     def __init__(self, config_path):
         TestSuite.__init__(self, config_path)
 
-    def proc_cap_data(self, area, sn, txn, freq, fs, dtype=np.int16):
+    def proc_cap_data(self, area, sn, freq, fs, dtype=np.int16):
         iq_data = []
         for rxn in self.rx:
             a = area[rxn]
@@ -24,13 +24,11 @@ class Test_Streaming(TestSuite):
 
             iq_data.append((I, Q))
 
-        self.publish(sn, txn, fs, freq, self.rx, iq_data)
+        self.publish(sn, self.tx, fs, freq, self.rx, iq_data)
 
     @TestSuite.Test
     def run_test(self):
         samplingFreq = self.rfdc.getSamplingFrequency()
-
-        assert len(self.tx) == 1
 
         sn = self.sn
         iter_count = 0
@@ -40,7 +38,7 @@ class Test_Streaming(TestSuite):
 
         while iter_count < self.num_iterations:
 
-            print("*** Running Iteration : sn={}, rx={}, tx={}".format(sn, self.rx, [txn]))
+            print("*** Running Iteration : sn={}, rx={}, tx={}".format(sn, self.rx, self.tx))
 
             self.adc_dac_sync(False)
             self.start_dma(rx_dma_map)
@@ -50,7 +48,7 @@ class Test_Streaming(TestSuite):
             self.adc_dac_sync(True)
 
             self.wait_capture_done()
-            self.proc_cap_data(area, sn, txn, 0, samplingFreq)
+            self.proc_cap_data(area, sn, 0, samplingFreq)
 
             sn += 1
             iter_count += 1
