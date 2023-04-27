@@ -46,7 +46,7 @@ class Wave:
 
         return buffer
 
-    def setSaw(self, numSampels):
+    def setSaw(self, numSamples):
         buffer = np.empty(numSamples, dtype=np.int16)
         for i in range(numSamples):
             buffer[i] = int(i)
@@ -59,7 +59,7 @@ class Wave:
 
         for i in range(1, numSamples//period, 2):
             for j in range(period):
-                buffer[(i-1)*period + j] = j - period//2 + 40
+                buffer[(i-1)*period + j] = j - period//2# + 200
             for j in range(period):
                 buffer[i*period + j] = period//2 - j
 

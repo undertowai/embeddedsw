@@ -1,30 +1,22 @@
 import sys
 import os
 
-sys.path.append("../misc")
+from reg import AxiReg
 
-from dts import Dts
-
-class AxisSwitch:
+class AxisSwitch(AxiReg):
     def __init__(self, ipName):
-        reg = Dts().readPropertyU32(ipName, "reg")
-
-        self.address = (reg[0] << 32) | reg[1]
-        self.length = (reg[2] << 32) | reg[3]
-
-    def __write_reg(self, offset, value):
-        os.system('devmem {} 32 {}'.format(hex(offset), hex(value)))
+        AxiReg.__init__(self, ipName)
 
     def __route(self, s, m):
         offset = 0x40 + int(m * 0x4)
-        self.__write_reg(self.address + offset, s)
+        self.write_reg_u32(offset, s)
 
     def __commit(self):
-        self.__write_reg(self.address, 0x2)
+        self.write_reg_u32(0x0, 0x2)
 
     def route(self, s, m):
         assert len(s) == len(m)
-        
+
         for i, mi in enumerate(m):
             self.__route(s[i], mi)
         self.__commit()
@@ -32,5 +24,5 @@ class AxisSwitch:
 
 if __name__ == "__main__":
     axis_sw = AxisSwitch("axis_switch_0")
-    
+
     axis_sw.route([0], [0])

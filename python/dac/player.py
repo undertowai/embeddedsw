@@ -108,12 +108,12 @@ class DacPlayer(AxiGpio):
 
         return buffer, freq, phaseDegrees
 
-    def make_saw_bram(self):
+    def make_saw_bram(self, size):
         p = self.getParameters()
 
         buffer = np.empty(p.buffersCount * p.numSamples, dtype=p.dtype)
 
-        tone = Wave().setTriangle( p.numSamples, 512 )
+        tone = Wave().setTriangle( p.numSamples, size )
 
         for i in range(p.buffersCount):
 
@@ -354,7 +354,7 @@ if __name__ == "__main__":
     elif args.saw is True:
 
         print('Flattening BRAM using SAW ')
-        bram0 = player.make_saw_bram()
+        bram0 = player.make_saw_bram(size)
 
         player.load_dac_player(bram0, bram0)
     elif args.zero is True:

@@ -7,35 +7,55 @@ sys.path.append("../axi")
 sys.path.append("../test")
 
 from test_config import TestConfig
-from gpio import AxiGpio
+from reg import AxiReg
 
-class IntegratorHwIf(AxiGpio):
+class IntegratorHwIf(AxiReg):
     def __init__ (self, debug=False):
-        AxiGpio.__init__(self, 'axi_gpio')
-        self.period_hw_ctrl = self.getGpio("axi_gpio_axis_dwell_ctrl")
+        AxiReg.__init__(self, 'axis_dwell_proc_0_axi_bram_ctrl_int_regs_0')
         self.debug = debug
 
-        self.offset_hw_ctrl_0 = self.getGpio("axis_dwell_proc_0_axi_gpio_offset_ctrl")
-        self.offset_hw_ctrl_1 = self.getGpio("axis_dwell_proc_0_axi_gpio_offset_ctrl1")
+    def readParameters(self, id):
+        base_addr = int(id) << 8
+        val = self.read_reg_u32(base_addr + 0x8)
+        beats_in_unit_max = val & 0xffff
+        depth_log2_max = (val >> 16) & 0xffff
+        return (beats_in_unit_max, depth_log2_max)
 
-    def set_offset_samples(self, hw_offset_map):
+    def checkHwType(self):
+        hwType = self.read_reg_u32(0xc) & 0x3
+        assert hwType == 0x1
+
+    def checkConfig(self, id, offset, beats_in_unit, ofdm_pulses, depth_log2):
+        beats_in_unit_max, depth_log2_max = self.readParameters(id)
+
+        assert beats_in_unit <= beats_in_unit_max, f'beats_in_unit {hex(beats_in_unit)} > beats_in_unit_max {hex(beats_in_unit_max)}'
+        assert depth_log2 <= depth_log2_max
+        assert ofdm_pulses <= 1024 * 64
+        assert offset <= 1024 * 64
+
+    def writeConfig(self, id, offset, beats_in_unit, ofdm_pulses, depth_log2):
+        offset = int(offset)
+        beats_in_unit = int(beats_in_unit)
+        ofdm_pulses = int(ofdm_pulses)
+        depth_log2 = int(depth_log2)
+
+        if (self.debug):
+            print(f'integrator.writeConfig: id={id}, beats_in_unit={beats_in_unit}, ofdm_pulses={ofdm_pulses}, depth_log2={depth_log2}')
+
+        base_addr = int(id) << 8
+        self.write_reg_u32( base_addr + 0x0, offset | (beats_in_unit << 16) )
+        self.write_reg_u32( base_addr + 0x4, ofdm_pulses | (depth_log2 << 16) )
+
+    def writeConfigAll(self, hw_offset_map, beats_in_unit, ofdm_pulses, depth_log2):
         assert len(hw_offset_map) == 8
+        self.checkConfig(0, hw_offset_map[0], beats_in_unit, ofdm_pulses, depth_log2)
 
-        val0  = (int(hw_offset_map[0]) << 0) | (int(hw_offset_map[1]) << 16)
-        val1  = (int(hw_offset_map[2]) << 0) | (int(hw_offset_map[3]) << 16)
-        val2  = (int(hw_offset_map[4]) << 0) | (int(hw_offset_map[5]) << 16)
-        val3  = (int(hw_offset_map[6]) << 0) | (int(hw_offset_map[7]) << 16)
+        for i, hw_offset in enumerate(hw_offset_map):
+            self.writeConfig(i*2, hw_offset, beats_in_unit, ofdm_pulses, depth_log2)
+            self.writeConfig(i*2 + 1, hw_offset, beats_in_unit, ofdm_pulses, depth_log2)
 
-        if self.debug:
-            print(f'HW offset map ={hw_offset_map}')
-            print(f'HW offset config : {hex(val0)}, {hex(val1)}, {hex(val2)}, {hex(val3)}')
-
-        self.offset_hw_ctrl_0.set(val=val0, val2=val1)
-        self.offset_hw_ctrl_1.set(val=val2, val2=val3)
-
-    def set_num_pulses_log2_samples(self, log2_samples, units_in_dwell):
-        val = (int(log2_samples) & 0xffff) | ((int(units_in_dwell) & 0xffff) << 16)
-        self.period_hw_ctrl.set(val=val)
+    def readConfig(self):
+        pass
 
 class Integrator:
     def __init__(self, config):
@@ -46,21 +66,15 @@ class Integrator:
         self.integrator_depth = config.integrator_depth
         self.dwell_in_stream = config.dwell_in_stream
         self.units_in_dwell = config.units_in_dwell
+        self.samples_in_beat = config.SAMPLES_PER_FLIT
 
         assert self.integrator_mode in ['sw', 'hw', 'bypass']
         assert self.integrator_type in ['dwell', 'ofdm']
-
 
         if self.integrator_mode == 'hw' and self.integrator_type == 'dwell':
             assert False, 'Current HW version doesn\'t support dwell integrator type'
             assert self.dwell_in_stream == config.HW_INTEGRATOR_WINDOW_SIZE, \
                     f'For integrator HW mode dwell_in_stream size must be {config.HW_INTEGRATOR_WINDOW_SIZE}'
-
-        if self.integrator_type == 'ofdm':
-            assert self.samples_in_unit == 512, "OFDM+CP pulse samples is hard coded to be 512 in HW integrator_mode"
-            assert self.integrator_depth > 4, "integrator_depth must be higher than 4"
-            assert self.units_in_dwell <= 1024*64
-
 
         if config.debug:
             print(f'Integrator settings : integrator_mode={self.integrator_mode}, \
@@ -75,18 +89,20 @@ class IntegratorHW(Integrator, IntegratorHwIf):
         Integrator.__init__(self, config)
         IntegratorHwIf.__init__(self, config.debug)
 
-    def setup(self, hw_offset_map = []):
-        if self.integrator_mode == 'hw':
-            periods_log2 = math.log2(self.integrator_depth)
-            integrator_depth = 2 ** periods_log2
+    def setup(self, hw_offset_map):
+        periods_log2 = math.log2(self.integrator_depth)
+        integrator_depth = 2 ** periods_log2
+        beats_in_unit = self.samples_in_unit // self.samples_in_beat
 
-            assert integrator_depth == self.integrator_depth, "integrator_depth parameter must be equal to 2^N if integrator_mode is HW"
+        assert (int(self.samples_in_unit) % self.samples_in_beat) == 0, f'samples_in_unit must be multiply of {self.samples_in_beat}'
+        assert self.integrator_mode == 'hw', "IntegratorHW: Incorrect mode, must be HW"
+        assert integrator_depth == self.integrator_depth, "IntegratorHW: integrator_depth parameter must be equal to 2^N if integrator_mode is HW"
 
-            self.set_num_pulses_log2_samples(periods_log2, self.units_in_dwell * self.dwell_in_stream)
-        else:
-            self.set_num_pulses_log2_samples(0, 0)
+        self.checkHwType()
+        self.writeConfigAll(hw_offset_map, beats_in_unit, self.units_in_dwell * self.dwell_in_stream, periods_log2)
 
-        self.set_offset_samples(hw_offset_map)
+    def do_integration(self, data):
+        return data
 
 class IntegratorSW(Integrator):
 
@@ -120,21 +136,22 @@ class IntegratorSW(Integrator):
 
         return self.__do_sw_integration_ofdm(data, self.samples_in_unit, self.units_in_dwell, self.dwell_in_stream, self.integrator_depth)
 
+    def do_integration(self, data):
+        assert self.integrator_mode in ['sw', 'bypass'],  "IntegratorHW: Incorrect mode, must be SW/Bypass"
+
+        if self.integrator_mode == 'bypass':
+            return data
+
+        if self.integrator_type == 'dwell':
+            return self.__do_sw_integration(data)
+        elif self.integrator_type == 'ofdm':
+            return self.__do_sw_integration_ofdm_wrapper(data)
 
     def test_sw_integrator_ofdm(self):
         data = np.array([0, 1, 2, 3, 0, -1, -2, -3, 0, 1, 2, 3, 4, 5, 6, 7, 4, 5, 6, 7, -4, -5, -6, -7])
 
         data = self.__do_sw_integration_ofdm(data, 6, 2, 1, 2)
         print(data)
-
-    def do_integration(self, data):
-        if self.integrator_mode != 'sw':
-            return data
-        else:
-            if self.integrator_type == 'dwell':
-                return self.__do_sw_integration(data)
-            elif self.integrator_type == 'ofdm':
-                return self.__do_sw_integration_ofdm_wrapper(data)
 
 if __name__ == '__main__':
     argparser=argparse.ArgumentParser()
@@ -155,7 +172,6 @@ if __name__ == '__main__':
     else:
         integrator = IntegratorHW(test_config)
 
-        assert len(test_config.tx) == 1
         hw_del = test_config.getStreamHwOffset(test_config.tx[0])
         integrator.setup(hw_del)
     print('Done')

@@ -21,7 +21,7 @@ from main import MainLoopExt, MainLoopPython
 
 from inet import Inet
 from test_config import TestConfig
-from integrator import IntegratorSW
+from integrator import IntegratorSW, IntegratorHW
 
 class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
 
@@ -44,11 +44,13 @@ class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
         self.ext_main_executor = MainLoopPython(self) \
                                 if self.ext_main_exec_lib == "" else MainLoopExt(self, self.ext_main_exec_lib)
 
-        self.integrator = IntegratorSW(self)
+        self.integrator = IntegratorHW(self) if self.integrator_mode == 'hw' else IntegratorSW(self)
 
         self.__set_loopback(self.adc_dac_sw_loppback)
 
         self.samplingFreq = self.rfdc.getSamplingFrequency()
+
+        self.checkBwCapacity(self.samplingFreq)
 
     def __set_loopback(self, loopback):
         s = [0, 2, 4, 6, 8, 10, 12, 14] if loopback else [1, 3, 5, 7, 9, 11, 13, 15]

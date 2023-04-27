@@ -1,16 +1,16 @@
 {
-    "rx": [4, 5, 6, 7],
+    "rx": [1],
     "tx": [7],
     "samples_in_unit": 512,
     "dwell_in_stream": 2,
-    "units_in_dwell": 128,
-    "adc_dac_hw_loppback": true,
-    "adc_dac_sw_loppback": false,
+    "units_in_dwell": 512,
+    "adc_dac_hw_loppback": false,
+    "adc_dac_sw_loppback": true,
     "integrator_mode": "hw",
     "integrator_type": "ofdm",
-    "integrator_depth": 1024,
-    "num_iterations": 10000,
+    "integrator_depth": 64,
+    "num_iterations": 20,
     "hw_offset_map_path": "../hw/hw_offset.json",
-    "ext_main_exec_lib": "zmqpub",
+    "ext_main_exec_lib": "",
     "debug": false
 }
