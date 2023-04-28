@@ -81,7 +81,7 @@ class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
                 addrQ = addr + size
                 if self.debug:
                     print(f'dmaBatch: {int(ddr_id), self.dma.devIdToIpName(dma_id[0])}, addr={hex(addrI)}, size={hex(size)}')
-                    print(f'dmaBatch: {int(ddr_id), self.dma.devIdToIpName(dma_id[1])}, addr={hex(addrI)}, size={hex(size)}')
+                    print(f'dmaBatch: {int(ddr_id), self.dma.devIdToIpName(dma_id[1])}, addr={hex(addrQ)}, size={hex(size)}')
 
                 dmaBatch.append( ( int(ddr_id), self.dma.devIdToIpName(dma_id[0]), addrI, size ) )
                 dmaBatch.append( ( int(ddr_id), self.dma.devIdToIpName(dma_id[1]), addrQ, size ) )

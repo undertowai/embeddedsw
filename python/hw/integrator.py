@@ -90,16 +90,18 @@ class IntegratorHW(Integrator, IntegratorHwIf):
         IntegratorHwIf.__init__(self, config.debug)
 
     def setup(self, hw_offset_map):
-        periods_log2 = math.log2(self.integrator_depth)
-        integrator_depth = 2 ** periods_log2
-        beats_in_unit = self.samples_in_unit // self.samples_in_beat
+        if self.integrator_mode not in ['hw']:
+            self.writeConfigAll([0, 0, 0, 0, 0, 0, 0, 0], 0, 0, 0)
+        else:
+            periods_log2 = math.log2(self.integrator_depth)
+            integrator_depth = 2 ** periods_log2
+            beats_in_unit = self.samples_in_unit // self.samples_in_beat
 
-        assert (int(self.samples_in_unit) % self.samples_in_beat) == 0, f'samples_in_unit must be multiply of {self.samples_in_beat}'
-        assert self.integrator_mode == 'hw', "IntegratorHW: Incorrect mode, must be HW"
-        assert integrator_depth == self.integrator_depth, "IntegratorHW: integrator_depth parameter must be equal to 2^N if integrator_mode is HW"
+            assert (int(self.samples_in_unit) % self.samples_in_beat) == 0, f'samples_in_unit must be multiply of {self.samples_in_beat}'
+            assert integrator_depth == self.integrator_depth, "IntegratorHW: integrator_depth parameter must be equal to 2^N if integrator_mode is HW"
 
-        self.checkHwType()
-        self.writeConfigAll(hw_offset_map, beats_in_unit, self.units_in_dwell * self.dwell_in_stream, periods_log2)
+            self.checkHwType()
+            self.writeConfigAll(hw_offset_map, beats_in_unit, self.units_in_dwell * self.dwell_in_stream, periods_log2)
 
     def do_integration(self, data):
         return data
