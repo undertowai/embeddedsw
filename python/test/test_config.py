@@ -127,7 +127,7 @@ class TestConfig(Hw):
 
     def getCaptureTimeForBytes(self, captureSize):
         numCaptures = 0x1
-        batchSize = captureSize * numCaptures * self.TIME_CORRECTION_COEFF
+        batchSize = captureSize * numCaptures * self.CAPTURE_WAIT_TIME_CORRECTION
         numSamples = batchSize / (self.BYTES_PER_SAMPLE)
         t = numSamples / self.samplingFreq
 

@@ -1,9 +1,5 @@
 import sys
 from test import TestSuite
-from time import sleep
-import numpy as np
-
-from inet import Inet
 
 class Test_Streaming(TestSuite):
     def __init__(self, config_path):

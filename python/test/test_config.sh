@@ -25,14 +25,14 @@ configure_hw_ip() {
 test_setup() {
 
     #Export BRAM before updating fpga
-    export_path="."
-    $py ../dac/player.py --export $export_path
+    #export_path="."
+    #$py ../dac/player.py --export $export_path
 
-    configure_fpga
+    #configure_fpga
 
     #Load exported BRAM back
-    echo "******************* Loading BRAM content *******************"
-    $py ../dac/player.py --bram0 "$export_path/bram0.npy" --bram1 "$export_path/bram1.npy"
+    #echo "******************* Loading BRAM content *******************"
+    #$py ../dac/player.py --bram0 "$export_path/bram0.npy" --bram1 "$export_path/bram1.npy"
 
     test_config=$1
     clk_config=$2

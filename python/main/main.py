@@ -97,6 +97,8 @@ class MainLoopPython:
         ts = self.test_suite
         iq_data = []
 
+        ts.integrator.do_check_errors(rx)
+
         for rxn in rx:
             a = area[rxn]
             addrI, sizeI = a["I"]
