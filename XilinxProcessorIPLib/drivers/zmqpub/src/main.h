@@ -20,7 +20,8 @@ int MainLoop_cpp (uint32_t *ddr_id_array,
                 uint64_t *dmaLenArray,
                 uint32_t dmaNumInst,
                 uint32_t waitTimeMs,
-                uint32_t txn,
+                uint32_t *txn,
+                uint32_t txn_len,
                 uint32_t *rxn,
                 uint32_t rxn_len);
 

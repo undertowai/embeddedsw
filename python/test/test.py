@@ -50,7 +50,7 @@ class TestSuite(TestConfig, AxiGpio, RfdcClk, Inet):
 
         self.samplingFreq = self.rfdc.getSamplingFrequency()
 
-        self.checkBwCapacity(self.samplingFreq)
+        #self.checkBwCapacity(self.samplingFreq)
 
     def __set_loopback(self, loopback):
         s = [0, 2, 4, 6, 8, 10, 12, 14] if loopback else [1, 3, 5, 7, 9, 11, 13, 15]

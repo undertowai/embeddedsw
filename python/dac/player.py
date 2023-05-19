@@ -295,6 +295,8 @@ if __name__ == "__main__":
     argparser.add_argument('--pstep', help='Specify phase_step', type=int)
 
     argparser.add_argument('--saw', help='Generate Incrementing sequence between min and max values (int16)', action='store_true')
+    argparser.add_argument('--tri', help='Same as a saw, but triangle', action='store_true')
+
     argparser.add_argument('--noise', help='generate noise', action='store_true')
     argparser.add_argument('--scale', help='Set scale for noise', type=int)
 
@@ -354,6 +356,12 @@ if __name__ == "__main__":
     elif args.saw is True:
 
         print('Flattening BRAM using SAW ')
+        bram0 = player.make_saw_bram(size)
+
+        player.load_dac_player(bram0, bram0)
+    elif args.tri is True:
+
+        print('Flattening BRAM using TRI ')
         bram0 = player.make_saw_bram(size)
 
         player.load_dac_player(bram0, bram0)

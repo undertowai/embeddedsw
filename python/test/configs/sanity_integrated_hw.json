@@ -1,13 +1,16 @@
 {
-    "rx": [0, 1, 2, 3, 4, 5, 6, 7],
-    "tx": [7],
-    "samples_in_unit": 65536,
-    "integrator_depth": 32,
-    "dwell_in_stream": 1,
+    "rx": [0, 1, 2, 3],
+    "tx": [0],
+    "samples_in_unit": 512,
+    "dwell_in_stream": 2,
+    "units_in_dwell": 2,
     "adc_dac_hw_loppback": false,
     "adc_dac_sw_loppback": true,
     "integrator_mode": "hw",
-    "num_iterations": 5,
-    "hw_offset_map_path": "../hw/hw_offset_sanity.json",
+    "integrator_type": "ofdm",
+    "integrator_depth": 1024,
+    "num_iterations": 20,
+    "hw_offset_map_path": "../hw/hw_offset.json",
+    "ext_main_exec_lib": "",
     "debug": false
 }

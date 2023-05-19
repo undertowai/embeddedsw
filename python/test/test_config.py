@@ -130,9 +130,6 @@ class TestConfig(Hw):
         batchSize = captureSize * numCaptures * self.CAPTURE_WAIT_TIME_CORRECTION
         numSamples = batchSize / (self.BYTES_PER_SAMPLE)
         t = numSamples / self.samplingFreq
-
-        print(f'captureSize={captureSize}')
-        print(f'time={t}')
         return t
 
     def getBpsPerDdrMax(self, ddr, samplingFrequency):
@@ -158,5 +155,6 @@ class TestConfig(Hw):
         rx_dma_map = self.map_rx_to_dma_id(self.rx)
         for ddr in rx_dma_map:
             bps = self.getBpsPerDdrActual(rx_dma_map[ddr], samplingFrequency)
+            print(f'Sampling frequency : {samplingFrequency}')
             print(f'actual TPUT (Per DDR) : {bps/1e6} MBytes/Sec, max TPUT : {self.DDR_BPS_MAX/1e6}')
             assert bps <= self.DDR_BPS_MAX, f'actual TPUT is higher than DDR bw: {bps} > {self.DDR_BPS_MAX} Bytes/Sec'

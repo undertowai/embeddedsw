@@ -100,7 +100,8 @@ int MainLoop_cpp (uint32_t *ddrIdArray,
                 uint64_t *dmaLenArray,
                 uint32_t dmaNumInst,
                 uint32_t waitTimeMs,
-                uint32_t txn,
+                uint32_t *txn,
+                uint32_t txn_len,
                 uint32_t *rxn,
                 uint32_t rxn_len)
 {
@@ -108,11 +109,13 @@ int MainLoop_cpp (uint32_t *ddrIdArray,
     uint32_t stream_num = rxn_len*2;
     DdrMng::IqData iq_data_v;
     std::vector<uint32_t> rxn_v;
+    std::vector<uint32_t> txn_v;
     uint32_t sn = 0;
 
     dma_inst_num = dmaNumInst;
 
     rxn_v.assign(rxn, rxn+rxn_len);
+    txn_v.assign(txn, txn+txn_len);
 
     if (XDMA_InitBatched(&dma_inst_pool, dmaNameArray, dmaNumInst)) {
         return -1;
@@ -154,7 +157,7 @@ int MainLoop_cpp (uint32_t *ddrIdArray,
 
         if (debug) tstamp(t_start, "Start DMA");
 
-        ZmqPublish(sn, txn, rxn_v, fs, iq_data_v);
+        ZmqPublish(sn, txn_v, rxn_v, fs, iq_data_v);
 
         if (debug) tstamp(t_start, "ZmqPublish");
         sn++;

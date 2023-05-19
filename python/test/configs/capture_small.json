@@ -1,9 +1,0 @@
-{
-    "rx": [0,1,2,3],
-    "tx": [0],
-    "samples_in_unit": 65536,
-    "integrator_depth": 2,
-    "cap_ddr_offset": 0,
-    "adc_dac_hw_loppback": false,
-    "adc_dac_sw_loppback": false
-}

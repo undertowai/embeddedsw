@@ -33,7 +33,7 @@ class MainLoopExt(MLock):
         )
         assert status == 0
 
-    def __loop_exec(self, rx, txn, wait_time):
+    def __loop_exec(self, rx, tx, wait_time):
 
         ts = self.test_suite
         rx_dma_map = ts.map_rx_to_dma_id(rx)
@@ -55,6 +55,7 @@ class MainLoopExt(MLock):
         addr_arr = self.__to_c_array(ct.c_uint64, addr_arr)
         size_arr = self.__to_c_array(ct.c_uint64, size_arr)
         rxn_arr = self.__to_c_array(ct.c_uint32, rx)
+        txn_arr = self.__to_c_array(ct.c_uint32, tx)
 
         status = fun(
             ddr_id_arr,
@@ -63,7 +64,8 @@ class MainLoopExt(MLock):
             size_arr,
             len(name_arr),
             int(wait_time),
-            int(txn),
+            txn_arr,
+            len(txn_arr),
             rxn_arr,
             len(rxn_arr)
         )
@@ -80,7 +82,7 @@ class MainLoopExt(MLock):
     def loop(self):
 
         self.__loop_init(self.fs)
-        self.__loop_exec(self.rx, self.txn, self.wait_time)
+        self.__loop_exec(self.rx, self.tx, self.wait_time)
         self.__loop_destroy()
 
         print(f'**** {__file__}: Exiting')
@@ -114,7 +116,7 @@ class MainLoopPython:
 
         ts.publish(self.VERSION, sn, txn, fs, freq, rx, iq_data)
 
-    def loop(self, fs, wait_time, txn, rx, sn, num_iterations):
+    def loop(self, fs, wait_time, tx, rx, sn, num_iterations):
 
         iter_count = 0
         ts = self.test_suite
@@ -133,7 +135,7 @@ class MainLoopPython:
             ts.adc_dac_sync(True)
 
             sleep(wait_time/1000)
-            self.__proc_cap_data(area, sn, rx, txn, 0, fs)
+            self.__proc_cap_data(area, sn, rx, tx, 0, fs)
 
             sn += 1
             iter_count += 1

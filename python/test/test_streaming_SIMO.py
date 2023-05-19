@@ -7,10 +7,9 @@ class Test_Streaming(TestSuite):
 
     def run_test(self, sn):
         samplingFreq = self.rfdc.getSamplingFrequency()
-        txn = self.tx[0]
 
         self.ext_main_executor.loop(fs=samplingFreq, wait_time=self.calc_wait_time_ms(),
-                         txn=txn, rx=self.rx, sn=sn, num_iterations=self.num_iterations)
+                         tx=self.tx, rx=self.rx, sn=sn, num_iterations=self.num_iterations)
 
 if __name__ == "__main__":
 

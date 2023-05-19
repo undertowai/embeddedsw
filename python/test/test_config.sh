@@ -1,5 +1,5 @@
 
-get_config() {
+get_config_optional() {
     config=$1
     param=$2
     def_val=$3
@@ -8,6 +8,15 @@ get_config() {
     else
         echo $def_val
     fi
+}
+
+get_config() {
+    config_value=$(get_config_optional $1 $2 "null")
+    if [[ $config_value == "null" ]]; then
+        echo "Parameter [$param] doesn't exist in $config, exiting"
+        exit 1
+    fi
+    echo $config_value
 }
 
 configure_fpga() {
@@ -24,6 +33,7 @@ configure_hw_ip() {
 
 test_setup() {
 
+    #TODO: create wrapper.bin and uncomment this !!!
     #Export BRAM before updating fpga
     #export_path="."
     #$py ../dac/player.py --export $export_path
@@ -39,16 +49,16 @@ test_setup() {
 
     configure_hw_ip $test_config
 
-    lmk_config=$(get_config $clk_config lmk "\"\"")
-    lmx2820_config=$(get_config $clk_config lmx2820 "\"\"")
+    lmk_config=$(get_config_optional $clk_config lmk "\"\"")
+    lmx2820_config=$(get_config_optional $clk_config lmx2820 "\"\"")
     rf_pwr_config="../hmc/configs/rf_power.json"
     rf_pwr_config_pre="../hmc/configs/rf_power_pre.json"
 
     [[ $lmk_config != "" ]] && lmk_config="--lmk ../rfdc/configs/$lmk_config"
     [[ $lmx2820_config != "" ]] && lmx2820_config="--lmx2820 ../lmx/$lmx2820_config"
 
-    adc_dac_hw_loppback=$(get_config $test_config adc_dac_hw_loppback False)
-    adc_dac_sw_loppback=$(get_config $test_config adc_dac_sw_loppback False)
+    adc_dac_hw_loppback=$(get_config $test_config adc_dac_hw_loppback)
+    adc_dac_sw_loppback=$(get_config $test_config adc_dac_sw_loppback)
 
     if [ $adc_dac_hw_loppback == "False" ] && [ $adc_dac_sw_loppback == "False" ]; then
         mode="RF"
