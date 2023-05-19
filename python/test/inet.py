@@ -32,17 +32,18 @@ class Inet:
         """
         Example subscriber :
 
-            def convert_recv_data(self):
-                data = self.socket.recv_multipart()
-                [topic, version, sn, txn, rxarray, fs, freq, sent_time, *iq_data] = data
+            def convert_recv_data(self, data):
+                [topic, version, sn, txarray, rxarray, fs, freq, sent_time, *iq_data] = data
 
                 version = int(version.decode('utf-8'))
 
                 if version == 1:
                     iq_data = pickle.loads(iq_data[0])
                     rxarray = pickle.loads(rxarray)
+                    txarray = pickle.loads(txarray)
                 elif version == 2:
                     rxarray = np.frombuffer(rxarray, dtype=np.uint32)
+                    txarray = np.frombuffer(txarray, dtype=np.uint32)
 
                     iq_data = list(iq_data)
                     iq_data = list(map(lambda iq: np.frombuffer(iq, dtype=np.int16), iq_data))
@@ -51,7 +52,9 @@ class Inet:
                     for i in range(0, len(iq_data), 2):
                         iq_data_out.append( (iq_data[i], iq_data[i+1]) )
                     iq_data = iq_data_out
+                else:
+                    assert False
 
 
-                return [topic, sn, txn, rxarray, fs, freq, sent_time, iq_data]
+                return [topic, sn, txarray, rxarray, fs, freq, sent_time, iq_data]
         """
