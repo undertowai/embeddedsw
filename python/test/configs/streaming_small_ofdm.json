@@ -1,11 +1,11 @@
 {
-    "rx": [0],
+    "rx": [0, 1],
     "tx": [0],
     "samples_in_unit": 512,
     "dwell_in_stream": 2,
     "units_in_dwell": 1,
     "adc_dac_hw_loppback": false,
-    "adc_dac_sw_loppback": true,
+    "adc_dac_sw_loppback": false,
     "integrator_mode": "bypass",
     "integrator_type": "ofdm",
     "integrator_depth": 2,

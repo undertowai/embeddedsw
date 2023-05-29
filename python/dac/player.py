@@ -34,6 +34,8 @@ class DacPlayer(AxiGpio):
 
         self.samplingFreq = self.rfdc.getSamplingFrequency()
 
+        print(f'DacPlayer: Sampling frequency : {self.samplingFreq}')
+
     def load_json(self, path):
         with open(path, 'r') as f:
             j = json.load(f)

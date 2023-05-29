@@ -30,7 +30,7 @@ int ZmqDestroy(void)
 }
 
 int ZmqPublish(uint32_t sn,
-                std::vector<uint32_t> rxn,
+                std::vector<uint32_t> txn,
                 std::vector<uint32_t> rxn,
                 uint32_t fs,
                 DdrMng::IqData &iq_data_v)
@@ -45,7 +45,7 @@ int ZmqPublish(uint32_t sn,
         send_msgs.push_back(zmq::buffer(topic));
         send_msgs.push_back(zmq::buffer(std::to_string(VERSION)));
         send_msgs.push_back(zmq::buffer(std::to_string(sn)));
-        send_msgs.push_back(zmq::buffer(std::to_string(txn)));
+        send_msgs.push_back(zmq::buffer(txn));
         send_msgs.push_back(zmq::buffer(rxn));
         send_msgs.push_back(zmq::buffer(std::to_string(fs)));
         send_msgs.push_back(zmq::buffer(std::to_string(freq)));

@@ -33,9 +33,10 @@ int MainLoop (  uint32_t *ddr_id_array,
                 uint64_t *dmaLenArray,
                 uint32_t dmaNumInst,
                 uint32_t waitTimeMs,
-                uint32_t txn,
+                uint32_t *txn,
+                uint32_t txn_len,
                 uint32_t *rxn,
                 uint32_t rxn_len)
 {
-    return MainLoop_cpp(ddr_id_array, dmaNameArray, dmaAddrArray, dmaLenArray, dmaNumInst, waitTimeMs, txn, rxn, rxn_len);
+    return MainLoop_cpp(ddr_id_array, dmaNameArray, dmaAddrArray, dmaLenArray, dmaNumInst, waitTimeMs, txn, txn_len, rxn, rxn_len);
 }

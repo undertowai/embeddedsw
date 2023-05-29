@@ -1,9 +1,9 @@
 #!/bin/bash
 py=python
 
-$py ../dac/player.py --tone 6000000 --pstep 90
-
 . test_config.sh
+
+$py ../dac/player.py --tone 6000000 --pstep 90
 
 run_test () {
     test_setup $1
